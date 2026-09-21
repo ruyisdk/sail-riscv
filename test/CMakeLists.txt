@@ -288,4 +288,9 @@ if (FIRST_PARTY_TESTS)
     add_subdirectory("first_party")
 endif()
 
+option(ENABLE_RISCV_ZTT_TESTS "Compile and register Ztt smoke tests." ON)
+if (ENABLE_RISCV_ZTT_TESTS)
+    add_subdirectory("ztt")
+endif()
+
 add_subdirectory("unit_tests")

@@ -1,0 +1,31 @@
+#!/usr/bin/env python3
+#
+# Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+# SPDX-License-Identifier: BSD-3-Clause-Clear
+#
+"""Generator for ``mfrintz.ew``: floating-point unary math."""
+
+from __future__ import annotations
+
+from mmul_gen.instruction import (
+    DESTINATION_OPERAND,
+    FIRST_SOURCE_OPERAND,
+)
+from mmul_gen.instructions.float_math.base import FloatMathInstruction
+from mmul_gen.templates.float_math_cases import (
+    FloatMathCases,
+)
+from mmul_gen.templates.float_math_common import MathOperation
+
+class MfrintzEw(FloatMathInstruction):
+    """Round each element toward zero."""
+
+    name = "mfrintz.ew"
+    summary = "round each element toward zero"
+    summary_zh = "将每个元素向零方向舍入"
+    operands = (DESTINATION_OPERAND, FIRST_SOURCE_OPERAND)
+    templates = (
+        FloatMathCases(MathOperation.TRUNC),
+    )
+
+__all__ = ["MfrintzEw"]
