@@ -41,9 +41,12 @@ private function privLevel_to_CSR_privbits(p : Privilege) -> nom_priv_bits =
 function check_CSR_priv(csr : csreg, p : Privilege) -> bool =
   privLevel_to_CSR_privbits(p) >=_u csrPriv(csr)
 
-// Check that the CSR access isn't a write to a read-only CSR.
+// Check that the CSR access isn't a write to a read-only CSR.  Extensions may
+// explicitly declare a writable CSR whose address encoding is read-only.
 function check_CSR_access(csr : csreg, access_type : CSRAccessType) -> bool =
-  not((access_type == CSRWrite | access_type == CSRReadWrite) & (csrAccess(csr) == 0b11))
+  is_CSR_writable(csr) |
+  not((access_type == CSRWrite | access_type == CSRReadWrite) &
+      (csrAccess(csr) == 0b11))
 
 function check_CSR(csr : csreg, p : Privilege, access_type : CSRAccessType) -> bool =
     check_CSR_priv(csr, p)
@@ -488,6 +491,14 @@ function reset_sys() -> unit = {
   vtype[vta]       = 0b0;
   vtype[vsew]      = 0b000;
   vtype[vlmul]     = 0b000;
+
+  amenlen = to_bits(ame_nlen);
+  ameudsz = to_bits(ame_unit_dtype_size);
+  amestype = zeros();
+  ameown = 0b0;
+  amefflags = zeros();
+  amexsat = 0b0;
+  amestatus = 0b0
 }
 
 // memory access exceptions, defined here for use by the platform model.

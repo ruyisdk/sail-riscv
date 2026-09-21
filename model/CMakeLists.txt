@@ -33,7 +33,9 @@ endif()
 set(project_file "riscv.sail_project")
 
 # Reconfigure if the project file changes.
-set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${project_file})
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+    ${project_file}
+)
 
 # Get a semicolon-separated list of source files. This is not strictly correct
 # because it will fail if a file contains a semicolon, but hopefully that's

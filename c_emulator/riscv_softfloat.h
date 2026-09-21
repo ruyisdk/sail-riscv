@@ -63,6 +63,21 @@ bv5_bv64 softfloat_ui32tof64(uint64_t rm, uint64_t v);
 bv5_bv64 softfloat_i64tof64(uint64_t rm, uint64_t v);
 bv5_bv64 softfloat_ui64tof64(uint64_t rm, uint64_t v);
 
+// Ztt transcendental helpers: host libm (glibc).  The AME spec permits an
+// implementation-defined approximation and requires the implementation to
+// document the maximum ulp error; this model documents <= 2 ulp (glibc's
+// float/double elementary functions are ~0.5-1 ulp).
+uint64_t ame_ztt_f32cos(uint64_t v);
+uint64_t ame_ztt_f32sin(uint64_t v);
+uint64_t ame_ztt_f32tanh(uint64_t v);
+uint64_t ame_ztt_f32exp2(uint64_t v);
+uint64_t ame_ztt_f32log2(uint64_t v);
+uint64_t ame_ztt_f64cos(uint64_t v);
+uint64_t ame_ztt_f64sin(uint64_t v);
+uint64_t ame_ztt_f64tanh(uint64_t v);
+uint64_t ame_ztt_f64exp2(uint64_t v);
+uint64_t ame_ztt_f64log2(uint64_t v);
+
 bv5_bv32 softfloat_f16tof32(uint64_t rm, uint64_t v);
 bv5_bv64 softfloat_f16tof64(uint64_t rm, uint64_t v);
 bv5_bv64 softfloat_f32tof64(uint64_t rm, uint64_t v);

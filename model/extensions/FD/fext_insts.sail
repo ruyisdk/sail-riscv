@@ -169,8 +169,8 @@ function negate_S(x32: bits(32)) -> bits(32) = {
 }
 
 function feq_quiet_S(v1 : bits(32), v2 : bits(32)) -> (bool, bits(5)) = {
-  let (s1, e1, m1) = fsplit_S (v1);
-  let (s2, e2, m2) = fsplit_S (v2);
+  let (s1, e1, fr1) = fsplit_S (v1);
+  let (s2, e2, fr2) = fsplit_S (v2);
 
   let v1Is0    = f_is_neg_zero_S(v1) | f_is_pos_zero_S(v1);
   let v2Is0    = f_is_neg_zero_S(v2) | f_is_pos_zero_S(v2);
@@ -185,13 +185,13 @@ function feq_quiet_S(v1 : bits(32), v2 : bits(32)) -> (bool, bits(5)) = {
 }
 
 function flt_S(v1 : bits(32), v2 : bits(32), is_quiet : bool) -> (bool, bits(5)) = {
-  let (s1, e1, m1) = fsplit_S (v1);
-  let (s2, e2, m2) = fsplit_S (v2);
+  let (s1, e1, fr1) = fsplit_S (v1);
+  let (s2, e2, fr2) = fsplit_S (v2);
 
   let result : bool =
     if (s1 == 0b0) & (s2 == 0b0) then
       if   (e1 == e2)
-      then unsigned (m1) < unsigned (m2)
+      then unsigned (fr1) < unsigned (fr2)
       else unsigned (e1) < unsigned (e2)
     else if (s1 == 0b0) & (s2 == 0b1)
     then false
@@ -199,7 +199,7 @@ function flt_S(v1 : bits(32), v2 : bits(32), is_quiet : bool) -> (bool, bits(5))
     then true
     else
         if   (e1 == e2)
-        then unsigned (m1) > unsigned (m2)
+        then unsigned (fr1) > unsigned (fr2)
         else unsigned (e1) > unsigned (e2);
 
   let fflags = if is_quiet then
@@ -215,8 +215,8 @@ function flt_S(v1 : bits(32), v2 : bits(32), is_quiet : bool) -> (bool, bits(5))
 }
 
 function fle_S(v1 : bits(32), v2 : bits(32), is_quiet : bool) -> (bool, bits(5)) = {
-  let (s1, e1, m1) = fsplit_S (v1);
-  let (s2, e2, m2) = fsplit_S (v2);
+  let (s1, e1, fr1) = fsplit_S (v1);
+  let (s2, e2, fr2) = fsplit_S (v2);
 
   let v1Is0    = f_is_neg_zero_S(v1) | f_is_pos_zero_S(v1);
   let v2Is0    = f_is_neg_zero_S(v2) | f_is_pos_zero_S(v2);
@@ -224,7 +224,7 @@ function fle_S(v1 : bits(32), v2 : bits(32), is_quiet : bool) -> (bool, bits(5))
   let result : bool =
     if (s1 == 0b0) & (s2 == 0b0) then
       if   (e1 == e2)
-      then unsigned (m1) <=  unsigned (m2)
+      then unsigned (fr1) <=  unsigned (fr2)
       else unsigned (e1)  <  unsigned (e2)
     else if (s1 == 0b0) & (s2 == 0b1)
     then (v1Is0 & v2Is0)                         // Equal in this case (+0=-0)
@@ -232,7 +232,7 @@ function fle_S(v1 : bits(32), v2 : bits(32), is_quiet : bool) -> (bool, bits(5))
     then true
     else
       if   (e1 == e2)
-      then unsigned (m1) >=  unsigned (m2)
+      then unsigned (fr1) >=  unsigned (fr2)
       else unsigned (e1)  >  unsigned (e2);
 
   let fflags = if is_quiet then
@@ -737,9 +737,9 @@ mapping clause encdec = F_BIN_TYPE_X_S(rs2, rs1, rd, FLE_S)
 function clause execute F_BIN_TYPE_F_S(rs2, rs1, rd, FSGNJ_S) = {
   let rs1_val_S    = F_or_X_S(rs1);
   let rs2_val_S    = F_or_X_S(rs2);
-  let (s1, e1, m1) = fsplit_S (rs1_val_S);
-  let (s2, e2, m2) = fsplit_S (rs2_val_S);
-  let rd_val_S     = fmake_S (s2, e1, m1);
+  let (s1, e1, fr1) = fsplit_S (rs1_val_S);
+  let (s2, e2, fr2) = fsplit_S (rs2_val_S);
+  let rd_val_S     = fmake_S (s2, e1, fr1);
 
   F_or_X_S(rd) = rd_val_S;
   RETIRE_SUCCESS
@@ -748,9 +748,9 @@ function clause execute F_BIN_TYPE_F_S(rs2, rs1, rd, FSGNJ_S) = {
 function clause execute F_BIN_TYPE_F_S(rs2, rs1, rd, FSGNJN_S) = {
   let rs1_val_S    = F_or_X_S(rs1);
   let rs2_val_S    = F_or_X_S(rs2);
-  let (s1, e1, m1) = fsplit_S (rs1_val_S);
-  let (s2, e2, m2) = fsplit_S (rs2_val_S);
-  let rd_val_S     = fmake_S (0b1 ^ s2, e1, m1);
+  let (s1, e1, fr1) = fsplit_S (rs1_val_S);
+  let (s2, e2, fr2) = fsplit_S (rs2_val_S);
+  let rd_val_S     = fmake_S (0b1 ^ s2, e1, fr1);
 
   F_or_X_S(rd) = rd_val_S;
   RETIRE_SUCCESS
@@ -759,9 +759,9 @@ function clause execute F_BIN_TYPE_F_S(rs2, rs1, rd, FSGNJN_S) = {
 function clause execute F_BIN_TYPE_F_S(rs2, rs1, rd, FSGNJX_S) = {
   let rs1_val_S    = F_or_X_S(rs1);
   let rs2_val_S    = F_or_X_S(rs2);
-  let (s1, e1, m1) = fsplit_S (rs1_val_S);
-  let (s2, e2, m2) = fsplit_S (rs2_val_S);
-  let rd_val_S     = fmake_S (s1 ^ s2, e1, m1);
+  let (s1, e1, fr1) = fsplit_S (rs1_val_S);
+  let (s2, e2, fr2) = fsplit_S (rs2_val_S);
+  let rd_val_S     = fmake_S (s1 ^ s2, e1, fr1);
 
   F_or_X_S(rd) = rd_val_S;
   RETIRE_SUCCESS

@@ -3,6 +3,8 @@
 // softfloat.h is missing #ifdef __cplusplus etc.
 extern "C" {
 #include "softfloat.h"
+#include <cmath>
+#include <cstring>
 }
 
 namespace {
@@ -465,6 +467,64 @@ bv5_bv64 softfloat_ui64tof64(uint64_t rm, uint64_t v) {
   res = ui64_to_f64(v);
 
   return {softfloat_exceptionFlags, res.v};
+}
+
+// ---- Ztt transcendentals (host libm, see riscv_softfloat.h) ----------------
+
+static float ame_ztt_f32_of(uint64_t v) {
+  float f;
+  std::memcpy(&f, &v, 4);
+  return f;
+}
+
+static uint64_t ame_ztt_bits_of_f32(float f) {
+  uint64_t o = 0;
+  std::memcpy(&o, &f, 4);
+  return o;
+}
+
+static double ame_ztt_f64_of(uint64_t v) {
+  double d;
+  std::memcpy(&d, &v, 8);
+  return d;
+}
+
+static uint64_t ame_ztt_bits_of_f64(double d) {
+  uint64_t o = 0;
+  std::memcpy(&o, &d, 8);
+  return o;
+}
+
+uint64_t ame_ztt_f32cos(uint64_t v) {
+  return ame_ztt_bits_of_f32(std::cos(ame_ztt_f32_of(v)));
+}
+uint64_t ame_ztt_f32sin(uint64_t v) {
+  return ame_ztt_bits_of_f32(std::sin(ame_ztt_f32_of(v)));
+}
+uint64_t ame_ztt_f32tanh(uint64_t v) {
+  return ame_ztt_bits_of_f32(std::tanh(ame_ztt_f32_of(v)));
+}
+uint64_t ame_ztt_f32exp2(uint64_t v) {
+  return ame_ztt_bits_of_f32(std::exp2(ame_ztt_f32_of(v)));
+}
+uint64_t ame_ztt_f32log2(uint64_t v) {
+  return ame_ztt_bits_of_f32(std::log2(ame_ztt_f32_of(v)));
+}
+
+uint64_t ame_ztt_f64cos(uint64_t v) {
+  return ame_ztt_bits_of_f64(std::cos(ame_ztt_f64_of(v)));
+}
+uint64_t ame_ztt_f64sin(uint64_t v) {
+  return ame_ztt_bits_of_f64(std::sin(ame_ztt_f64_of(v)));
+}
+uint64_t ame_ztt_f64tanh(uint64_t v) {
+  return ame_ztt_bits_of_f64(std::tanh(ame_ztt_f64_of(v)));
+}
+uint64_t ame_ztt_f64exp2(uint64_t v) {
+  return ame_ztt_bits_of_f64(std::exp2(ame_ztt_f64_of(v)));
+}
+uint64_t ame_ztt_f64log2(uint64_t v) {
+  return ame_ztt_bits_of_f64(std::log2(ame_ztt_f64_of(v)));
 }
 
 bv5_bv32 softfloat_f16tof32(uint64_t rm, uint64_t v) {

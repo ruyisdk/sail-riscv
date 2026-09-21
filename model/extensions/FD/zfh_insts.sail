@@ -117,8 +117,8 @@ function f_is_NaN_H(xf16 : bits(16)) -> bool = {
 }
 
 function fle_H(v1 : bits(16), v2 : bits(16), is_quiet : bool) -> (bool, bits(5)) = {
-  let (s1, e1, m1) = fsplit_H (v1);
-  let (s2, e2, m2) = fsplit_H (v2);
+  let (s1, e1, fr1) = fsplit_H (v1);
+  let (s2, e2, fr2) = fsplit_H (v2);
 
   let v1Is0    = f_is_neg_zero_H(v1) | f_is_pos_zero_H(v1);
   let v2Is0    = f_is_neg_zero_H(v2) | f_is_pos_zero_H(v2);
@@ -126,7 +126,7 @@ function fle_H(v1 : bits(16), v2 : bits(16), is_quiet : bool) -> (bool, bits(5))
   let result : bool =
     if (s1 == 0b0) & (s2 == 0b0) then
       if   (e1 == e2)
-      then unsigned (m1) <=  unsigned (m2)
+      then unsigned (fr1) <=  unsigned (fr2)
       else unsigned (e1)  <  unsigned (e2)
     else if (s1 == 0b0) & (s2 == 0b1)
     then (v1Is0 & v2Is0)                         // Equal in this case (+0=-0)
@@ -134,7 +134,7 @@ function fle_H(v1 : bits(16), v2 : bits(16), is_quiet : bool) -> (bool, bits(5))
     then true
     else
       if   (e1 == e2)
-      then unsigned (m1) >=  unsigned (m2)
+      then unsigned (fr1) >=  unsigned (fr2)
       else unsigned (e1)  >  unsigned (e2);
 
   let fflags = if is_quiet then
@@ -342,9 +342,9 @@ mapping clause encdec = F_BIN_X_TYPE_H(rs2, rs1, rd, FLE_H)
 function clause execute F_BIN_F_TYPE_H(rs2, rs1, rd, FSGNJ_H) = {
   let rs1_val_H    = F_or_X_H(rs1);
   let rs2_val_H    = F_or_X_H(rs2);
-  let (s1, e1, m1) = fsplit_H (rs1_val_H);
-  let (s2, e2, m2) = fsplit_H (rs2_val_H);
-  let rd_val_H     = fmake_H (s2, e1, m1);
+  let (s1, e1, fr1) = fsplit_H (rs1_val_H);
+  let (s2, e2, fr2) = fsplit_H (rs2_val_H);
+  let rd_val_H     = fmake_H (s2, e1, fr1);
 
   F_or_X_H(rd) = rd_val_H;
   RETIRE_SUCCESS
@@ -353,9 +353,9 @@ function clause execute F_BIN_F_TYPE_H(rs2, rs1, rd, FSGNJ_H) = {
 function clause execute F_BIN_F_TYPE_H(rs2, rs1, rd, FSGNJN_H) = {
   let rs1_val_H    = F_or_X_H(rs1);
   let rs2_val_H    = F_or_X_H(rs2);
-  let (s1, e1, m1) = fsplit_H (rs1_val_H);
-  let (s2, e2, m2) = fsplit_H (rs2_val_H);
-  let rd_val_H     = fmake_H (0b1 ^ s2, e1, m1);
+  let (s1, e1, fr1) = fsplit_H (rs1_val_H);
+  let (s2, e2, fr2) = fsplit_H (rs2_val_H);
+  let rd_val_H     = fmake_H (0b1 ^ s2, e1, fr1);
 
   F_or_X_H(rd) = rd_val_H;
   RETIRE_SUCCESS
@@ -364,9 +364,9 @@ function clause execute F_BIN_F_TYPE_H(rs2, rs1, rd, FSGNJN_H) = {
 function clause execute F_BIN_F_TYPE_H(rs2, rs1, rd, FSGNJX_H) = {
   let rs1_val_H    = F_or_X_H(rs1);
   let rs2_val_H    = F_or_X_H(rs2);
-  let (s1, e1, m1) = fsplit_H (rs1_val_H);
-  let (s2, e2, m2) = fsplit_H (rs2_val_H);
-  let rd_val_H     = fmake_H (s1 ^ s2, e1, m1);
+  let (s1, e1, fr1) = fsplit_H (rs1_val_H);
+  let (s2, e2, fr2) = fsplit_H (rs2_val_H);
+  let rd_val_H     = fmake_H (s1 ^ s2, e1, fr1);
 
   F_or_X_H(rd) = rd_val_H;
   RETIRE_SUCCESS

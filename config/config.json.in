@@ -826,6 +826,18 @@
     "Zhinxmin": {
       "supported": false
     },
+    "Ztt": {
+      "supported": true,
+      "ame_nlen_pow": @CONFIG__ZTT__NLEN_POW@,
+      "ame_num_m_regs": @CONFIG__ZTT__NUM_M_REGS@,
+      "ame_num_acc_regs": @CONFIG__ZTT__NUM_ACC_REGS@,
+      // Backend ownership mode.  The current Sail model supports a dedicated
+      // backend per hart; shared-backend arbitration requires a platform
+      // backend provider and is rejected during configuration validation.
+      "ame_backend": "@CONFIG__ZTT__BACKEND@",
+      "ame_unit_dtype_size_pow": @CONFIG__ZTT__UNIT_DTYPE_SIZE_POW@,
+      "ame_max_dtype_size_pow": 7
+    },
     "Zvabd": {
       "supported": true
     },

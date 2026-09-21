@@ -206,6 +206,10 @@ bitfield Mstatus : bits(64) = {
   SXL  : 35 .. 34,
   UXL  : 33 .. 32,
 
+  // Ztt matrix context status.  This is a provisional use of a field that is
+  // reserved by the base status layout and is mirrored in sstatus.
+  MS   : 26 .. 25,
+
   //SDT  : 24,
   SPELP: 23,
   TSR  : 22,
@@ -257,9 +261,11 @@ private function legalize_mstatus(o : Mstatus, v : bits(64)) -> Mstatus = {
 
     // We don't have any extension context yet.
     XS = extStatus_map(Off),
-    // Validate FS and VS against their allowed set.
+    // Validate FS and VS against their allowed set.  Ztt always implements
+    // the architectural four-state MS model when it is present.
     FS = legalize_extStatus(plat_mstatus_legal_fs, v[FS]),
     VS = legalize_extStatus(plat_mstatus_legal_vs, v[VS]),
+    MS = if hartSupports(Ext_Ztt) then v[MS] else extStatus_map(Off),
 
     MPP = if have_nominal_privLevel(v[MPP]) then v[MPP] else privLevel_to_bits(lowest_supported_privLevel()),
     SPP = if currentlyEnabled(Ext_S) then v[SPP] else 0b0,
@@ -278,7 +284,8 @@ private function legalize_mstatus(o : Mstatus, v : bits(64)) -> Mstatus = {
   // Set dirty bit to OR of other status bits.
   let dirty = extStatus_map(o[FS]) == Dirty |
               extStatus_map(o[XS]) == Dirty |
-              extStatus_map(o[VS]) == Dirty;
+              extStatus_map(o[VS]) == Dirty |
+              extStatus_map(o[MS]) == Dirty;
 
   [o with SD = bool_to_bit(dirty)]
 }
@@ -303,9 +310,33 @@ function clause is_CSR_accessible(0x310, _, _) = mstatush_is_defined & xlen == 3
 function clause read_CSR(0x300) = mstatus.bits[xlen - 1 .. 0]
 function clause read_CSR(0x310 if xlen == 32) = mstatus.bits[63 .. 32]
 
-function clause write_CSR((0x300, value) if xlen == 64) = { mstatus = legalize_mstatus(mstatus, value); Ok(mstatus.bits) }
-function clause write_CSR((0x300, value) if xlen == 32) = { mstatus = legalize_mstatus(mstatus, mstatus.bits[63 .. 32] @ value); Ok(mstatus.bits[31 .. 0]) }
-function clause write_CSR((0x310, value) if xlen == 32) = { mstatus = legalize_mstatus(mstatus, value @ mstatus.bits[31 .. 0]); Ok(mstatus.bits[63 .. 32]) }
+function write_mstatus_if_legal(value : bits(64)) -> result(Mstatus, unit) = {
+  let updated = legalize_mstatus(mstatus, value);
+  if is_mstatus_write_legal(updated.bits) then {
+    mstatus = updated;
+    Ok(mstatus)
+  }
+  else Err(())
+}
+
+function clause write_CSR((0x300, value) if xlen == 64) = {
+  match write_mstatus_if_legal(value) {
+    Ok(updated) => Ok(updated.bits),
+    Err(()) => Err(()),
+  }
+}
+function clause write_CSR((0x300, value) if xlen == 32) = {
+  match write_mstatus_if_legal(mstatus.bits[63 .. 32] @ value) {
+    Ok(updated) => Ok(updated.bits[31 .. 0]),
+    Err(()) => Err(()),
+  }
+}
+function clause write_CSR((0x310, value) if xlen == 32) = {
+  match write_mstatus_if_legal(value @ mstatus.bits[31 .. 0]) {
+    Ok(updated) => Ok(updated.bits[63 .. 32]),
+    Err(()) => Err(()),
+  }
+}
 
 bitfield Hstatus : bits(64) = {
   HUPMM : 49 .. 48,
@@ -921,6 +952,7 @@ bitfield Sstatus : bits(64) = {
   SD    : xlen - 1,
 
   UXL   : 33 .. 32,
+  MS    : 26 .. 25,
 //  SDT   : 24,
   SPELP : 23,
   MXR   : 19,
@@ -940,6 +972,7 @@ private function lower_mstatus(m : Mstatus) -> Sstatus = {
   [s with
     SD = m[SD],
     UXL = m[UXL],
+    MS = m[MS],
     //SDT = m[SDT],
     SPELP = m[SPELP],
     MXR = m[MXR],
@@ -955,11 +988,12 @@ private function lower_mstatus(m : Mstatus) -> Sstatus = {
 
 private function lift_sstatus(m : Mstatus, s : Sstatus) -> Mstatus = {
   let dirty = extStatus_map(s[FS]) == Dirty | extStatus_map(s[XS]) == Dirty |
-              extStatus_map(s[VS]) == Dirty;
+              extStatus_map(s[VS]) == Dirty | extStatus_map(s[MS]) == Dirty;
 
   [m with
     SD = bool_to_bit(dirty),
     UXL = s[UXL],
+    MS = s[MS],
     //SDT = s[SDT],
     SPELP = s[SPELP],
     MXR = s[MXR],
@@ -994,8 +1028,22 @@ function clause is_CSR_accessible(0x100, _, _) = currentlyEnabled(Ext_S) // ssta
 function clause read_CSR(0x100) = lower_mstatus(if inVirtualPrivilege() then vsstatus else mstatus).bits[xlen - 1 .. 0]
 function clause write_CSR(0x100, value) =
   if inVirtualPrivilege()
-  then { vsstatus = legalize_sstatus(vsstatus, value); Ok(lower_mstatus(vsstatus).bits[xlen - 1 .. 0]) }
-  else { mstatus  = legalize_sstatus(mstatus, value);  Ok(lower_mstatus(mstatus).bits[xlen - 1 .. 0])  }
+  then {
+    let updated = legalize_sstatus(vsstatus, value);
+    if is_mstatus_write_legal(updated.bits) then {
+      vsstatus = updated;
+      Ok(lower_mstatus(vsstatus).bits[xlen - 1 .. 0])
+    }
+    else Err(())
+  }
+  else {
+    let updated = legalize_sstatus(mstatus, value);
+    if is_mstatus_write_legal(updated.bits) then {
+      mstatus = updated;
+      Ok(lower_mstatus(mstatus).bits[xlen - 1 .. 0])
+    }
+    else Err(())
+  }
 
 // Virtual Supervisor related state registers
 register vstvec    : Mtvec

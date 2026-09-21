@@ -773,6 +773,14 @@ private function check_misc_extension_dependencies() -> bool = {
 
 private function check_extension_param_constraints() -> bool = {
   var valid : bool = true;
+  if (ame_backend != "dedicated") & (ame_backend != "shared") then {
+    valid = false;
+    print_endline("extensions.Ztt.ame_backend must be either dedicated or shared, got " ^ ame_backend ^ ".");
+  };
+  if ame_backend == "shared" then {
+    valid = false;
+    print_endline("extensions.Ztt.ame_backend=shared is not supported by the current single-hart Sail model; shared backend arbitration requires a platform backend provider.");
+  };
   if (config extensions.Zic64b.supported : bool) & (plat_cache_block_size_exp != 6) then {
     valid = false;
     print_endline("The Zic64b extension is enabled but the cache block size is not 64 bytes.");

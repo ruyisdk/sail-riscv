@@ -128,8 +128,8 @@ function negate_D(x64 : bits(64)) -> bits(64) = {
 }
 
 function feq_quiet_D(v1 : bits(64), v2 : bits(64)) -> (bool, bits(5)) = {
-  let (s1, e1, m1) = fsplit_D (v1);
-  let (s2, e2, m2) = fsplit_D (v2);
+  let (s1, e1, fr1) = fsplit_D (v1);
+  let (s2, e2, fr2) = fsplit_D (v2);
 
   let v1Is0    = f_is_neg_zero_D(v1) | f_is_pos_zero_D(v1);
   let v2Is0    = f_is_neg_zero_D(v2) | f_is_pos_zero_D(v2);
@@ -144,13 +144,13 @@ function feq_quiet_D(v1 : bits(64), v2 : bits(64)) -> (bool, bits(5)) = {
 }
 
 function flt_D(v1 : bits(64), v2 : bits(64), is_quiet : bool) -> (bool, bits(5)) = {
-  let (s1, e1, m1) = fsplit_D (v1);
-  let (s2, e2, m2) = fsplit_D (v2);
+  let (s1, e1, fr1) = fsplit_D (v1);
+  let (s2, e2, fr2) = fsplit_D (v2);
 
   let result : bool =
     if (s1 == 0b0) & (s2 == 0b0) then
       if   (e1 == e2)
-      then unsigned (m1) < unsigned (m2)
+      then unsigned (fr1) < unsigned (fr2)
       else unsigned (e1) < unsigned (e2)
     else if (s1 == 0b0) & (s2 == 0b1) then
       false
@@ -158,7 +158,7 @@ function flt_D(v1 : bits(64), v2 : bits(64), is_quiet : bool) -> (bool, bits(5))
       true
     else
       if   (e1 == e2)
-      then unsigned (m1) > unsigned (m2)
+      then unsigned (fr1) > unsigned (fr2)
       else unsigned (e1) > unsigned (e2);
 
   let fflags = if is_quiet then
@@ -174,8 +174,8 @@ function flt_D(v1 : bits(64), v2 : bits(64), is_quiet : bool) -> (bool, bits(5))
 }
 
 function fle_D(v1 : bits(64), v2 : bits(64), is_quiet : bool) -> (bool, bits(5)) = {
-  let (s1, e1, m1) = fsplit_D (v1);
-  let (s2, e2, m2) = fsplit_D (v2);
+  let (s1, e1, fr1) = fsplit_D (v1);
+  let (s2, e2, fr2) = fsplit_D (v2);
 
   let v1Is0    = f_is_neg_zero_D(v1) | f_is_pos_zero_D(v1);
   let v2Is0    = f_is_neg_zero_D(v2) | f_is_pos_zero_D(v2);
@@ -183,7 +183,7 @@ function fle_D(v1 : bits(64), v2 : bits(64), is_quiet : bool) -> (bool, bits(5))
   let result : bool =
     if (s1 == 0b0) & (s2 == 0b0) then
       if   (e1 == e2)
-      then unsigned (m1) <=  unsigned (m2)
+      then unsigned (fr1) <=  unsigned (fr2)
       else unsigned (e1)  <  unsigned (e2)
     else if (s1 == 0b0) & (s2 == 0b1) then
       (v1Is0 & v2Is0)                         // Equal in this case (+0=-0)
@@ -191,7 +191,7 @@ function fle_D(v1 : bits(64), v2 : bits(64), is_quiet : bool) -> (bool, bits(5))
       true
     else
       if   (e1 == e2)
-      then unsigned (m1) >=  unsigned (m2)
+      then unsigned (fr1) >=  unsigned (fr2)
       else unsigned (e1)  >  unsigned (e2);
 
   let fflags = if is_quiet then
@@ -685,9 +685,9 @@ function clause execute F_BIN_F_TYPE_D(rs2, rs1, rd, FSGNJ_D) = {
   let rs1_val_D    = F_or_X_D(rs1);
   let rs2_val_D    = F_or_X_D(rs2);
 
-  let (s1, e1, m1) = fsplit_D (rs1_val_D);
-  let (s2, e2, m2) = fsplit_D (rs2_val_D);
-  let rd_val_D     = fmake_D (s2, e1, m1);
+  let (s1, e1, fr1) = fsplit_D (rs1_val_D);
+  let (s2, e2, fr2) = fsplit_D (rs2_val_D);
+  let rd_val_D     = fmake_D (s2, e1, fr1);
 
   F_or_X_D(rd) = rd_val_D;
   RETIRE_SUCCESS
@@ -696,9 +696,9 @@ function clause execute F_BIN_F_TYPE_D(rs2, rs1, rd, FSGNJ_D) = {
 function clause execute F_BIN_F_TYPE_D(rs2, rs1, rd, FSGNJN_D) = {
   let rs1_val_D    = F_or_X_D(rs1);
   let rs2_val_D    = F_or_X_D(rs2);
-  let (s1, e1, m1) = fsplit_D (rs1_val_D);
-  let (s2, e2, m2) = fsplit_D (rs2_val_D);
-  let rd_val_D     = fmake_D (0b1 ^ s2, e1, m1);
+  let (s1, e1, fr1) = fsplit_D (rs1_val_D);
+  let (s2, e2, fr2) = fsplit_D (rs2_val_D);
+  let rd_val_D     = fmake_D (0b1 ^ s2, e1, fr1);
 
   F_or_X_D(rd) = rd_val_D;
   RETIRE_SUCCESS
@@ -707,9 +707,9 @@ function clause execute F_BIN_F_TYPE_D(rs2, rs1, rd, FSGNJN_D) = {
 function clause execute F_BIN_F_TYPE_D(rs2, rs1, rd, FSGNJX_D) = {
   let rs1_val_D    = F_or_X_D(rs1);
   let rs2_val_D    = F_or_X_D(rs2);
-  let (s1, e1, m1) = fsplit_D (rs1_val_D);
-  let (s2, e2, m2) = fsplit_D (rs2_val_D);
-  let rd_val_D     = fmake_D (s1 ^ s2, e1, m1);
+  let (s1, e1, fr1) = fsplit_D (rs1_val_D);
+  let (s2, e2, fr2) = fsplit_D (rs2_val_D);
+  let rd_val_D     = fmake_D (s1 ^ s2, e1, fr1);
 
   F_or_X_D(rd) = rd_val_D;
   RETIRE_SUCCESS

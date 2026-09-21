@@ -391,6 +391,10 @@ function clause hartSupports(Ext_Zve64f) = sizeof(elen_exp) >= 6 & vector_suppor
 enum clause extension = Ext_Zve64x
 mapping clause extensionName = Ext_Zve64x <-> "zve64x"
 function clause hartSupports(Ext_Zve64x) = sizeof(elen_exp) >= 6 & vector_support_level >= Integer
+// Attached Matrix Extension
+enum clause extension = Ext_Ztt
+mapping clause extensionName = Ext_Ztt <-> "ztt"
+function clause hartSupports(Ext_Ztt) = sys_enable_experimental_extensions() & config extensions.Ztt.supported
 // Vector Integer Absolute Difference
 enum clause extension = Ext_Zvabd
 mapping clause extensionName = Ext_Zvabd <-> "zvabd"
@@ -835,6 +839,8 @@ let extensions_ordered_for_isa_string = [
 
   //Zvabd
   Ext_Zvabd,
+  // Ztt
+  Ext_Ztt,
 
   // Zvb
   Ext_Zvbb,

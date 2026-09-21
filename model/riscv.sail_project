@@ -14,6 +14,7 @@ core {
     core/xlen.sail,
     core/flen.sail,
     core/vlen.sail,
+    core/mlen.sail,
     core/mem_addrtype.sail,
     core/mem_metadata.sail,
     core/phys_mem_interface.sail,
@@ -62,7 +63,7 @@ pmp {
 }
 
 sys {
-  requires prelude, core, exceptions, pmp, V_core, Smcntrpmf, Zicfilp_regs, A_types, Stateen, Zicbop_types, PM_utils
+  requires prelude, core, exceptions, pmp, V_core, Smcntrpmf, Zicfilp_regs, A_types, Stateen, Zicbop_types, PM_utils, Ztt_regs
 
   files
     sys/sys_reservation.sail,
@@ -329,6 +330,49 @@ extensions {
     }
   }
 
+  Ztt {
+    requires core
+    Ztt_types {
+      before sys
+      files
+        extensions/Ztt/ztt_types.sail,
+        extensions/Ztt/ztt_instruction_types.sail
+    }
+    Ztt_regs {
+      requires Ztt_types
+      before sys
+      files extensions/Ztt/ztt_regs.sail
+    }
+    Ztt_utils {
+      requires FD_core, Ztt_types, Ztt_regs
+      before sys
+      files
+        extensions/Ztt/ztt_datatype_utils.sail,
+        extensions/Ztt/ztt_register_utils.sail,
+        extensions/Ztt/ztt_bit_utils.sail,
+        extensions/Ztt/ztt_integer_utils.sail,
+        extensions/Ztt/ztt_float_utils.sail,
+        extensions/Ztt/ztt_backend_utils.sail
+    }
+    Ztt_insts {
+      requires sys, exceptions, FD_core, Ztt_types, Ztt_regs, Ztt_utils
+      files
+        extensions/Ztt/ztt_insts_common.sail,
+        extensions/Ztt/ztt_resource_insts.sail,
+        extensions/Ztt/ztt_datatype_insts.sail,
+        extensions/Ztt/ztt_arithmetic_insts.sail,
+        extensions/Ztt/ztt_float_insts.sail,
+        extensions/Ztt/ztt_bitwise_insts.sail,
+        extensions/Ztt/ztt_compare_insts.sail,
+        extensions/Ztt/ztt_permutation_insts.sail,
+        extensions/Ztt/ztt_state_insts.sail,
+        extensions/Ztt/ztt_math_insts.sail,
+        extensions/Ztt/ztt_memory_insts.sail,
+        extensions/Ztt/ztt_mmul_insts.sail,
+        extensions/Ztt/ztt_reduction_insts.sail
+    }
+  }
+
   // Control and Status Register (CSR) Instructions
   Zicsr {
     requires core
@@ -585,7 +629,7 @@ mops {
 postlude {
   after extensions, mops, core
 
-  requires prelude, core, sys, exceptions, Smcntrpmf, pmp, Zicfilp_regs, Zicfilp_insts
+  requires prelude, core, sys, exceptions, Smcntrpmf, pmp, Zicfilp_regs, Zicfilp_insts, Ztt_types
 
   files
     postlude/insts_end.sail,
@@ -603,10 +647,22 @@ postlude {
 
 unit_tests {
   after postlude
-  requires prelude, core, sys, exceptions, postlude
+  requires prelude, core, sys, exceptions, postlude, Ztt_types, Ztt_regs, Ztt_utils, Ztt_insts
 
   files
     unit_tests/test_mstatus.sail,
+    unit_tests/test_ztt_instruction_helpers.sail,
+    unit_tests/test_ztt_amestatus.sail,
+    unit_tests/test_ztt_assembly_disassembly.sail,
+    unit_tests/test_ztt_context_status.sail,
+    unit_tests/test_ztt_fp_special_values.sail,
+    unit_tests/test_ztt_integer_status.sail,
+    unit_tests/test_ztt_memory_layout.sail,
+    unit_tests/test_ztt_predicate.sail,
+    unit_tests/test_ztt_datatype_management.sail,
+    unit_tests/test_ztt_zero_instructions.sail,
+    unit_tests/test_ztt_move_instructions.sail,
+    unit_tests/test_ztt_nsq.sail,
 }
 
 main {

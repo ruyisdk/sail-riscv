@@ -19,6 +19,18 @@ overload to_str = {csr_name}
 val is_CSR_accessible : (csreg, Privilege, CSRAccessType) -> bool
 scattered function is_CSR_accessible
 
+// Some extensions allocate writable CSRs in an address range whose encoding
+// normally denotes read-only state.  Those extensions declare the exception
+// here; the generic CSR access check remains address-agnostic.
+val is_CSR_writable : csreg -> bool
+scattered function is_CSR_writable
+
+// Extension state can constrain otherwise valid writes to mstatus/sstatus.
+// The core applies this after status-field legalisation, keeping extension
+// ownership rules out of the base status-register implementation.
+val is_mstatus_write_legal : bits(64) -> bool
+scattered function is_mstatus_write_legal
+
 // returns the value of the CSR if it is defined
 val read_CSR : csreg -> xlenbits
 scattered function read_CSR
