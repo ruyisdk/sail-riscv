@@ -1,21 +1,22 @@
-# AME 回归测试
+# AME regression tests
 
-针对单条 AME 指令行为的固定最小测试，与生成的矩阵（`gen/mmul_gen/`）互补：生成的 ELF
-覆盖面广，这些文件钉死单个确定性用例，无需重新生成即可捕获回归。
+Fixed minimal tests for the behavior of single AME instructions, complementing the generated matrix
+(`gen/mmul_gen/`): the generated ELFs have broad coverage, while these files pin down individual
+deterministic cases and catch regressions without needing regeneration.
 
-运行：
+Run:
 
 ```sh
-./run_repro.sh                                  # 使用默认模拟器路径
-./run_repro.sh /path/to/sail_riscv_sim          # 覆盖 sail 二进制
+./run_repro.sh                                  # use the default simulator path
+./run_repro.sh /path/to/sail_riscv_sim          # override the sail binary
 ```
 
-Spike 通过 `spike_ztt_runner.py` 运行，该脚本内已接入启用 AME 的 spike 构建。
+Spike is run via `spike_ztt_runner.py`, which already wires in an AME-enabled spike build.
 
-## 回归守卫
+## Regression guards
 
-| 文件                          | 配置         | 覆盖                                                                                                                                                    |
-| ----------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `spike_int128_mhdiff_x_m32.S` | n8/uds16/m32 | 128 位 `mhdiff.ew.x` 的舍入方向。`halve_mag_rm` 对 RNU/RDN 先对幅值取整，会翻转负商的 tie 方向（-2.5 RNU 必须是 -2，而不是 -3）。两个模拟器都必须通过。 |
+| File                          | Configuration | Coverage                                                                                                                                                                                                              |
+| ----------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `spike_int128_mhdiff_x_m32.S` | n8/uds16/m32  | Rounding direction of the 128-bit `mhdiff.ew.x`. `halve_mag_rm` rounds the magnitude first for RNU/RDN, which flips the tie direction of negative quotients (-2.5 RNU must be -2, not -3). Both simulators must pass. |
 
-所有测试都应在两个模拟器上通过。
+All tests should pass on both simulators.

@@ -1,23 +1,23 @@
 # Sail Ztt
 
-## 编译
+## Build
 
-前置依赖：
+Prerequisites:
 
-- Sail 编译器 0.20.1 或更高版本（`CMakeLists.txt` 中 `SAIL_REQUIRED_VER=0.20.1`，`model/CMakeLists.txt` 以 `--require-version` 传入）。
-- CMake 3.20 或更高版本（`cmake_minimum_required(VERSION 3.20)`）。
-- 支持 C++17 的 C/C++ 编译器（`CMAKE_CXX_STANDARD 17`）。
-- GMP：默认由 CMake 下载并本地编译（`DOWNLOAD_GMP=TRUE`，GMP 6.3.0）；设 `DOWNLOAD_GMP=FALSE` 时改用系统 GMP（`find_package(GMP)`）。
-- Ruby：`ENABLE_RISCV_ZTT_TESTS=ON` 时，配置阶段会运行 `test/ztt/generators/gen_ztt_sail.rb` 与 `gen_ztt_macros.rb`。
-- 必须显式指定 `-DCMAKE_BUILD_TYPE`，否则 CMake 以 `FATAL_ERROR` 退出。
+- Sail compiler 0.20.1 or later (`SAIL_REQUIRED_VER=0.20.1` in `CMakeLists.txt`, passed in as `--require-version` by `model/CMakeLists.txt`).
+- CMake 3.20 or later (`cmake_minimum_required(VERSION 3.20)`).
+- A C/C++ compiler supporting C++17 (`CMAKE_CXX_STANDARD 17`).
+- GMP: downloaded and built locally by CMake by default (`DOWNLOAD_GMP=TRUE`, GMP 6.3.0); when `DOWNLOAD_GMP=FALSE` is set, the system GMP is used instead (`find_package(GMP)`).
+- Ruby: with `ENABLE_RISCV_ZTT_TESTS=ON`, the configuration stage runs `test/ztt/generators/gen_ztt_sail.rb` and `gen_ztt_macros.rb`.
+- `-DCMAKE_BUILD_TYPE` must be specified explicitly, otherwise CMake exits with a `FATAL_ERROR`.
 
-完整命令序列（`build_simulator.sh` 的默认行为）：
+Full command sequence (the default behavior of `build_simulator.sh`):
 
 ```sh
 ./build_simulator.sh
 ```
 
-等价的显式命令：
+The equivalent explicit commands:
 
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo \
@@ -29,31 +29,31 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo \
 cmake --build build -j"$(nproc)"
 ```
 
-改用系统 GMP：
+To use the system GMP instead:
 
 ```sh
 env DOWNLOAD_GMP=FALSE ./build_simulator.sh
 ```
 
-`build_simulator.sh` 识别的环境变量：
+Environment variables recognized by `build_simulator.sh`:
 
-| 变量                       | 默认值  | 传给 CMake                                                           |
-| -------------------------- | ------- | -------------------------------------------------------------------- |
-| `DOWNLOAD_GMP`             | `TRUE`  | `-DDOWNLOAD_GMP`                                                     |
-| `ENABLE_RISCV_TESTS`       | `FALSE` | `-DENABLE_RISCV_TESTS`                                               |
-| `ENABLE_RISCV_ZTT_TESTS`   | `TRUE`  | `-DENABLE_RISCV_ZTT_TESTS`                                           |
-| `GENERATE_RISCV_ZTT_TESTS` | `TRUE`  | `-DGENERATE_RISCV_ZTT_TESTS`                                         |
-| `FIRST_PARTY_TESTS`        | `FALSE` | `-DFIRST_PARTY_TESTS`                                                |
-| `ZTT_INSTRUCTION_DATA`     | 空      | 非空时传 `-DZTT_INSTRUCTION_DATA`，配置阶段按该快照校验 Ztt 指令清单 |
-| `ZTT_EXPECTED_MACROS`      | 空      | 非空时传 `-DZTT_EXPECTED_MACROS`，配置阶段按该宏文件校验编码         |
+| Variable                   | Default | Passed to CMake                                                                                                                          |
+| -------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `DOWNLOAD_GMP`             | `TRUE`  | `-DDOWNLOAD_GMP`                                                                                                                         |
+| `ENABLE_RISCV_TESTS`       | `FALSE` | `-DENABLE_RISCV_TESTS`                                                                                                                   |
+| `ENABLE_RISCV_ZTT_TESTS`   | `TRUE`  | `-DENABLE_RISCV_ZTT_TESTS`                                                                                                               |
+| `GENERATE_RISCV_ZTT_TESTS` | `TRUE`  | `-DGENERATE_RISCV_ZTT_TESTS`                                                                                                             |
+| `FIRST_PARTY_TESTS`        | `FALSE` | `-DFIRST_PARTY_TESTS`                                                                                                                    |
+| `ZTT_INSTRUCTION_DATA`     | empty   | when non-empty, passes `-DZTT_INSTRUCTION_DATA`, and the configuration stage validates the Ztt instruction catalog against that snapshot |
+| `ZTT_EXPECTED_MACROS`      | empty   | when non-empty, passes `-DZTT_EXPECTED_MACROS`, and the configuration stage validates the encodings against that macro file              |
 
-产物：`build/c_emulator/sail_riscv_sim`。
+Artifact: `build/c_emulator/sail_riscv_sim`.
 
-## 如何开启 Ztt 扩展
+## How to enable the Ztt extension
 
-Ztt 的使能需要同时满足两个条件：
+Enabling Ztt requires two conditions to hold at the same time:
 
-1. 运行时配置中的 `extensions.Ztt.supported` 为 `true`。`config/config.json.in` 的 `Ztt` 块为：
+1. `extensions.Ztt.supported` in the runtime configuration is `true`. The `Ztt` block of `config/config.json.in` is:
 
 ```json
 "Ztt": {
@@ -67,14 +67,14 @@ Ztt 的使能需要同时满足两个条件：
 }
 ```
 
-2. 命令行加上 `--enable-experimental-extensions`。`model/core/extensions.sail` 中 `hartSupports(Ext_Ztt)` 定义为 `sys_enable_experimental_extensions() & config extensions.Ztt.supported`，两个条件同时成立时 `ztt` 才进入 ISA 字符串。
+2. The command line includes `--enable-experimental-extensions`. In `model/core/extensions.sail`, `hartSupports(Ext_Ztt)` is defined as `sys_enable_experimental_extensions() & config extensions.Ztt.supported`; only when both conditions hold does `ztt` enter the ISA string.
 
-配置由模拟器用 `--config <file>` 加载，`--config-override <file>` 可在基础配置上覆盖部分字段。CMake 在构建目录的 `config/` 下生成的可用配置包括：
+A configuration is loaded by the simulator with `--config <file>`, and `--config-override <file>` can override some fields on top of a base configuration. The configurations CMake generates under `config/` in the build directory include:
 
-- `rv64d_v256_e64.json`：基础配置，`Ztt` 块为 N=8（`ame_nlen_pow=3`）、UDS=8（`ame_unit_dtype_size_pow=3`），M/ACC 取构建时的缓存变量值。
-- `rv64d_v256_e64_ztt_n<N>_u<UDS>.json`：`config/CMakeLists.txt` 按 N∈{4,8,16,32}（`ame_nlen_pow` 2..5）、UDS∈{8,16,32}（`ame_unit_dtype_size_pow` 3..5）生成。
+- `rv64d_v256_e64.json`: the base configuration, whose `Ztt` block is N=8 (`ame_nlen_pow=3`) and UDS=8 (`ame_unit_dtype_size_pow=3`), with M/ACC taken from the cache variable values at build time.
+- `rv64d_v256_e64_ztt_n<N>_u<UDS>.json`: generated by `config/CMakeLists.txt` for N∈{4,8,16,32} (`ame_nlen_pow` 2..5) and UDS∈{8,16,32} (`ame_unit_dtype_size_pow` 3..5).
 
-运行一个 ELF：
+Running an ELF:
 
 ```sh
 build/c_emulator/sail_riscv_sim \
@@ -83,7 +83,7 @@ build/c_emulator/sail_riscv_sim \
   <elf-file>
 ```
 
-只校验配置、不执行程序：
+To validate the configuration only, without executing a program:
 
 ```sh
 build/c_emulator/sail_riscv_sim \
@@ -92,7 +92,7 @@ build/c_emulator/sail_riscv_sim \
   --validate-config
 ```
 
-打印 ISA 字符串：
+To print the ISA string:
 
 ```sh
 build/c_emulator/sail_riscv_sim \
@@ -101,33 +101,33 @@ build/c_emulator/sail_riscv_sim \
   --print-isa-string
 ```
 
-## 可选参数
+## Optional parameters
 
-`extensions.Ztt` 的运行时配置项（依据 `config/config.json.in`、`model/core/mlen.sail` 与 `model/extensions/Ztt/ztt_types.sail`）：
+Runtime configuration items of `extensions.Ztt` (based on `config/config.json.in`, `model/core/mlen.sail` and `model/extensions/Ztt/ztt_types.sail`):
 
-| 配置项                    | 取值域                                         | 模板默认值    | 含义                                                                 |
-| ------------------------- | ---------------------------------------------- | ------------- | -------------------------------------------------------------------- |
-| `supported`               | 布尔                                           | `true`        | 是否启用 Ztt                                                         |
-| `ame_nlen_pow`            | 整数，2..16                                    | `3`           | N = 2^`ame_nlen_pow`，矩阵边长                                       |
-| `ame_unit_dtype_size_pow` | 整数，3..63                                    | `3`           | UDS = 2^`ame_unit_dtype_size_pow`，单位数据类型位宽                  |
-| `ame_max_dtype_size_pow`  | 整数，7..63 且不小于 `ame_unit_dtype_size_pow` | `7`           | 最大数据类型位宽 = 2^`ame_max_dtype_size_pow`                        |
-| `ame_num_m_regs`          | `16` 或 `32`                                   | `32`          | 架构 M/Md 寄存器个数                                                 |
-| `ame_num_acc_regs`        | `1`、`2`、`4`、`8`、`16`                       | `4`           | 架构 Acc/Ad 寄存器个数                                               |
-| `ame_backend`             | 字符串，`"dedicated"` 或 `"shared"`            | `"dedicated"` | 后端归属模式；`"shared"` 需要平台 backend provider，配置校验阶段报错 |
+| Item                      | Domain                                                     | Template default | Meaning                                                                                                                             |
+| ------------------------- | ---------------------------------------------------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `supported`               | boolean                                                    | `true`           | whether Ztt is enabled                                                                                                              |
+| `ame_nlen_pow`            | integer, 2..16                                             | `3`              | N = 2^`ame_nlen_pow`, the side length of the matrix                                                                                 |
+| `ame_unit_dtype_size_pow` | integer, 3..63                                             | `3`              | UDS = 2^`ame_unit_dtype_size_pow`, the unit datatype width                                                                          |
+| `ame_max_dtype_size_pow`  | integer, 7..63 and not less than `ame_unit_dtype_size_pow` | `7`              | maximum datatype width = 2^`ame_max_dtype_size_pow`                                                                                 |
+| `ame_num_m_regs`          | `16` or `32`                                               | `32`             | number of architectural M/Md registers                                                                                              |
+| `ame_num_acc_regs`        | `1`, `2`, `4`, `8`, `16`                                   | `4`              | number of architectural Acc/Ad registers                                                                                            |
+| `ame_backend`             | string, `"dedicated"` or `"shared"`                        | `"dedicated"`    | backend ownership mode; `"shared"` requires a platform backend provider and is reported as an error during configuration validation |
 
-几何量换算（`model/core/mlen.sail`）：
+Geometry conversions (`model/core/mlen.sail`):
 
-- N（`ame_nlen`）= 2^`ame_nlen_pow`
+- N (`ame_nlen`) = 2^`ame_nlen_pow`
 - `ame_nelem` = 2^(2 × `ame_nlen_pow`) = N²
-- UDS（`ame_unit_dtype_size`）= 2^`ame_unit_dtype_size_pow`
-- 单个 M 寄存器位宽 `mlen` = 2^(`ame_unit_dtype_size_pow` + 2 × `ame_nlen_pow`) = UDS × N²
-- 单个 Acc 寄存器位宽 `acclen` = 2^(`ame_max_dtype_size_pow` + 2 × `ame_nlen_pow`) = 2^`ame_max_dtype_size_pow` × N²
+- UDS (`ame_unit_dtype_size`) = 2^`ame_unit_dtype_size_pow`
+- single M register width `mlen` = 2^(`ame_unit_dtype_size_pow` + 2 × `ame_nlen_pow`) = UDS × N²
+- single Acc register width `acclen` = 2^(`ame_max_dtype_size_pow` + 2 × `ame_nlen_pow`) = 2^`ame_max_dtype_size_pow` × N²
 
-CMake 变量（`config/CMakeLists.txt`）：
+CMake variables (`config/CMakeLists.txt`):
 
-- `CONFIG__ZTT__NUM_M_REGS`：缓存变量，`STRING`，默认 `32`，允许 `16`、`32`。
-- `CONFIG__ZTT__NUM_ACC_REGS`：缓存变量，`STRING`，默认 `4`，允许 `1`、`2`、`4`、`8`、`16`。
-- `CONFIG__ZTT__NLEN_POW`（默认 `3`）、`CONFIG__ZTT__UNIT_DTYPE_SIZE_POW`（默认 `3`）、`CONFIG__ZTT__BACKEND`（默认 `"dedicated"`）是 `config/CMakeLists.txt` 内的普通变量；生成 `rv64d_v256_e64_ztt_n*_u*.json` 时按 2..5 与 3..5 循环覆盖。
+- `CONFIG__ZTT__NUM_M_REGS`: cache variable, `STRING`, default `32`, allowed values `16`, `32`.
+- `CONFIG__ZTT__NUM_ACC_REGS`: cache variable, `STRING`, default `4`, allowed values `1`, `2`, `4`, `8`, `16`.
+- `CONFIG__ZTT__NLEN_POW` (default `3`), `CONFIG__ZTT__UNIT_DTYPE_SIZE_POW` (default `3`) and `CONFIG__ZTT__BACKEND` (default `"dedicated"`) are ordinary variables inside `config/CMakeLists.txt`; when `rv64d_v256_e64_ztt_n*_u*.json` is generated they are overridden by loops over 2..5 and 3..5.
 
 # Formal Specification of the RISC-V ISA
 

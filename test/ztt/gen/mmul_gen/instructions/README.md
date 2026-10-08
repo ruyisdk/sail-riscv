@@ -1,11 +1,13 @@
-# 指令声明（`mmul_gen/instructions`）
+# Instruction declarations (`mmul_gen/instructions`)
 
-一条指令 = 一个文件。文件名是助记符把小写点和横线换成下划线的形式（`mcmovge.ew` →
-`mcmovge_ew.py`），文件里一个类，类名是助记符的驼峰形式（`McmovgeEw`）。
+One instruction = one file. The file name is the mnemonic with the lowercase dots and hyphens
+replaced by underscores (`mcmovge.ew` → `mcmovge_ew.py`); the file contains one class, whose name is
+the camel-cased mnemonic (`McmovgeEw`).
 
-## 打开一个指令文件，应该看到它自己
+## Opening an instruction file should show the instruction itself
 
-纯整数指令只声明形态、算式，和跑整数检验的那两个模板：
+A pure integer instruction only declares its form, its formula, and the two templates that run the
+integer checks:
 
 ```python
 class McmovgeEw(ElementwiseInstruction):
@@ -30,9 +32,11 @@ class McmovgeEw(ElementwiseInstruction):
     )
 ```
 
-一条指令把自己的模板全写出来，每个模板构造时就带上它要检验的值。两个模板系列都拿**函数**：整数
-模板拿清单和算式 `evaluate`，浮点标称模板拿 `evaluate_float`。函数都定义在列表之前，因为它们是这
-条指令自己的方法，要先有名字才能当参数递过去：
+An instruction writes out all of its templates, and each template carries the values it checks at
+construction time. Both template families take a **function**: the integer templates take the list
+and the formula `evaluate`, and the floating-point nominal template takes `evaluate_float`. The
+functions are defined before the list because they are this instruction's own methods, and they must
+have a name before they can be passed as an argument:
 
 ```python
 class MaddEw(ElementwiseInstruction):
@@ -76,13 +80,15 @@ class MaddEw(ElementwiseInstruction):
     )
 ```
 
-## 指令怎么把参数交给模板
+## How an instruction hands arguments to templates
 
-家族基类**不预留任何可选槽**：一条指令没有的行为就不存在。也没有"先声明值、再由框架按名字筛出
-场景"这一层——**模板构造时就拿到自己的值**，指令把要跑的模板逐个列进 `templates`：
+Family base classes **reserve no optional slots**: behavior an instruction does not have simply does
+not exist. Nor is there a layer where values are declared first and the framework then filters
+scenarios out by name — **a template receives its values at construction time**, and the
+instruction lists the templates it wants to run one by one in `templates`:
 
 ```python
-class MandEw(ElementwiseInstruction):        # 纯整数指令，只有整数检验
+class MandEw(ElementwiseInstruction):        # pure integer instruction, only integer checks
     form = ElementwiseForm.BINARY_M
 
     def evaluate(self, elements: IntegerElements) -> int:
@@ -94,110 +100,146 @@ class MandEw(ElementwiseInstruction):        # 纯整数指令，只有整数检
     )
 ```
 
-每个模板拿到的都是"**怎么得到期望值**"，而且都是类里写的函数：整数模板拿 `evaluate`，浮点标称模板
-拿 `evaluate_float`——它的体通常是一次查表（`FLOAT_OPERATION_VALUES`），比较
-类返回全 1 或 0。另外两格拿到的不是函数而是 role：特殊值和舍入格每格是几十上百个用例（同一对操作
-数换 6 种舍入模式、换 NaN/±0/无穷等特殊操作数），不是一个"给一次运算返回一个数"的函数能装的，所以
-指令在那里声明的是"**套哪一组用例**"。
+Every template receives "**how to obtain the expected value**", and it is always a function written
+in the class: the integer templates take `evaluate`, and the floating-point nominal template takes
+`evaluate_float` — whose body is usually a single table lookup (`FLOAT_OPERATION_VALUES`), with
+comparison classes returning all ones or 0. The other two cells receive a role rather than a
+function: the special-value and rounding cells each hold dozens or hundreds of cases (the same
+operand pair across 6 rounding modes, or across special operands such as NaN/±0/infinity), which no
+function of the form "return one number for one operation" can hold, so what the instruction
+declares there is "**which group of cases to apply**".
 
-类体读起来就是"这条指令跑哪些模板、每个模板检验什么"：没列出的模板在它身上不存在，因此不跑，
-`templates` 就是它完整的检验清单。列表按源里场景段的先后写；两条 128 位模板（`...128` 结尾的
-两个类）跟在各自的根后面，拿的是同一份值。写错类名会当场 `NameError`；写错值的类型由类型检查器
-在构造那一行就报出来。顺序写错、或者漏掉一条 128 位模板，由 `test_elementwise_template_table_parity.py`
-逐个指令核对。
+The class body reads as "which templates this instruction runs and what each template checks": a
+template that is not listed does not exist on it and therefore does not run, so `templates` is its
+complete check list. The list is written in the order of the scenario sections in the source; the
+two 128-bit templates (the two classes ending in `...128`) follow their respective roots and receive
+the same values. A misspelled class name raises a `NameError` on the spot; a wrong value type is
+reported by the type checker on the construction line. Wrong ordering, or a missing 128-bit template,
+is verified instruction by instruction by `test_elementwise_template_table_parity.py`.
 
-| 声明                           | 含义                                                                                       | 谁读它                                                |
-| ------------------------------ | ------------------------------------------------------------------------------------------ | ----------------------------------------------------- |
-| `name` / `summary` / `subject` | 助记符与文档属性                                                                           | `catalog`、`--list`                                   |
-| `form`                         | 操作数形态（`BINARY_M` / `BINARY_X` / `TERNARY_M` / `TERNARY_X` / `MOVE_M` / `UNARY_ABS`） | 全部 7 个场景（整数取操作数、发射器选计划、浮点分派） |
-| `evaluate`                     | **这条指令在一个元素上算出的精确结果**；作为参数交给两条整数模板                           | 模板持有它的副本，`integer_expected` 用它算每个用例   |
-| `templates`                    | **这条指令跑的模板，按源里的先后**，每个模板自己带着要检验的值                             | 驱动按这个列表逐模板建用例                            |
+| Declaration                    | Meaning                                                                                                        | Who reads it                                                                             |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `name` / `summary` / `subject` | mnemonic and documentation attributes                                                                          | `catalog`, `--list`                                                                      |
+| `form`                         | operand form (`BINARY_M` / `BINARY_X` / `TERNARY_M` / `TERNARY_X` / `MOVE_M` / `UNARY_ABS`)                    | all 7 scenarios (integer operand reads, emitter plan selection, floating-point dispatch) |
+| `evaluate`                     | **the exact result this instruction computes on one element**; handed to both integer templates as an argument | the templates hold a copy of it, and `integer_expected` uses it to compute each case     |
+| `templates`                    | **the templates this instruction runs, in source order**, each carrying the values it checks                   | the driver builds cases template by template following this list                         |
 
-`templates` 里能出现的五个场景类，以及构造它们时要传什么：
+The five scenario classes that can appear in `templates`, and what to pass when constructing them:
 
-| 场景类                           | 构造参数（直接列在 `__init__` 里）                                                         |
-| -------------------------------- | ------------------------------------------------------------------------------------------ |
-| `ElementwiseIntegerValueRules`   | **整数输入用例清单**（按源里发用例的顺序）+ 这条指令的 `evaluate`                          |
-| `ElementwiseSaturatingBoundary`  | `SaturatingExpectation`（往哪一端夹）+ `CasePlan`（哪些方块把它推过去）                    |
-| `ElementwiseFloatNominal`        | 这条指令的 `evaluate_float`；比较类再加 `comparison=True`                                  |
-| `ElementwiseFloatSpecialValues`  | 算术类给 `FloatArithmeticRole`，比较类给 `FloatSpecialRole.COMPARE_TRUE` / `COMPARE_FALSE` |
-| `ElementwiseFloatSemanticsSweep` | `FloatArithmeticRole`（无效运算向量）                                                      |
+| Scenario class                   | Constructor arguments (listed directly in `__init__`)                                                                    |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `ElementwiseIntegerValueRules`   | **the integer input case list** (in the order the cases are emitted in the source) + this instruction's `evaluate`       |
+| `ElementwiseSaturatingBoundary`  | `SaturatingExpectation` (which end to clamp to) + `CasePlan` (which blocks push it there)                                |
+| `ElementwiseFloatNominal`        | this instruction's `evaluate_float`; comparison classes additionally pass `comparison=True`                              |
+| `ElementwiseFloatSpecialValues`  | arithmetic classes pass `FloatArithmeticRole`, comparison classes pass `FloatSpecialRole.COMPARE_TRUE` / `COMPARE_FALSE` |
+| `ElementwiseFloatSemanticsSweep` | `FloatArithmeticRole` (the invalid-operation vector)                                                                     |
 
-每个场景拿到的都是**它自己的构造参数**，没有包装类型：饱和那一对拿期望值和操作数计划两个参数，
-特殊值场景拿一个 role——`FloatArithmeticRole`（无效运算向量）或 `FloatSpecialRole`（特例行为，
-比较的两种结果各占一个成员，所以"比较成不成立"不需要第二个可选参数）。一个模板一个值，所以
-"特殊值场景既可能读 special、又可能读 role"这种"或"关系不存在了：一条指令传给它的那一个值就说
-明了它是什么（46 条指令里没有一条两者都要）。128 位的那两条属于同一对，值必须一样——
-`test_elementwise_template_table_parity.py` 会核对期望值与计划都一致。
+Each scenario receives **its own constructor arguments**, with no wrapper types: the saturating pair
+takes an expectation and an operand plan, and the special-value scenario takes a single role —
+`FloatArithmeticRole` (the invalid-operation vector) or `FloatSpecialRole` (special-case behavior,
+where the two comparison outcomes each have their own member, so "whether the comparison holds"
+needs no second optional argument). One template, one value, so the "or" relationship of "the
+special-value scenario might read `special`, or might read `role`" no longer exists: the single
+value the instruction passes to it states what it is (none of the 46 instructions needs both). The
+two 128-bit ones belong to the same pair and must have the same values —
+`test_elementwise_template_table_parity.py` verifies that both the expectation and the plan match.
 
-**怎么读一个类**：拿 `madd.ew` 来说，AME 没有硬件浮点，浮点语义由 `fp_semantics.py` 这个软件模型
-给出——它为每个浮点 dtype 存了一组名义位模式（E4M3 下 `a`=0x3C 即 1.5、`b`=0x40 即
-2.0、`add`=0x46 即 3.5）。软浮点场景就是把 `a`/`b` 按 FP8/FP16 装载、跑 `madd.ew`、逐位比对结果是不是
-`FLOAT_OPERATION_VALUES[DTYPE]["add"]`。所以类里那个
-`def evaluate_float(...)` 读作"**这条指令的软浮点名义答案就是名册里的 `add` 那一项**"，模板那条
-`ElementwiseFloatNominal(evaluate_float)` 就是把它交出去；同一个 `FloatArithmeticRole.ADD` 出现在特殊值场景和舍入扫描两个条目里（它们是 ADD 的
-无效运算向量），两个条目并排写着，在指令类里直接看得到。`madd.ew` 既是整数加法，也是这套测试里的软浮点加法。判断"某条指令支不支持浮点"最快的
-办法是 `python3 -m mmul_gen --list`：`madd.ew` 会列出 3 个软浮点场景、`formed_softfloat` 域和
-FP16/BF16/FP32/FP64/E4M3/E5M2 六个 dtype。
+**How to read a class**: take `madd.ew`. AME has no hardware floating point; floating-point
+semantics are provided by the software model `fp_semantics.py` — it stores a set of nominal bit
+patterns for every floating-point dtype (under E4M3, `a`=0x3C, i.e. 1.5, `b`=0x40, i.e. 2.0, and
+`add`=0x46, i.e. 3.5). The softfloat scenario is exactly this: load `a`/`b` as FP8/FP16, run
+`madd.ew`, and compare bit by bit whether the result is `FLOAT_OPERATION_VALUES[DTYPE]["add"]`. So
+the `def evaluate_float(...)` in the class reads as "**this instruction's softfloat nominal answer
+is the `add` entry in the table**", and the template line
+`ElementwiseFloatNominal(evaluate_float)` simply hands it over; the same
+`FloatArithmeticRole.ADD` appears in both the special-value scenario and the rounding sweep entry
+(they are the invalid-operation vectors of ADD), and the two entries sit side by side, directly
+visible in the instruction class. `madd.ew` is both integer addition and, in this test suite,
+softfloat addition. The fastest way to tell whether an instruction supports floating point is
+`python3 -m mmul_gen --list`: `madd.ew` lists 3 softfloat scenarios, the `formed_softfloat` domain
+and the six dtypes FP16/BF16/FP32/FP64/E4M3/E5M2.
 
-没写进 `templates` 就是**那条行为不存在**，对应模板不跑——这是家族表达"这条指令没有这种情况"
-的方式。词汇不会写错得静悄悄：类名拼错是 `NameError`，`templates` 里的条目必须是七个场景类之一
-（`mmul_gen/tests/test_elementwise_declarations.py`）。整套架构由 `mmul_gen/tests/test_architecture.py` 守着：
-**全部 141 条指令**的类上除身份、公式和 elementwise 自己的 `form` 之外不许再有别的成员，任何模板也不许
-回读家族数据——包括用 `getattr(instruction, "…")` 把名字藏起来。真正的兜底仍是 120 个配置的逐字节对拍。
+Not being written into `templates` means **that behavior does not exist** and the corresponding
+template does not run — that is how a family expresses "this instruction does not have this case".
+The vocabulary does not go wrong silently: a misspelled class name is a `NameError`, and entries in
+`templates` must be one of the seven scenario classes
+(`mmul_gen/tests/test_elementwise_declarations.py`). The whole architecture is guarded by
+`mmul_gen/tests/test_architecture.py`: the classes of **all 141 instructions** may have no members
+other than identity, formula and elementwise's own `form`, and no template may read back family data
+— including hiding a name with `getattr(instruction, "…")`. The real backstop is still the
+byte-for-byte comparison across the 120 configurations.
 
-整数清单也是模板参数，写法是组合：四项通用用例（`small_values` / `boundaries` /
-`power_of_two` / `bit_patterns`）是全族不变量，`BASE_INTEGER_INPUT_CASES` 在家族基类写一次；
-有溢出用例的指令把它接在后面，没有的就只写 `BASE_INTEGER_INPUT_CASES`，所以打开任何一个
-指令文件都能看到它跑的**全部**输入。
-`overflow(kind, downward=...)` 决定溢出用例的**操作数对**和 `dest` 取哪一端，两者不能互相
-推出（`mmulsub` 用乘法配方却落在 floor），所以都由指令声明。128 位场景把标量形式收窄成
-`small_values` 一条，那是场景规则不是指令事实，落在 `integer_cases()` 里。
-整数场景也没有"恒开"这种特例：清单就是它构造时拿到的参数。`templates` 是必填声明
-（`Instruction.__init_subclass__` 在类定义时就要求它非空），忘了给整数条目则由配对测试和
-`input_case_names`（找不到整数模板就报错）兜住。`python3 -m mmul_gen --list` 打印的
-`input_cases` 是同一份事实的另一种问法：`Instruction.input_case_names` 去问它构造出的模板
-（`Template.input_cases`），所以清单只写在 `templates` 里，指令类上没有第二份声明可以漂移。
+The integer list is also a template argument, written as a composition: the four generic cases
+(`small_values` / `boundaries` / `power_of_two` / `bit_patterns`) are family-wide invariants, and
+`BASE_INTEGER_INPUT_CASES` is written once in the family base class; instructions with an overflow
+case append it, and those without it write only `BASE_INTEGER_INPUT_CASES`, so opening any
+instruction file shows **all** the inputs it runs.
+`overflow(kind, downward=...)` decides the **operand pair** of the overflow case and which end
+`dest` takes, and the two cannot be derived from each other (`mmulsub` uses the multiply recipe yet
+lands on floor), so both are declared by the instruction. The 128-bit scenario narrows the scalar
+form down to the single `small_values` entry; that is a scenario rule, not an instruction fact, and
+it lives in `integer_cases()`. The integer scenario has no "always on" special case either: the list
+is exactly the argument it receives at construction time. `templates` is a required declaration
+(`Instruction.__init_subclass__` requires it to be non-empty at class-definition time); forgetting
+the integer entry is caught by the parity test and by `input_case_names` (which raises when no
+integer template is found). The `input_cases` printed by `python3 -m mmul_gen --list` is another way
+of asking the same fact: `Instruction.input_case_names` asks the templates it constructed
+(`Template.input_cases`), so the list is written only in `templates`, and there is no second
+declaration on the instruction class that could drift.
 
-## `evaluate` 的契约
+## The `evaluate` contract
 
-- 返回**精确结果**，允许超出元素宽度。按宽度重新编码（`convert_result`）是
-  `integer_expected` 的职责，所以每一条声明都不必自己取模，也不会漏掉溢出回绕。
-- 参数 `elements` 把**形态**翻译成**角色**：
-  - `lhs` / `rhs` / `dest`：架构值，已按元素宽度读回；
-  - `lhs_raw` / `rhs_raw`：同样的比特按无符号读（位运算指令用的就是它）；
-  - `mask`：元素宽度的全 1，也就是比较指令要产出的"真"。
-- 标量形式（`.x`）的 `lhs` 就是那个标量，三元 M 形式的 `dest` 与 `lhs` 是同一个方块。
-  因此同一个算式在 `madd.ew` 和 `madd.ew.x` 里写法完全相同，差异只由 `form` 承担。
-- 每个整数 elementwise 指令**必须**声明它，并且**必须把它交给两条整数模板**：模板构造时就把它
-  存下来，`integer_expected` 调的是模板手里这一份。所以漏传是类定义时就报 `TypeError`（少一个位置
-  参数），传错一个别的函数则由
-  `test_elementwise_declared_evaluation.py::test_every_instruction_hands_its_formula_to_both_integer_templates`
-  逐条指令核对"两条模板持有的就是类里声明的那个函数"。类名、值、顺序的其他检查放在
-  `test_elementwise_declarations.py` 与 `test_elementwise_template_table_parity.py`，而不是藏在
-  `__init_subclass__` 钩子里：从指令文件看得见，而且一次报出所有违规者。这里不留默认实现——
-  一个"没写公式却通过测试"的指令是不可接受的。
-- 浮点标称走同一条路：类里声明 `def evaluate_float(self, dtype_name, element_bits) -> int`，把它交给
-  `ElementwiseFloatNominal`。体通常是一行查表（`FLOAT_OPERATION_VALUES[dtype_name]["add"]`，比较类
-  返回 `(1 << element_bits) - 1` 或 0），所以 **`evaluate` 不必是算出来的**；漏传同样在类定义时报
-  `TypeError`，传错由
-  `test_elementwise_declared_evaluation.py::test_every_instruction_hands_its_float_formula_to_its_nominal_template`
-  逐条核对"标称场景持有的就是类里那个函数"。
-- `evaluate_float` 只覆盖标称那一格（一个 dtype 一个答案）。特殊值与舍入两格没有"一个答案"，返回的
-  是用例向量，指令在那里声明 role——见上一节的表。
-- 声明与共享 oracle `numeric_reference` 的一致性由
-  `mmul_gen/tests/test_elementwise_declared_evaluation.py` 逐点穷举守着（4 位全立方 +
-  8 位全对，两种符号），不一致就是测试失败；`numeric_reference` 是期望值计算与
-  逐字节对拍共用的参照实现。
+- It returns the **exact result**, which may exceed the element width. Re-encoding to the width
+  (`convert_result`) is the job of `integer_expected`, so no declaration has to take the modulus
+  itself, and no overflow wrap-around is missed.
+- The `elements` argument translates **form** into **role**:
+  - `lhs` / `rhs` / `dest`: architectural values, already read back at the element width;
+  - `lhs_raw` / `rhs_raw`: the same bits read as unsigned (this is what the bit-manipulation
+    instructions use);
+  - `mask`: all ones at the element width, i.e. the "true" a comparison instruction must produce.
+- For the scalar form (`.x`), `lhs` is that scalar, and for the ternary M form, `dest` and `lhs` are
+  the same block. Therefore the same formula is written identically in `madd.ew` and `madd.ew.x`,
+  and the difference is carried entirely by `form`.
+- Every integer elementwise instruction **must** declare it, and **must hand it to both integer
+  templates**: the templates store it at construction time, and `integer_expected` calls the copy
+  the template holds. So forgetting to pass it is a `TypeError` at class-definition time (one
+  positional argument missing), and passing a different function is verified instruction by
+  instruction by
+  `test_elementwise_declared_evaluation.py::test_every_instruction_hands_its_formula_to_both_integer_templates`,
+  which checks that "what the two templates hold is exactly the function declared in the class". The
+  other checks on class names, values and ordering live in `test_elementwise_declarations.py` and
+  `test_elementwise_template_table_parity.py` rather than hidden in an `__init_subclass__` hook:
+  they are visible from the instruction file, and they report all violations at once. No default
+  implementation is left here — an instruction that "passes the tests without writing a formula" is
+  unacceptable.
+- Floating-point nominal follows the same path: the class declares
+  `def evaluate_float(self, dtype_name, element_bits) -> int` and hands it to
+  `ElementwiseFloatNominal`. The body is usually a one-line table lookup
+  (`FLOAT_OPERATION_VALUES[dtype_name]["add"]`; comparison classes return
+  `(1 << element_bits) - 1` or 0), so **`evaluate` does not have to be computed**; forgetting to pass
+  it likewise raises a `TypeError` at class-definition time, and passing the wrong one is verified
+  instruction by instruction by
+  `test_elementwise_declared_evaluation.py::test_every_instruction_hands_its_float_formula_to_its_nominal_template`,
+  which checks that "what the nominal scenario holds is exactly the function in the class".
+- `evaluate_float` covers only the nominal cell (one answer per dtype). The special-value and
+  rounding cells have no "single answer" and return a case vector, and the instruction declares a
+  role there — see the table in the previous section.
+- Consistency between the declarations and the shared oracle `numeric_reference` is guarded point by
+  point, exhaustively, by `mmul_gen/tests/test_elementwise_declared_evaluation.py` (the full 4-bit
+  cube + all 8-bit pairs, for both signs); any inconsistency is a test failure. `numeric_reference`
+  is the reference implementation shared by expected-value computation and the byte-for-byte
+  comparison.
 
-## 家族约定
+## Family conventions
 
-- `instructions/<family>/base.py` 放家族基类与枚举；`<family>/__init__.py` 只有文档字符串；
-  具体指令各占一个文件。
-- 指令文件从 `<family>.base` 导入声明词汇（`ElementwiseForm`、`IntegerElements`、
-  `FLOAT_OPERATION_VALUES`、`FloatSpecialRole` 等），不再从别处取。
-- 新增一条指令 = 加一个文件 + 在 `instructions/__init__.py` 登记类 + 在 `mmul_gen/catalog.py`
-  的家族清单里挂上实例；不需要改任何已有指令文件，也不需要动场景表——除非它带来一种
-  **新的行为**，那时才在表里加一行。
-- 共享模块可以提供机制，但**不得按指令名字分支**：这条由
-  `mmul_gen/tests/test_complexity_budget.py` 的不变量守着。
+- `instructions/<family>/base.py` holds the family base class and the enums;
+  `<family>/__init__.py` contains only a docstring; each concrete instruction occupies its own file.
+- Instruction files import the declaration vocabulary (`ElementwiseForm`, `IntegerElements`,
+  `FLOAT_OPERATION_VALUES`, `FloatSpecialRole`, etc.) from `<family>.base` and take it from nowhere
+  else.
+- Adding an instruction = add one file + register the class in `instructions/__init__.py` + hook the
+  instance into the family list in `mmul_gen/catalog.py`; no existing instruction file needs
+  changing, and the scenario table does not need touching — unless it brings a **new behavior**, in
+  which case one row is added to the table.
+- Shared modules may provide machinery, but **must not branch on instruction names**: this is
+  guarded by an invariant in `mmul_gen/tests/test_complexity_budget.py`.

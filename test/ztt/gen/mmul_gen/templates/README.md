@@ -1,24 +1,27 @@
-# 模板（Templates）
+# Templates
 
-每个模板一个模块，外加 `base.py`（契约）与 `__init__.py`（实例化后的清单）；
-`ones_uniform.py` 是唯一一个模块内持有共享 `build` 的一对模板。模板是覆盖的最小
-单位：它拥有一个数据类型域，为该域内每个数据类型构建用例，并渲染这些用例。
+One module per template, plus `base.py` (the contract) and `__init__.py` (the instantiated
+catalog); `ones_uniform.py` is the only module holding a shared `build` for a pair of templates. A
+template is the smallest unit of coverage: it owns one datatype domain, builds cases for every
+datatype in that domain, and renders those cases.
 
-模板按**指令家族**分组，下面的清单也据此分节。同一个模板可以被不同家族的指令复用
-（例如 `matrix_small` 服务于 6 条矩阵乘法指令中的 5 条）。
+Templates are grouped by **instruction family**, and the catalog below is split into sections
+accordingly. The same template can be reused by instructions from different families (for example
+`matrix_small` serves 5 of the 6 matrix multiply instructions).
 
-指令不含汇编。指令只列出自己覆盖的模板，因此同一个模板对象服务于所有指令——
-`matrix_small` 只在这里写一次，却出现在 5 个生成源里。
+Instructions contain no assembly. An instruction only lists the templates it covers, so the same
+template object serves all instructions — `matrix_small` is written once, here, yet appears in 5
+generated sources.
 
 ```sh
-# 本页所有内容的实时视图（随配置变化）。
+# A live view of everything on this page (varies with the configuration).
 cd sail-ame/test/ztt/gen
 python3 -m mmul_gen --list --uds 8
 ```
 
-## 模板文件的形状
+## The shape of a template file
 
-每个模块都是同样的形状，顺序一致：
+Every module has the same shape, in the same order:
 
 ```python
 """One-line summary."""
@@ -42,178 +45,211 @@ class SomeTemplate(Template):
     def render(self, machine, instruction, case, out) -> None: ...
 ```
 
-payload 通常是本模块声明的 frozen dataclass，但不总是：
-`mixed_signedness_multiple_square` 直接复用
-`reference.mixed_signedness_product` 已经返回的 `MixedSignednessProduct` 记录，
-而不是把同样的字段再声明一遍。
+The payload is usually a frozen dataclass declared in this module, but not always:
+`mixed_signedness_multiple_square` directly reuses the `MixedSignednessProduct` record already
+returned by `reference.mixed_signedness_product`, instead of declaring the same fields again.
 
-`build` 决定取值与布局，不产出任何汇编；`render` 依据 payload 渲染汇编与期望数据，
-绝不重算期望值。`Template.__init_subclass__` 会拒绝缺少 docstring、`name` 或
-`dtypes` 的子类，因此清单里不可能存在未文档化的模板。
+`build` decides values and layout and produces no assembly; `render` renders assembly and expected
+data from the payload, and never recomputes expected values. `Template.__init_subclass__` rejects
+subclasses missing a docstring, `name` or `dtypes`, so an undocumented template cannot exist in the
+catalog.
 
-`case_payload(PayloadType, case)` 是 `build`/`render` 边界上的类型检查：若某个用例的
-payload 来自另一个模板，会立刻抛 `TypeError` 并同时报出两个类型名，而不是稍后以
-`AttributeError` 收场。
+`case_payload(PayloadType, case)` is the type check at the `build`/`render` boundary: if a case's
+payload comes from another template, it raises a `TypeError` immediately and reports both type names
+at once, instead of ending later in an `AttributeError`.
 
-## 清单
+## Catalog
 
-用例数取自 `--n 8 --uds 8 --m 32 --acc 4`，这是所有模板都能存活的
-配置。`dtypes` 是该域在该配置下选出的描述符个数。
+Case counts are taken from `--n 8 --uds 8 --m 32 --acc 4`, the configuration in which every template
+survives. `dtypes` is the number of descriptors the domain selects under that configuration.
 
-| 模板                               | 数据类型域             | 使用它的指令           | 用例/数据类型 | dtypes |
-| ---------------------------------- | ---------------------- | ---------------------- | ------------- | ------ |
-| `ones_uniform`                     | `integer`              | 仅 `mmulacc.2d`        | 4             | 8      |
-| `ones_uniform_128`                 | `integer128`           | 仅 `mmulacc.2d`        | 4             | 2      |
-| `matrix_small`                     | `integer`              | 除 `mmulacc.2d` 外全部 | 4             | 8      |
-| `float_pair_sweep`                 | `softfloat`            | 全部 6 条              | 8             | 6      |
-| `packed_small`                     | `packed_integer`       | 全部 6 条              | 4             | 2      |
-| `saturating_boundary`              | `saturating_integer`   | 全部 6 条              | 4             | 8      |
-| `mixed_signedness_multiple_square` | `signed_packed_source` | 全部 6 条              | 4             | 1      |
-| `multi_acc_independent`            | `integer`              | 仅 `mmulacc.2d`        | 3             | 8      |
+| Template                           | Datatype domain        | Instructions using it   | Cases/datatype | dtypes |
+| ---------------------------------- | ---------------------- | ----------------------- | -------------- | ------ |
+| `ones_uniform`                     | `integer`              | only `mmulacc.2d`       | 4              | 8      |
+| `ones_uniform_128`                 | `integer128`           | only `mmulacc.2d`       | 4              | 2      |
+| `matrix_small`                     | `integer`              | all except `mmulacc.2d` | 4              | 8      |
+| `float_pair_sweep`                 | `softfloat`            | all 6                   | 8              | 6      |
+| `packed_small`                     | `packed_integer`       | all 6                   | 4              | 2      |
+| `saturating_boundary`              | `saturating_integer`   | all 6                   | 4              | 8      |
+| `mixed_signedness_multiple_square` | `signed_packed_source` | all 6                   | 4              | 1      |
+| `multi_acc_independent`            | `integer`              | only `mmulacc.2d`       | 3              | 8      |
 
-`type_register` 家族的四个模板（每个用例只选一个寄存器文件，因此只发一条布局注释）：
+The four templates of the `type_register` family (each case selects only one register file, so it
+emits only one layout comment):
 
-| 模板                      | 数据类型域    | 使用它的指令         | 用例/数据类型 | dtypes |
-| ------------------------- | ------------- | -------------------- | ------------- | ------ |
-| `MTypeRoundtrip`          | `every_dtype` | `msettyp`、`mgettyp` | 2             | 30     |
-| `AccTypeRoundtrip`        | `every_dtype` | `asettyp`、`agettyp` | 4             | 30     |
-| `MTypeUnsupportedProbe`   | `probe_dtype` | 仅 `msettyp`         | 2             | 1      |
-| `AccTypeUnsupportedProbe` | `probe_dtype` | 仅 `asettyp`         | 4             | 1      |
+| Template                  | Datatype domain | Instructions using it | Cases/datatype | dtypes |
+| ------------------------- | --------------- | --------------------- | -------------- | ------ |
+| `MTypeRoundtrip`          | `every_dtype`   | `msettyp`, `mgettyp`  | 2              | 30     |
+| `AccTypeRoundtrip`        | `every_dtype`   | `asettyp`, `agettyp`  | 4              | 30     |
+| `MTypeUnsupportedProbe`   | `probe_dtype`   | only `msettyp`        | 2              | 1      |
+| `AccTypeUnsupportedProbe` | `probe_dtype`   | only `asettyp`        | 4              | 1      |
 
-轮转类模板对每个描述符覆盖全部寄存器放置（M 侧 low/high，ACC 侧每个累加器）；
-探针类模板只在 M 寄存器文件的两个物理边界上运行，并且只针对一个描述符。
+The round-trip templates cover every register placement for each descriptor (low/high on the M side,
+every accumulator on the ACC side); the probe templates run only on the two physical boundaries of
+the M register file, and only for one descriptor.
 
-`load_store` 家族只有一个模板，两个指令共用它：
+The `load_store` family has only one template, shared by two instructions:
 
-| 模板          | 数据类型域    | 使用它的指令       | 用例/数据类型 | dtypes |
-| ------------- | ------------- | ------------------ | ------------- | ------ |
-| `RawTransfer` | `every_dtype` | `mls.1r`、`mss.1r` | 1             | 30     |
+| Template      | Datatype domain | Instructions using it | Cases/datatype | dtypes |
+| ------------- | --------------- | --------------------- | -------------- | ------ |
+| `RawTransfer` | `every_dtype`   | `mls.1r`, `mss.1r`    | 1              | 30     |
 
-`mls.1r` 与 `mss.1r` 的汇编完全相同（一个用例里先用 load 播种、再用 store 读回），
-唯一差别是 `# case N:` 那行的助记符，所以它们是同一个模板对象的两个使用者——
-这正是「指令组合模板」而不是「指令拥有模板」的例子。原始传输搬动的是整个物理寄存器
-（`n² · uds / 8` 字节），与描述符无关，因此每个描述符产出同样的块，用例也不描述寄存器
-布局。
+The assembly of `mls.1r` and `mss.1r` is identical (one case first seeds with a load and then reads
+back with a store); the only difference is the mnemonic on the `# case N:` line, so they are two
+users of the same template object — exactly the example of "instructions compose templates" rather
+than "instructions own templates". A raw transfer moves a whole physical register
+(`n² · uds / 8` bytes) regardless of the descriptor, so every descriptor produces the same block, and
+the case does not describe the register layout either.
 
-`backend` 家族的四个模板没有数据类型维度（`dtypes = None`），每个配置只构造一个用例：
+The four templates of the `backend` family have no datatype dimension (`dtypes = None`) and build
+exactly one case per configuration:
 
-| 模板                  | 使用它的指令  | 场景                                       |
-| --------------------- | ------------- | ------------------------------------------ |
-| `AcquireReleaseState` | `ame.acquire` | 无竞争地取得所有权，状态位可观察，随后释放 |
-| `AcquireBusyState`    | `ame.acquire` | 有竞争时请求被拒，且不改变状态             |
-| `ReleaseState`        | `ame.release` | 释放后状态位回到 idle                      |
-| `ReleaseIdleState`    | `ame.release` | 未持有时的释放是空操作                     |
+| Template              | Instructions using it | Scenario                                                                         |
+| --------------------- | --------------------- | -------------------------------------------------------------------------------- |
+| `AcquireReleaseState` | `ame.acquire`         | acquire ownership without contention, the status bit is observable, then release |
+| `AcquireBusyState`    | `ame.acquire`         | the request is rejected under contention and does not change the state           |
+| `ReleaseState`        | `ame.release`         | after release the status bit returns to idle                                     |
+| `ReleaseIdleState`    | `ame.release`         | releasing while not holding is a no-op                                           |
 
-四个场景共用 `backend_state.py` 里的架构常量（状态 CSR 与请求掩码）。取所有权是这些
-用例**要测的东西**，所以指令家族声明 `acquires_backend = False`，头部不再插入标准前导。
+The four scenarios share the architectural constants in `backend_state.py` (the status CSR and the
+request mask). Acquiring ownership is what these cases **are meant to test**, so the instruction
+family declares `acquires_backend = False`, and no standard prologue is inserted into the header.
 
-`accumulator` 家族有四个模板，每个操作一个，一个模板只服务一条指令：
+The `accumulator` family has four templates, one per operation, each serving only one instruction:
 
-| 模板                 | 模板名（=`# input:` 标签） | 数据类型域 | 使用它的指令   | 用例/数据类型 | dtypes |
-| -------------------- | -------------------------- | ---------- | -------------- | ------------- | ------ |
-| `AccumulatorZeroAcc` | `zero_acc`                 | `integer`  | `mzero.2d.acc` | 4             | 8      |
-| `AccumulatorZeroM`   | `zero_m`                   | `integer`  | `mzero.2d.m`   | 2             | 8      |
-| `AccumulatorAccToM`  | `acc_to_m`                 | `integer`  | `mmov.m.a`     | 4             | 8      |
-| `AccumulatorMToAcc`  | `m_to_acc`                 | `integer`  | `mmov.a.m`     | 4             | 8      |
+| Template             | Template name (=`# input:` label) | Datatype domain | Instructions using it | Cases/datatype | dtypes |
+| -------------------- | --------------------------------- | --------------- | --------------------- | -------------- | ------ |
+| `AccumulatorZeroAcc` | `zero_acc`                        | `integer`       | `mzero.2d.acc`        | 4              | 8      |
+| `AccumulatorZeroM`   | `zero_m`                          | `integer`       | `mzero.2d.m`          | 2              | 8      |
+| `AccumulatorAccToM`  | `acc_to_m`                        | `integer`       | `mmov.m.a`            | 4              | 8      |
+| `AccumulatorMToAcc`  | `m_to_acc`                        | `integer`       | `mmov.a.m`            | 4              | 8      |
 
-每条用例都是「把某个寄存器文件清零、再拷贝到另一个、然后检查目标方阵全零」，所以一次全零
-镜像检查同时证明了清零写满、拷贝搬全、以及没有越界破坏。四个模板共享 `accumulator_common.py`
-里的基类与三个发射助手；`AccumulatorAccToM` 与 `AccumulatorZeroAcc` 的汇编相同（搬移前同样用
-`mzero.2d.acc` 铺底），区别只在那行 `# input:` 标签，因此复用同一个助手而不是复制代码。
+Every case is "zero one register file, copy it into another, then check that the destination square
+matrix is all zeros", so a single all-zero mirror check proves at once that the zeroing wrote
+everything, the copy moved everything, and nothing was clobbered out of bounds. The four templates
+share the base class and three emission helpers in `accumulator_common.py`; `AccumulatorAccToM` and
+`AccumulatorZeroAcc` have identical assembly (they likewise lay the groundwork with `mzero.2d.acc`
+before moving), differing only in the `# input:` label line, so they reuse the same helper instead
+of duplicating code.
 
-两点只在这个家族出现的细节：`AccumulatorZeroM` 是唯一不涉及累加器的模板（用例只有 M 布局）；
-而 `AccumulatorMToAcc` 的目标 M 寄存器**复用**源寄存器（`MRegisterRole(..., reuse_of="ms")`），
-因为结果读回时源已被累加器消费掉。另外，`accumulator` 的用例枚举**全部**累加器而不是
-low/high/boundary 代表性子集——它每条用例只碰一个累加器，跳过中间某个就等于没测。
+Two details appear only in this family: `AccumulatorZeroM` is the only template that does not
+involve an accumulator (its case has only an M layout); and the destination M register of
+`AccumulatorMToAcc` **reuses** the source register (`MRegisterRole(..., reuse_of="ms")`), because
+the source has already been consumed by the accumulator when the result is read back. In addition,
+the `accumulator` case enumeration covers **all** accumulators rather than a representative
+low/high/boundary subset — each of its cases touches only one accumulator, so skipping one in the
+middle would mean not testing it.
 
-`acc_span` 家族是「**同一个源里两种用例编号**」的样板：打包（storage-only）数据类型让一个
-M 寄存器装 `pack_factor = UDS / element_bits` 个方阵，于是一个累加器操作数代表一段**连续
-span**。三条声明只用两个模板，而且没有家族基类：
+The `acc_span` family is the model for "**two case numberings in the same source**": a packed
+(storage-only) datatype lets one M register hold `pack_factor = UDS / element_bits` square matrices,
+so one accumulator operand represents a **contiguous span**. Its three declarations use only two
+templates, and there is no family base class:
 
-| 模板                        | 模板名                | 数据类型域       | 使用它的指令            | 用例/指令（n8/uds8/m32/a4）                      |
-| --------------------------- | --------------------- | ---------------- | ----------------------- | ------------------------------------------------ |
-| `AccumulatorSpanRouting`    | `acc_span_routing`    | `packed_integer` | `mmov.m.a` / `mmov.a.m` | 12（2 个合法 span × 3 个 M 布局 × 2 个数据类型） |
-| `AccumulatorSpanExceptions` | `acc_span_exceptions` | `packed_integer` | `mmov`                  | 每个数据类型 1 条                                |
+| Template                    | Template name         | Datatype domain  | Instructions using it   | Cases/instruction (n8/uds8/m32/a4)             |
+| --------------------------- | --------------------- | ---------------- | ----------------------- | ---------------------------------------------- |
+| `AccumulatorSpanRouting`    | `acc_span_routing`    | `packed_integer` | `mmov.m.a` / `mmov.a.m` | 12 (2 legal spans × 3 M layouts × 2 datatypes) |
+| `AccumulatorSpanExceptions` | `acc_span_exceptions` | `packed_integer` | `mmov`                  | 1 per datatype                                 |
 
-两处这一族独有的设计：
+Two designs unique to this family:
 
-- **期望值是基址的推论，不是手写清单**：routing 模板先写第一幅图，再往相邻 span 写第二幅
-  重叠图，然后在 `build` 里保留「哪个累加器现在装哪个方阵」的物理映射，两次读回的期望
-  因此由选中的 span 基址直接推出来——包括两段 span 重叠的位置。写死一张期望表就无法
-  解释重叠。
-- **用例编号有两种**：routing 的标签数字（`span6_int4_*`）与 `# case 6` 是**文件内全局**
-  序号（驱动的 `case.number`），exceptions 的（`exc0_uint4_*`）是**数据类型内**下标。
-  两者在同一个源里各不相同，录错会在第一个数据类型边界整段错位。
+- **The expected value is a consequence of the base address, not a hand-written list**: the routing
+  template first writes the first image, then writes a second, overlapping image into an adjacent
+  span, and then keeps in `build` the physical mapping of "which accumulator now holds which square
+  matrix"; the expected values of the two read-backs are therefore derived directly from the
+  selected span base addresses — including where the two spans overlap. A hard-coded expectation
+  table could not explain the overlap.
+- **There are two kinds of case numbering**: the routing label numbers (`span6_int4_*`) and
+  `# case 6` are **file-global** indices (the driver's `case.number`), while the exceptions ones
+  (`exc0_uint4_*`) are indices **within a datatype**. The two differ throughout the same source, and
+  a wrong entry shifts a whole section at the first datatype boundary.
 
-例外 recipe 把「跨出累加器文件」这条路径写成和正向测试同等强度：先用毒图铺满每个
-填充基址，再把越界基址清成零，然后 `EXPECT_TRAP` 两次，最后**逐个**读回所有填充基址——
-故意清零的那个读 0，其余仍读毒值。它需要 `Case.layout` 之外的一条文件级 `TRAP_GUARD_ARM`，
-而驱动发布局的顺序是「`# input:` → 布局注释 → 用例体」，所以守卫被写成第一个数据类型的
-**前导伪用例**，而不是改驱动或绕过布局声明。越界累加器名是这一族的**主题**，`test_generation`
-的守卫也据此加强为「越界名必须落在该用例声明的 `expected illegal` span 区间内」。
+The exception recipe makes the "step outside the accumulator file" path as strong as the positive
+tests: first fill every padding base address with a poison image, then clear the out-of-bounds base
+address to zero, then `EXPECT_TRAP` twice, and finally read back **all** padding base addresses one
+by one — the one deliberately zeroed reads 0 and the rest still read the poison value. It needs a
+file-level `TRAP_GUARD_ARM` outside `Case.layout`, and the driver emits layouts in the order
+"`# input:` → layout comment → case body", so the guard is written as a **leading pseudo-case** of
+the first datatype, rather than by changing the driver or bypassing the layout declaration. The
+out-of-bounds accumulator name is the **subject** of this family, and the guard in `test_generation`
+is strengthened accordingly to "an out-of-bounds name must fall inside the `expected illegal` span
+range declared by that case".
 
-这一族没有新增数据类型域：域就是 `packed_integer`（整数且窄于 UDS）。两条 routing 指令的源名带族后缀
-（`mmov_m_a_acc_span.S` / `mmov_a_m_acc_span.S`），用普通类属性覆盖 `file_name` 即可，
-共享的例外 recipe 用 `mmov` 作词干、`acc_span_exceptions.S` 作文件名。
+This family adds no new datatype domain: the domain is `packed_integer` (integer and narrower than
+the UDS). The source names of the two routing instructions carry a family suffix
+(`mmov_m_a_acc_span.S` / `mmov_a_m_acc_span.S`), which just needs overriding `file_name` with an
+ordinary class attribute; the shared exception recipe uses `mmov` as its stem and
+`acc_span_exceptions.S` as its file name.
 
-`strided_memory` 家族是「**一个源里三个配方**」的样板：4 条指令（装/存 × 普通/转置）各
-一个源，每条源里固定顺序发三个配方，三个配方的数据类型域各不相同，因此正好对应三个模板：
+The `strided_memory` family is the model for "**three recipes in one source**": 4 instructions
+(load/store × normal/transposed) each get one source, and each source emits three recipes in a fixed
+order; the three recipes have different datatype domains, so they correspond to exactly three
+templates:
 
-| 模板                     | 模板名                     | 数据类型域           | 配方                                                            |
-| ------------------------ | -------------------------- | -------------------- | --------------------------------------------------------------- |
-| `StridedNormalSquare`    | `strided_normal_square`    | `semantic`           | 整方阵按段搬，一段一个元素；stride=0 时所有段重叠在同一地址     |
-| `StridedPackedStorage`   | `strided_packed_storage`   | `strided_storage`    | 位保持地搬打包镜像（每个 M 寄存器 `UDS / 元素位宽` 个逻辑方阵） |
-| `StridedConversionPairs` | `strided_conversion_pairs` | `strided_conversion` | 半 UDS 存储描述符经 mconv 加宽/收窄到全 UDS 孪生后再搬          |
+| Template                 | Template name              | Datatype domain      | Recipe                                                                                                                         |
+| ------------------------ | -------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `StridedNormalSquare`    | `strided_normal_square`    | `semantic`           | move a whole square matrix segment by segment, one element per segment; with stride=0 all segments overlap at the same address |
+| `StridedPackedStorage`   | `strided_packed_storage`   | `strided_storage`    | bit-preservingly move a packed image (`UDS / element width` logical square matrices per M register)                            |
+| `StridedConversionPairs` | `strided_conversion_pairs` | `strided_conversion` | half-UDS storage descriptors widened/narrowed to their full-UDS twins via mconv, then moved                                    |
 
-三条配方由 `tests/test_strided_recipe_parity.py` 逐字节校验。
+The three recipes are verified byte for byte by `tests/test_strided_recipe_parity.py`.
 
-两处这一族独有的细节：**转换对的编号**是无符号在前、有符号在后，所以 `strided_conversion` 域
-按该顺序选出描述符，而不是复用 `pack` 家族的 `packed_conversion`；
-**家族基类放在指令包**（`instructions/strided_memory/base.py`）而不是模板模块——否则
-`templates/__init__` → 模板模块 → `mmul_gen.instruction` → `templates.base` 会成环，模板模块
-因此用 `TYPE_CHECKING` + 鸭子类型窄化取 `transfer`。
+Two details unique to this family: **the conversion pair numbering** puts unsigned first and signed
+second, so the `strided_conversion` domain selects descriptors in that order rather than reusing the
+`pack` family's `packed_conversion`; and **the family base class lives in the instruction package**
+(`instructions/strided_memory/base.py`) rather than in the template module — otherwise
+`templates/__init__` → template module → `mmul_gen.instruction` → `templates.base` would form a
+cycle, which is why the template module obtains `transfer` through a `TYPE_CHECKING` + duck-typing
+narrowing.
 
-`logexp` 家族是「12 条指令共用少数模板」的样板：差异全部写成**指令上的声明**，模板只读声明。
+The `logexp` family is the model for "12 instructions sharing a few templates": all the differences
+are written as **declarations on the instruction**, and the templates only read declarations.
 
-| 模板                         | 模板名                         | 数据类型域              | 由谁使用       |
+| Template                     | Template name                  | Datatype domain         | Used by        |
 | ---------------------------- | ------------------------------ | ----------------------- | -------------- |
-| `LogExpNominal`              | `nominal`                      | `integer`               | 全部 12 条     |
+| `LogExpNominal`              | `nominal`                      | `integer`               | all 12         |
 | `Exp2SaturatingBoundary`     | `exp2_saturating_boundary`     | `saturating_integer`    | `mexp2.ew`     |
 | `Exp2Saturating128`          | `exp2_saturating_128`          | `saturating_integer128` | `mexp2.ew`     |
 | `LdexpaccSaturatingBoundary` | `ldexpacc_saturating_boundary` | `saturating_integer`    | `mldexpacc.ew` |
 
-指令声明的字段：`src1_label`/`src2_label`（读哪个数据方阵）、`expected`（每个元素的期望值）、
-`form`（`unary`/`binary_m`/`ternary_m`/`binary_x`）、`scalar`、`initialize_destination`、
-`scalar_dtype_csr`。`mexp2.ew` 因此只比别的指令多两样：多声明两个模板、多声明两个输入用例。
-寄存器不够时被跳过的数据类型**仍占编号**：编号是数据类型在自身模板域中的位置，因此跳过的
-数据类型会在编号里留下空洞。
+Fields declared by the instructions: `src1_label`/`src2_label` (which data square matrix to read),
+`expected` (the expected value per element), `form` (`unary`/`binary_m`/`ternary_m`/`binary_x`),
+`scalar`, `initialize_destination`, `scalar_dtype_csr`. `mexp2.ew` therefore differs from the other
+instructions in only two ways: it declares two more templates and two more input cases. Datatypes
+skipped for lack of registers **still take a number**: the number is the datatype's position in its
+own template domain, so skipped datatypes leave holes in the numbering.
 
-饱和组的两个断言是独立的：结果必须钳到最大值，**并且** `amexsat` 必须置位——只有其一通过不算过。
+The two assertions of the saturating group are independent: the result must clamp to the maximum,
+**and** `amexsat` must be set — passing only one of them is not a pass.
 
-`axis_permute` 家族一个模板服务一条指令，**输入用例是 case 维度而不是模板维度**：
-模板的 `build` 对每个数据类型返回 `len(input_cases)` 个用例，`Case.description` 就是那行
-`# input: <标签>`，用例顺序与文件内的编号天然一致。
+In the `axis_permute` family one template serves one instruction, and **the input cases are a case
+dimension rather than a template dimension**: the template's `build` returns `len(input_cases)` cases
+per datatype, `Case.description` is the `# input: <label>` line, and the case order naturally matches
+the numbering in the file.
 
-| 模板              | 模板名             | 输入用例                         | 数据类型（UDS=8） | 用例/指令 |
-| ----------------- | ------------------ | -------------------------------- | ----------------- | --------- |
-| `ColumnBroadcast` | `column_broadcast` | `first_column`, `last_column`    | 8                 | 16        |
-| `RowBroadcast`    | `row_broadcast`    | `first_row`, `last_row`          | 8                 | 16        |
-| `ColumnIndex`     | `column_index`     | `coordinate_ramp`                | 8                 | 8         |
-| `RowIndex`        | `row_index`        | `coordinate_ramp`                | 8                 | 8         |
-| `ColumnShift`     | `column_shift`     | `forward_shift`, `reverse_shift` | 8                 | 16        |
-| `RowShift`        | `row_shift`        | `forward_shift`, `reverse_shift` | 8                 | 16        |
+| Template          | Template name      | Input cases                      | Datatypes (UDS=8) | Cases/instruction |
+| ----------------- | ------------------ | -------------------------------- | ----------------- | ----------------- |
+| `ColumnBroadcast` | `column_broadcast` | `first_column`, `last_column`    | 8                 | 16                |
+| `RowBroadcast`    | `row_broadcast`    | `first_row`, `last_row`          | 8                 | 16                |
+| `ColumnIndex`     | `column_index`     | `coordinate_ramp`                | 8                 | 8                 |
+| `RowIndex`        | `row_index`        | `coordinate_ramp`                | 8                 | 8                 |
+| `ColumnShift`     | `column_shift`     | `forward_shift`, `reverse_shift` | 8                 | 16                |
+| `RowShift`        | `row_shift`        | `forward_shift`, `reverse_shift` | 8                 | 16                |
 
-每条用例都往 `m0` 装一条 `1..nelem` 的斜坡源，做完行/列操作后存回目标方阵，并采样
-`(0, 1, n-1, n, nelem-1)` 这五个位置——**这个元组保留、不去重**：`n = 2` 时第 2、3 项
-重合，该元素会被检查两遍。广播取首/末行（列）两个用例是为了同时压住「按行读」
-和「行距等于活跃长度」；移位取正/负两个方向是为了压住越界那一侧必须读成 0。
+Every case loads a `1..nelem` ramp source into `m0`, performs the row/column operation, stores back
+into the destination square matrix, and samples the five positions `(0, 1, n-1, n, nelem-1)` —
+**this tuple is kept as is and not deduplicated**: when `n = 2` the 2nd and 3rd entries coincide and
+that element is checked twice. Broadcast takes the first/last row (column) cases in order to pin
+down both "read by row" and "the row stride equals the active length"; shift takes both a positive
+and a negative direction in order to pin down that the out-of-bounds side must read as 0.
 
-`column_index`/`row_index` 同样装载斜坡源（虽然不读它），期望值是坐标本身。
+`column_index`/`row_index` likewise load the ramp source (even though they do not read it), and
+their expected values are the coordinates themselves.
 
-`broadcast` 家族把 `mbcast.m.x` 的**七组**数据类型写进同一个源文件，所以它是「一条指令、八个模板」
-（含一个声明输入清单的 dtype-free 模板）：
+The `broadcast` family writes the **seven groups** of `mbcast.m.x` datatypes into a single source
+file, so it is "one instruction, eight templates" (including one dtype-free template that declares
+the input list):
 
-| 模板                                   | 模板名                          | 数据类型域              | 用例/数据类型（UDS=8 / UDS=32） |
+| Template                               | Template name                   | Datatype domain         | Cases/datatype (UDS=8 / UDS=32) |
 | -------------------------------------- | ------------------------------- | ----------------------- | ------------------------------- |
 | `ScalarIngressBroadcast`               | `scalar_ingress`                | `integer`               | 8 / 4                           |
 | `Integer128IngressBroadcast`           | `integer128_ingress`            | `integer128`            | 2 / 2                           |
@@ -221,390 +257,473 @@ span**。三条声明只用两个模板，而且没有家族基类：
 | `SaturatingInteger128IngressBroadcast` | `saturating_integer128_ingress` | `saturating_integer128` | 2 / 2                           |
 | `PackedStorageBroadcast`               | `packed_storage_ingress`        | `packed_storage`        | 4 / 6                           |
 | `FloatingBroadcast`                    | `floating_ingress`              | `softfloat`             | 6 / 2                           |
-| `UnsupportedDtypeProbe`                | `unsupported_dtype_probe`       | 无（dtype-free）        | 1 / 1                           |
-
-前四个模板（整数/128 位/饱和/饱和 128 位）只有数据类型域不同，发射体完全一样，因此共用一个
-基类；后三个各自发射不同内容，各自成文件。三处只在 `broadcast` 出现的写法：
-
-- **用例编号按组重启**：`# case N` 里的 N 是「该数据类型在自己模板域里的位置」，不是全文件计数。
-- **输入清单是独立用例**：文件在第一条用例之前一次性列出 7 条 `# input:`，且与配置无关；
-  把它做成声明在最前的 dtype-free 模板，既保持无条件性，又落在格式要求的唯一位置上。
-- **浮点用原始位型**：广播的标量写成位模式字面量（如 `0x3c00`），不经过宿主浮点库。
-
-两个域覆盖存储与 128 位饱和两类：`packed_storage`（`bits*2 == uds` 的**全部**描述符，含饱和与
-浮点——位保持型操作不要求成对）和 `saturating_integer128`。它们在 UDS=32 时把 FP16/BF16 从
-浮点组挪到存储组，所以按某一组配置的名单写死会错。
-
-`matrix_ops` 家族是「**用声明代替分派**」最彻底的一次：20 条指令按三个操作形状分成三组，
-每组只用一个模板，模板里**没有任何一处**对着助记符分派。差异全部写成指令上的三个枚举声明。
-
-| 模板                     | 模板名                        | 数据类型域           | 使用它的指令                      | 用例/指令（n8/uds8/m32/a4） |
-| ------------------------ | ----------------------------- | -------------------- | --------------------------------- | --------------------------- |
-| `ReducePrefixRamp`       | `reduce_row_ramp`             | `integer`            | 10 条归约/前缀                    | 9（两个 `add.row` 为 17）   |
-| `ReducePrefixSaturating` | `reduce_saturating_boundary`  | `saturating_integer` | `mreduceadd.row`/`mprefixadd.row` | 8                           |
-| `ZipDualSource`          | `zip_dual_source_ramp`        | `integer`            | 4 条 zip/unzip                    | 8                           |
-| `ZipExtraSource`         | `zip_extra_dtype_ramp`        | `extra_permute`      | 4 条 zip/unzip                    | 14                          |
-| `GatherScatterIndexed`   | `gather_indexed_elements`     | `integer`            | 6 条 gather/scatter               | 8（`mrowscatadd` 为 16）    |
-| `GatherExtraIndex`       | `gather_extra_dtype_index`    | `extra_permute`      | 仅 `mcolgather.ew`                | 14                          |
-| `ScatterSaturating`      | `scatter_saturating_boundary` | `saturating_integer` | 仅 `mrowscatadd.ew`               | 8                           |
-
-三个枚举**自己带算法**，而模板拿到的不是指令成员、是构造参数（`ReducePrefixRamp(MatrixAxis.ROW, Reduction.SUM)`
-这类写法），枚举值本身仍由 `mmul_gen/instructions/matrix_ops/base.py` 声明：
-
-| 声明                                        | 枚举                           | 取值                 | 模板用它的方式                                                                                        |
-| ------------------------------------------- | ------------------------------ | -------------------- | ----------------------------------------------------------------------------------------------------- |
-| `ReducePrefixInstruction.axis`              | `MatrixAxis`                   | `row`/`column`       | `line_indices`（整行/列）+ `prefix_indices` + `reduce_check_indices`/`prefix_check_indices`（采样点） |
-| `ReducePrefixInstruction.reduction`         | `Reduction`                    | `sum`/`max`/`min`    | `aggregate(values)`                                                                                   |
-| `ReducePrefixInstruction.prefix`            | `bool`                         | —                    | 取前缀还是整行                                                                                        |
-| `ZipInstruction.axis` / `.unzip`            | `MatrixAxis` / `bool`          | —                    | `varying`（谁是被交织的坐标）+ `result_index`（结果落在哪）                                           |
-| `GatherScatterInstruction.axis` / `.access` | `MatrixAxis` / `ScatterAccess` | `gather`/`add`/`max` | `source_index`（读哪）+ `result_index`（写哪）+ `combine`/`accumulates`/`by_max`                      |
-
-10 条归约/前缀指令其实是 `axis × reduction × prefix` 的 10 个组合（`row×sum×reduce` =
-`mreduceadd.row`，`column×sum×prefix` = `mprefixadd.col` …），所以「一条指令一个期望值表」被
-一条通用公式取代。`extra_permute` 域（`bits >= uds` 且不是普通整数）
-正是这一族需要的：zip 和 gather 要三个互不重叠的寄存器组，所以它们跑饱和与浮点描述符。
-
-三个只在 `matrix_ops` 出现的写法：
-
-- **零用例也发 `.data`**：整族在「所有类型都放不下」的配置下仍产出 `.data` 段（空的），
-  所以三个家族基类都声明 `always_emits_data = True`。
-- **采样点是形状的函数而不是助记符的函数**：归约采样 `(0, n-1, nelem-1)`、前缀按轴采样
-  `(0, 3, n+2)` 或 `(0, n, 2n+3)`，写成 `MatrixAxis` 的方法。
-- **寄存器组数检查不对称**：zip 的普通分支不检查 `2*nregs <= num_m_regs`，extra 分支会跳过
-  放不下的类型。
-
-`float_math` 家族是「**一个模板装下整族**」的样板：10 条指令只声明一个 `MathOperation`
-枚举成员，整族只有**一个**发射模板——因为生成文件是**按数据类型交错**的：每个数据类型先发它
-的 nominal 用例，再发它自己的 boundary 场景，然后才轮到下一个数据类型。框架的管线是
-「模板 → 数据类型」，两个模板会把顺序变成「所有 nominal，再所有 boundary」，那是另一个文件。
-所以 nominal / boundary / transcendental 三种发射体是同一个模板的三个私有方法，用
-`Case.payload` 区分。
-
-| 模板             | 模板名             | 数据类型域         | 使用它的指令 | 用例/指令（n8/uds8/m32/a4）   |
-| ---------------- | ------------------ | ------------------ | ------------ | ----------------------------- |
-| `FloatMathCases` | `float_math_cases` | `formed_softfloat` | 全部 10 条   | 见下表（清单 1 + 每类型若干） |
-
-用例数按操作类别分（含那 1 条清单用例）：
-
-| 类别       | 指令               | 每个数据类型                                                  | 用例数 |
-| ---------- | ------------------ | ------------------------------------------------------------- | ------ |
-| 取整       | `mfrintm/n/p/z.ew` | 1 nominal + 6 个舍入模式                                      | 43     |
-| 倒数       | `mrec.ew`          | 1 + 24（±0 的 12 个极点 + ±最小次正规的 12 个溢出）           | 151    |
-| 倒数平方根 | `mrsqrt.ew`        | 1 + 18（12 个极点 + 6 个负数无效）                            | 115    |
-| 平方根     | `msqrt.ew`         | 1 + 12（6 个负数无效 + 6 个 √2 不精确）                       | 79     |
-| 超越函数   | `mcos/sin/tanh.ew` | 6（±0、qNaN、±inf、1.0 数值用例；E4M3 没有 inf 编码，只有 4） | 35     |
-
-| 声明        | 取值                    | 说明                                                                        |
-| ----------- | ----------------------- | --------------------------------------------------------------------------- |
-| `operation` | 10 个成员，一条指令一个 | 枚举成员自己带 nominal 激励、boundary 场景、以及超越函数的 host libm 入口名 |
-
-三处只在 `float_math` 出现的写法：
-
-- **域要用 formed 版本**：`formed_softfloat`。`softfloat` 走 `semantic_dtypes`（`mmul` 用的就是
-  它），而这一族走 `formed_dtypes`——UDS=16 时 8 位的 OCP 格式是打包存储、仍要覆盖，
-  用错域会整整少两个数据类型。
-- **期望值来自 host libm，而不是表**：超越函数的窄格式用例复刻仿真器的路径（加宽到 f32 →
-  调用**宿主机**的 `cosf`/`sinf`/`tanhf` → 按 RNE 窄化回来），并在生成期用 30 位 mpmath
-  参考做 2 ulp 预算的交叉校验——宿主机 libm 漂移会在生成期炸掉，而不是在测试里变成偶发失败。
-- **参考表整模块复用**：位模式表来自 `mmul_gen/fp_semantics.py`，由
-  `tests/test_fp_semantics_parity.py` 对每张表、每条规则做等值守卫。
-
-`integer_shift` 家族有两个模板，按「移位量从哪来」分，而不是按指令分：三条移位指令
-（`msll`/`msrl`/`msra`）各自选用其中一个，所以一个模板服务三条指令。
-
-| 模板                  | 模板名                  | 数据类型域       | 使用它的指令                        | 用例/数据类型 | dtypes            |
-| --------------------- | ----------------------- | ---------------- | ----------------------------------- | ------------- | ----------------- |
-| `ShiftRegisterSource` | `shift_register_source` | `formed_integer` | `msll.ew`/`msrl.ew`/`msra.ew`       | 1             | 10（`msra` 为 5） |
-| `ShiftScalarSource`   | `shift_scalar_source`   | `formed_integer` | `msll.ew.x`/`msrl.ew.x`/`msra.ew.x` | 1             | 10（`msra` 为 5） |
-
-两者只有「移位量从哪来」不同：寄存器形式从第二个 M 操作数读每个元素各自的量，标量形式
-复用同一个整数寄存器。移位量的取值走 `0, 1, bits-1, bits, bits+1, 2*bits-1` 的边界扫描——
-**等于和超过元素宽度的量**才能压出硬件对移位量的取模约简，而「常量移位」的测试永远碰不到。
-源图案则让每个元素的符号位恒为 1。
-
-这个家族第一次用到了框架的三处新能力：
-
-- `formed_integer` 域（`machine.formed_dtypes`）比 `integer` 域多出**子 UDS** 的 4/8 位描述符，
-  所以 `AME_UINT4_DTYPE` 这类窄类型也进了用例；四位元素把两个半字节打包在同一行 `.byte` 上
-  （不拆行，否则字节就不一致了）。
-- `choose_m_group_base(num_m_regs, bits, uds, preferred=16)` 保留首选的 `m16` 基址，寄存器
-  文件不够大时退回最后一个对齐的组。
-- `fits(machine, instruction, dtype)` 现在能看到指令：`msra` 比其他两条多一条限制——只有
-  有符号描述符才有算术右移语义，而三条指令共用同一个模板，限制属于**操作**而不属于模板。
-
-`memory_order` 家族有两个模板，每个方向一个，每个方向被它的加载与存储指令共用：
-
-| 模板                  | 数据类型域 | 使用它的指令       | 用例/数据类型 | dtypes |
-| --------------------- | ---------- | ------------------ | ------------- | ------ |
-| `MemoryOrderRowToCol` | `integer`  | `mls.rm`、`mss.cm` | 1             | 8      |
-| `MemoryOrderColToRow` | `integer`  | `mls.cm`、`mss.rm` | 1             | 8      |
-
-一个用例里同时执行「以某种主序加载、再以另一种主序存回」这一整个往返，所以 `mls.rm` 与
-`mss.cm` 的汇编完全相同，只有头部和 `# case` 那行不同——又是一个模板服务两条指令的例子。
-两个方向互为逆变换，所以期望值刚好对调（第二个元素与下一存储行首元素分别是 `N+1`/`2` 还是
-`2`/`N+1`）。`# input:` 标签只在整个 dtype 循环之前出现一次，由「首个 dtype 的用例带
-`description`、其余为 `None`」表达（`raw_transfer` 同一个模式）。
-
-`debug_move` 家族有四个模板，每个宽度一个，每个宽度被两条指令共用：
-
-| 模板          | 数据类型域   | 使用它的指令                 | 用例/数据类型 | dtypes |
-| ------------- | ------------ | ---------------------------- | ------------- | ------ |
-| `DebugMove8`  | 无（`None`） | `mmove8.m.x`、`mmove8.x.m`   | 1             | —      |
-| `DebugMove16` | 无（`None`） | `mmove16.m.x`、`mmove16.x.m` | 1             | —      |
-| `DebugMove32` | 无（`None`） | `mmove32.m.x`、`mmove32.x.m` | 1             | —      |
-| `DebugMove64` | 无（`None`） | `mmove64.m.x`、`mmove64.x.m` | 1             | —      |
-
-四条指令的用例都同时走两个方向（写进 M 寄存器、再读回来），所以 `.m.x` 与 `.x.m` 的汇编
-**完全相同**，只有头部那行不同——这就是「一个模板服务两条指令」而不是写两份近乎相同的模板。
-四个模板共享 `debug_move_common.py` 的家族基类，子类只声明三个常量（`element_bits`、
-`position`、`value`）。
-
-这个家族也是唯一一个**源集合随配置变化**的：宽度超过一行（`n * uds` 位）的指令在该配置下
-整个源都不生成，因为模型对它报 Illegal Instruction，没什么可测的。所以 `n=4, uds=8` 时
-只有 6 个源，`n=8, uds=8` 起才有 8 个。
-
-`pack` 家族有两个模板，共享 `pack_common.py` 的形状与三个输入模式：
-
-| 模板          | 数据类型域          | 使用它的指令      | 用例/数据类型 | dtypes |
-| ------------- | ------------------- | ----------------- | ------------- | ------ |
-| `PackSlots`   | `packed_conversion` | 仅 `mpack.ew.x`   | 3             | 2      |
-| `UnpackSlots` | `packed_conversion` | 仅 `munpack.ew.x` | 3             | 2      |
-
-两个模板都继承 `pack_common.py` 里的 dtype-free 家族基类 `PackedSlotConversion`，输入模式
-固定为 `selected_slot` / `preserved_slot` / `signed_boundary_values` 三种，选中槽恒为 3。
-「选中槽被写对、未选中的槽一个字节都没被动、符号边界值正确」这三件事必须分开测，所以是
-三个用例而不是一个用例里的三段——任何一个失败都能立刻定位到是哪一类错误。
-
-`mconv` 家族只有一个模板，也是唯一一个同时被两个方向的转换使用的模板：
-
-| 模板             | 数据类型域          | 使用它的指令 | 用例/数据类型 | dtypes |
-| ---------------- | ------------------- | ------------ | ------------- | ------ |
-| `MconvRoundtrip` | `packed_conversion` | `mconv.ew`   | 1             | 2      |
-
-`mconv.ew` 同时做两个方向的转换（把 packed 存储方阵展宽、再把两个 compute 方阵收窄
-回去），所以只能用一个模板。它的数据类型域在该配置下选出**两个**描述符（无符号、有符号各
-一个），每个描述符产出**一个**用例，期望值在七个边界值之间轮转。它的头部还有一行 `UDS=<uds>: storage=<uds/2>, compute=<uds>`，
-由指令文件覆盖 `banner(machine)` 追加。
-
-每数据类型用例数就是 `paired_cases` 为该数据类型找到的、合法的 M/ACC 布局配对数，
-因此它随配置变化，寄存器变少时下降。在
-`--m 16 --acc 1` 下：`ones_uniform`、`matrix_small`、
-`saturating_boundary` 变成 1 或 3，`float_pair_sweep` 变成 2 或 6，`packed_small` 与
-`mixed_signedness_multiple_square` 为 3，而 `ones_uniform_128` 与
-`multi_acc_independent` 完全不运行——它们的 `fits` 谓词直接拒绝该配置，而不是把操作数
-重新布局。
-
-`elementwise` 是唯一一个**场景写在指令里**的家族：7 个场景类，一条指令跑哪几个由它自己的
-`templates` 列表决定——列表就是会跑的清单，没写进去的行为在这条指令身上不存在。所以 `--list`
-报的是每条指令自己的场景数：`mand.ew` 报 2 个、`madd.ew` 报 7 个，而不是人人都报 7 个。这 7 个
-模板按用例在源里出现的顺序排列：
-
-| 模板                                  | 数据类型域                  | 实际发用例的指令 | 总用例（`--m 32`） | dtypes | 条目怎么构造                                          |
-| ------------------------------------- | --------------------------- | ---------------- | ------------------ | ------ | ----------------------------------------------------- |
-| `elementwise_integer_value_rules`     | `formed_integer`            | 46/46            | 2040               | 10     | 46/46（整数清单 + 该指令的 `evaluate`）               |
-| `elementwise_integer_value_rules_128` | `integer128`                | 46/46            | 268                | 2      | 46/46（同上，用 `wide=True`）                         |
-| `elementwise_saturating_boundary`     | `formed_saturating_integer` | 7/46             | 65                 | 10     | `SaturatingExpectation` + `CasePlan`                  |
-| `elementwise_saturating_boundary_128` | `saturating_integer128`     | 6/46             | 11                 | 2      | 同上                                                  |
-| `elementwise_float_nominal`           | `formed_softfloat`          | 27/46            | 162                | 6      | 该指令的 `evaluate_float`（比较类 `comparison=True`） |
-| `elementwise_float_special_values`    | `formed_softfloat`          | 27/46            | 541                | 6      | `FloatArithmeticRole` 或 `FloatSpecialRole`           |
-| `elementwise_float_semantics_sweep`   | `formed_softfloat`          | 18/46            | 108                | 6      | `FloatArithmeticRole`                                 |
-
-「实际发用例的指令」这一列不是手写的，而是**从 46 个类的 `templates` 里数出来的**：
-7 = `SATURATING_EXPECTED_KIND` 的条目数，6 = `SATURATING_128_INSTRUCTIONS`，
-27 = `FLOAT_EXPECTED_KEYS`（23 条标称 + 4 条比较），27 = 9 条特例 + 18 条算术特例，18 =
-`ELEMENTWISE_FP_ROUNDING_INSTRUCTIONS`。列表一变，这四个数字会立刻变化。
-
-"哪个场景跑"由指令决定，而且只有一处：指令把要跑的模板**逐个构造**进 `templates`，值当场传进
-构造函数——**没有别的门**，没写进列表的模板就不跑，所以指令文件就是它完整的检验清单。128 位的
-那两条跟在各自根后面，拿同一份值。场景类的先后由 `ELEMENTWISE_TEMPLATE_CLASSES` 给出，测试对
-每条指令的列表核对。
-两者合起来由 `test_elementwise_template_table_parity.py` 逐点比对（46 指令 × 7 场景 × 120
-配置），所以顺序错、参数给错、少一个场景都会立刻变成对拍失败。场景本身只回答"这个配置放得下
-我的用例吗"，也不去猜指令有没有这条行为。
-
-整数两条模板拿的是"清单 + 算式"，浮点标称拿的是"算式 + 一个 `comparison` 标志"——两条路都是类里写
-的函数，区别只在函数体：整数是算术，浮点标称是查 `FLOAT_OPERATION_VALUES`（比较类给全 1/0，并靠
-那个标志播种目的地与走三组 M 寄存器的规则）。另外两格拿的是 role，因为它们的期望值是一组用例而不
-是一个数。
-前四个模板把"整数/饱和"和"128 位"分开，是因为 128 位数据类型的用例构造与期望值算完全不同
-（跨多个 M 寄存器）；浮点三个模板共用 `formed_softfloat` 域，但各自筛不同的指令：标称、
-特例（NaN/无穷/有符号零与无效运算）、舍入扫描。`float_special_values` 的 6 个 dtype 中有一个只发 1 个用例、
-其余各发 3 个，差别来自 `NO_INFINITY_DTYPES`——`AME_OCP_E4M3_DTYPE` 没有无穷编码，所以它没有无穷用例。
-
-浮点场景的**用例数随配置变化**：`float_semantics_sweep` 只在声明了 `float_arithmetic` 且
-不是标量形式的指令上发用例（标量形式的舍入路径不同，另有两个块覆盖）；三元形式的
-`float_special_values` 用目的地的 NaN 而不是加数的 NaN，这些差异都在模板内部按 `form` 分派，
-不需要指令文件各写一份。
-
-## 逐个模板
-
-### `ones_uniform` —— 全寄存器冒烟测试
-
-- **覆盖** 所有能构成完整 M 寄存器的非饱和整数。
-- **激励** 两个源方阵全为 1，累加器用 `mzero.2d.acc` 清零，因此目标值就是 N 个 1×1
-  乘积之和。
-- **期望值** `uniform_ones_product` = N；当指令对乘积取负时为 −N。
-- **自检** 逐字节加载首元素、次元素、末元素的起始字节，各自与期望字节比对
-  （`check_dst_lines`）。
-- **为什么需要它** 这是最廉价的、可能失败的测试。没有任何取值依赖位置、符号、打包或
-  饱和，所以这里一旦失败，问题必定出在形成方式、数据类型或累加/相减语义上，而不是
-  数值本身。
-- **谁在用** 仅 `mmulacc.2d`：它是唯一一条在得到新乘积后仅靠 `mmov.m.a` 读回累加器
-  的指令，这正是"累加器已清零、图像均匀"这个用例有意义的前提。
-
-### `ones_uniform_128` —— 跨多个寄存器的目标
-
-- **覆盖** `AME_{UINT,INT}128`，即跨多个 M 寄存器的描述符。
-- **激励与期望值** 原样继承 `ones_uniform`；只有渲染器、数据类型域与谓词不同。
-- **自检** 比对首尾两个 128 位元素。128 位元素的值是每个 16 字节槽中**首字节**里的 N
-  （取负时其余字节二补数填充），因此端点比对校验的是跨寄存器图像的地址与布局。
-- **为什么需要它** 128 位目标是 M 寄存器跨寄存器形成、以及 `movv.m.a` 多寄存器回写
-  出问题的地方。
-- **谁在用** 仅 `mmulacc.2d`，且仅在两个 M 寄存器跨度都装得下时。
-
-### `matrix_small` —— 位置相关的乘积
-
-- **覆盖** 所有构成完整 M 寄存器的非饱和整数。
-- **激励** `small_matrix_inputs` 按行主序构造
-  `a[i][j] = (i + 2j + 1) mod 3`、`b[i][j] = (2i + j + 2) mod 3`。取值恒小于 3，
-  因此精确乘积在此处所有数据类型下都可表示。
-- **期望值** `small_matrix_product` 精确重放点积，并施加指令的 `product_flags`
-  （左转置、右转置、取负）。
-- **自检** 检查 5 个元素位置——首元素、次元素、第二行首元素、方阵中部某位、末元素
-  （`check_dst_element_lines`）——这正是让"位置相关性"真正可观测的原因。
-- **为什么需要它** 它是唯一期望值依赖行与列的整数模板，因此能抓到均匀方阵看不见的
-  步长、索引、行列混淆。转置变体也是在这里被区分的：`reference.py` 按指令的
-  `product_flags` 重放点积，因此转置只在发射出的期望值上体现，激励与代码逐字节相同。
-- **谁在用** 5 条普通乘积指令；`mmulacc.2d` 改用 `ones_uniform`。
-
-### `float_pair_sweep` —— 一个模板，两种 payload
-
-- **覆盖** `E4M3`、`E5M2`、`FP16`、`BF16`、`FP32`、`FP64`。
-- **激励与期望值** 两种 payload，在 `render` 中分派：
-  - `FloatNominalPayload` —— 全 1 乘积，可精确表示，期望值为
-    `softfloat_product_expected`，即 2 的幂形式的 N（窄格式受尾数位宽限制）。
-  - `FloatOverflowPayload` —— 最大有限值乘 2，遍历所有舍入模式与正负号，期望值按模式
-    取自 `float_overflow_boundaries`。
-- **自检** nominal 比对期望方阵；overflow 另外断言异常标志（对 `fflags` 的 `EXPECT`
-  为 inexact），并与无穷大图像一同校验。
-- **为什么需要它** 它是唯一检查**标志位**而不只是数据的模板，也是唯一覆盖舍入模式的
-  模板。overflow 扫描正是让舍入模式或标志位传递的回归暴露出来的地方。
-- **谁在用** 全部 6 条指令。
-
-### `packed_small` —— 存储宽度窄于 UDS 的源
-
-- **覆盖** 所有存储宽度窄于当前 UDS 的整数描述符。
-- **激励** 左手 1、右手 2，做累加。打包指令会把一行中每个存储槽折叠进目标元素，因此
-  期望值为 `2 * pack * N`，其中 `pack = uds / element_bits`。
-- **期望值** `packed_product`，目标数据类型由 `packed_compute_dtype` 选出——是整寄存器
-  类型，而不是存储类型。
-- **自检** 比对整寄存器目标图像的首尾元素（`check_dst_lines`）。
-- **为什么需要它** 源存储宽度与目标形成宽度不同，因此它是抓加宽或回写错误的地方。
-  目标数据类型选错会改变存储图像，而任何同宽模板都发现不了。
-- **谁在用** 全部 6 条指令。
-
-### `saturating_boundary` —— 数据加异常标志
-
-- **覆盖** `AME_*_SAT` 整数描述符。
-- **激励** 单次累加：全 1 乘以可表示的最大值。若参考乘积**没有**真的饱和，
-  `saturating_edge_product` 会直接抛错，因此当激励不再触及边界时是生成期失败，而不是
-  悄悄退化成一个普通边界测试。
-- **期望值** 饱和后的结果，外加 `amexsat` 读到 1，用 `EXPECT` 断言。
-- **自检** 检查首尾元素（`check_dst_element_lines`），并单独断言 `amexsat`。
-- **为什么需要它** 它是唯一断言饱和被**上报**、而不仅仅是被钳住的整数模板。回绕型
-  回归与标志位缺失是两类不同的缺陷，这里是唯一把两者同时钉住的地方。
-- **谁在用** 全部 6 条指令，且仅在两个 M 寄存器跨度都装得下时。
-
-### `multi_acc_independent` —— 一个累加器顶不了另一个
-
-- **覆盖** 非饱和的整寄存器整数。
-- **激励** 每个合法累加器都用 `mmov.a.m` 以 `0x11 * (index + 1)` 播种，然后把同一个
-  全 1 乘积累加进所有累加器，最后各自读回到自己的目标方阵。
-- **期望值** `seeded_ones_product` = seed + N，逐累加器。
-- **自检** 每个累加器的目标方阵独立比对（`check_dst_lines`），且各自有独立的数据标签
-  （`..._acc0_dst`、`..._acc1_dst`……），因此不一致时能指出是哪个累加器。
-- **为什么需要它** 种子互不相同且有间隔，因此"某个累加器串到另一个"或"某个操作数把两个
-  累加器别名到同一寄存器"会立刻改变存储结果。均匀种子会掩盖这一切。
-- **谁在用** 仅 `mmulacc.2d`，且仅在至少存在两个累加器时。
-
-### `mixed_signedness_multiple_square` —— 一个操作数装两个方阵
-
-- **覆盖** 半个当前 UDS 宽度的有符号整数描述符。
-- **激励** `_packed_square_data_lines` 把两个**逻辑**方阵（符号与取值都不同）打包进
-  同一个物理形成的操作数，因此一次 `mls.rm` 加载就能同时得到两者。
-- **期望值** `mixed_signedness_product` 返回一个 `MixedSignednessProduct`，描述两半；
-  校验按几何宽度而非元素宽度进行。
-- **自检** 把存储方阵与期望图像逐个字节比对（`check_dst_lines`），按几何宽度而非元素
-  宽度进行。
-- **为什么需要它** 它是唯一"一个操作数内装两个不同符号方阵"的模板，打包源的符号扩展
-  与"乘积是否读了两半"都在这里裁定。
-- **谁在用** 全部 6 条指令。
-
-### `MTypeRoundtrip` / `AccTypeRoundtrip` —— 描述符往返
-
-对宏文件里声明的**每一个**描述符（`every_dtype`，不做 UDS 过滤：往返不形成操作数，
-所以没有存储比例可言），把类型码写进寄存器再读回，并与类型码宏比较。M 侧覆盖每个
-合法放置（跨越 1/2/4/8/16 个寄存器时分别落在 low 与 high），ACC 侧覆盖每个累加器。
-`# case N:` 行的说明文字来自指令的 `case_action`，因为那句话同时点了写入方与读出方。
-
-### `MTypeUnsupportedProbe` / `AccTypeUnsupportedProbe` —— 非法类型码
-
-先把寄存器播种成 `AME_INT8_DTYPE`，再送入编码之外的 `0x80000008`：状态位必须报告
-拒绝，且描述符必须仍读出播种值。这是**错误路径**的覆盖，与往返模板是两回事，所以
-是独立的模板而不是往返模板里的一个分支。
-
-## 检查机制
-
-生成器只输出**静态 N** 形式：N 在生成期已知，因此期望值可以精确算好后作为立即数发射，
-检查也只需比对固定的几个位置。全部渲染器共用两个原语：
-
-| 原语                      | 用途                                           |
-| ------------------------- | ---------------------------------------------- |
-| `check_dst_lines`         | 均匀期望方阵：比对首元素与末元素               |
-| `check_dst_element_lines` | 位置相关的期望方阵：比对恰好一个指定下标的元素 |
-
-两者都带元素下标，因此断言本身指明它检查的位置；比对通过 `EXPECT` 宏完成，失败时
-`RVMODEL_HALT_FAIL` 向 `tohost` 写入统一码 3——也就是说，静态形式只告诉你**这个源失败了**，
-定位靠读汇编。这一点比下面提到的运行期编码粗，但它就是这 720 个生成源一直以来实际使用的
-方式。
-
-### 为什么没有 `--generic-n`
-
-早期版本还支持一个 `--generic-n` 模式：表按最大 N 生成、检查循环以运行期读到的
-`amenlen` 为界，于是一个二进制可以配合同一批 ≤ 32 的不同 N 配置运行。它已被移除。
-
-原因是它与静态 N 的**目标冲突**：N 一变期望值就变，而二进制里的立即数是生成期固定的。
-所以 `--generic-n` 只能改用在测试内用汇编重算期望值，用放弃"期望值来自 Python 参考实现"
-这一强保证，换取"一个二进制跨 N"。而那个"跨 N"能力在本项目里没有需求方：
-`run_ztt_tests.py` 为每个组合渲染一份模型配置，永远是按 N 建二进制、再按同一个 N 跑。
-更要紧的是，一个二进制能覆盖的 N 值并没有变多——N 在模型里是 2 的幂，32 以下的幂正好是
-4/8/16/32，与静态矩阵相同。
-
-如果将来确实需要"一个二进制覆盖多种 N 配置"，正确做法是把每个受支持 N 的期望值都打进
-二进制、再按 `amenlen` 在运行期选择，而不是在测试内重算公式；但这需要真实需求才值得引入。
-
-## 继承与复用
-
-只有一个模板继承另一个：`OnesUniform128` 继承 `OnesUniform`，覆盖 `render`、
-`dtypes`、`fits`，并原样继承 `build`。这是整个生成器里唯一一处模板体通过继承被真正
-共享的地方，也是应当遵循的范式：当用例构造完全相同、只有渲染或适用域不同时才用子类。
-
-`FloatPairSweep` 展示了另一处接缝——`render` 分派到 `self._render_nominal` /
-`self._render_overflow`，于是"一个模板有两种 payload 形状"可以保持一个公开入口、两个
-私有实现。
-
-指令复用模板靠的是**组合**而非继承：它们持有同一批实例。6 条指令共享
-`float_pair_sweep`、`packed_small`、`saturating_boundary` 与
-`mixed_signedness_multiple_square`；5 条共享 `matrix_small`；只有 `mmulacc.2d` 额外
-加上 `ones_uniform`、`ones_uniform_128` 与 `multi_acc_independent`。
-`mmul_gen.tests.test_templates` 同时钉住了"同一对象被共享"与上面那条继承关系。
-
-## 新增一个模板
-
-1. 新增 `<name>.py`，写入 payload、类与 docstring。
-2. 在 `__init__.py` 中实例化，并加入 `ALL_TEMPLATES`。
-3. 在需要覆盖它的每条指令的 `templates` 元组中加入该实例。
-4. 在上层 README 的覆盖表中补一行。
-
-`build` 与 `render` 是唯一的必需成员；只有当模板需要多于一个 M 寄存器跨度时才需要
-`fits`。除新模块与上面两处声明之外，不需要改动任何东西。
+| `UnsupportedDtypeProbe`                | `unsupported_dtype_probe`       | none (dtype-free)       | 1 / 1                           |
+
+The first four templates (integer/128-bit/saturating/saturating 128-bit) differ only in their
+datatype domain and emit exactly the same body, so they share one base class; the last three each
+emit different content and each get their own file. Three idioms that appear only in `broadcast`:
+
+- **Case numbering restarts per group**: the N in `# case N` is "the datatype's position in its own
+  template domain", not a file-wide count.
+- **The input list is an independent case**: the file lists all 7 `# input:` lines at once before
+  the first case, and independently of the configuration; making it a dtype-free template declared
+  first keeps it unconditional while placing it in the only position the format allows.
+- **Floating point uses raw bit patterns**: broadcast scalars are written as bit-pattern literals
+  (e.g. `0x3c00`) and do not go through the host floating-point library.
+
+The two domains cover storage and 128-bit saturating: `packed_storage` (**all** descriptors with
+`bits*2 == uds`, including saturating and floating-point ones — bit-preserving operations do not
+require pairing) and `saturating_integer128`. At UDS=32 they move FP16/BF16 from the floating-point
+group into the storage group, so a list hard-coded for one group would be wrong.
+
+The `matrix_ops` family is the most thorough instance of "**declarations instead of dispatch**": its
+20 instructions are split into three groups by operation shape, each group uses a single template,
+and **nowhere** inside a template is there dispatch on a mnemonic. All the differences are written
+as three enum declarations on the instruction.
+
+| Template                 | Template name                 | Datatype domain      | Instructions using it             | Cases/instruction (n8/uds8/m32/a4) |
+| ------------------------ | ----------------------------- | -------------------- | --------------------------------- | ---------------------------------- |
+| `ReducePrefixRamp`       | `reduce_row_ramp`             | `integer`            | 10 reduce/prefix                  | 9 (17 for the two `add.row`)       |
+| `ReducePrefixSaturating` | `reduce_saturating_boundary`  | `saturating_integer` | `mreduceadd.row`/`mprefixadd.row` | 8                                  |
+| `ZipDualSource`          | `zip_dual_source_ramp`        | `integer`            | 4 zip/unzip                       | 8                                  |
+| `ZipExtraSource`         | `zip_extra_dtype_ramp`        | `extra_permute`      | 4 zip/unzip                       | 14                                 |
+| `GatherScatterIndexed`   | `gather_indexed_elements`     | `integer`            | 6 gather/scatter                  | 8 (16 for `mrowscatadd`)           |
+| `GatherExtraIndex`       | `gather_extra_dtype_index`    | `extra_permute`      | only `mcolgather.ew`              | 14                                 |
+| `ScatterSaturating`      | `scatter_saturating_boundary` | `saturating_integer` | only `mrowscatadd.ew`             | 8                                  |
+
+The three enums **carry their own algorithms**, and what a template receives is not an instruction
+member but a constructor argument (written as `ReducePrefixRamp(MatrixAxis.ROW, Reduction.SUM)` and
+the like), while the enum values themselves are still declared by
+`mmul_gen/instructions/matrix_ops/base.py`:
+
+| Declaration                                 | Enum                           | Values               | How the template uses it                                                                                             |
+| ------------------------------------------- | ------------------------------ | -------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `ReducePrefixInstruction.axis`              | `MatrixAxis`                   | `row`/`column`       | `line_indices` (whole row/column) + `prefix_indices` + `reduce_check_indices`/`prefix_check_indices` (sample points) |
+| `ReducePrefixInstruction.reduction`         | `Reduction`                    | `sum`/`max`/`min`    | `aggregate(values)`                                                                                                  |
+| `ReducePrefixInstruction.prefix`            | `bool`                         | —                    | whether to take the prefix or the whole row                                                                          |
+| `ZipInstruction.axis` / `.unzip`            | `MatrixAxis` / `bool`          | —                    | `varying` (which coordinate is being interleaved) + `result_index` (where the result lands)                          |
+| `GatherScatterInstruction.axis` / `.access` | `MatrixAxis` / `ScatterAccess` | `gather`/`add`/`max` | `source_index` (where to read) + `result_index` (where to write) + `combine`/`accumulates`/`by_max`                  |
+
+The 10 reduce/prefix instructions are in fact the 10 configurations of `axis × reduction × prefix`
+(`row×sum×reduce` = `mreduceadd.row`, `column×sum×prefix` = `mprefixadd.col` ...), so "one
+expected-value table per instruction" is replaced by one general formula. The `extra_permute` domain
+(`bits >= uds` and not an ordinary integer) is exactly what this family needs: zip and gather need
+three non-overlapping register groups, so they run saturating and floating-point descriptors.
+
+Three idioms that appear only in `matrix_ops`:
+
+- **Emit `.data` even with zero cases**: the whole family still produces a `.data` section (empty)
+  in a configuration where no type fits, so all three family base classes declare
+  `always_emits_data = True`.
+- **Sample points are a function of the shape, not of the mnemonic**: reduce samples
+  `(0, n-1, nelem-1)` and prefix samples along the axis `(0, 3, n+2)` or `(0, n, 2n+3)`, written as
+  methods of `MatrixAxis`.
+- **The register-group count checks are asymmetric**: zip's ordinary branch does not check
+  `2*nregs <= num_m_regs`, while the extra branch skips types that do not fit.
+
+The `float_math` family is the model for "**one template holding the whole family**": its 10
+instructions each declare one `MathOperation` enum member, and the whole family has only **one**
+emission template — because the generated file is **interleaved by datatype**: for each datatype it
+first emits its nominal cases, then its own boundary scenarios, and only then moves on to the next
+datatype. The framework pipeline is "template → datatype", so two templates would turn the order
+into "all nominal, then all boundary", which is a different file. So the nominal / boundary /
+transcendental emitters are three private methods of the same template, distinguished by
+`Case.payload`.
+
+| Template         | Template name      | Datatype domain    | Instructions using it | Cases/instruction (n8/uds8/m32/a4)                      |
+| ---------------- | ------------------ | ------------------ | --------------------- | ------------------------------------------------------- |
+| `FloatMathCases` | `float_math_cases` | `formed_softfloat` | all 10                | see the table below (1 catalog case + several per type) |
+
+Case counts by operation category (including that 1 catalog case):
+
+| Category               | Instructions       | Per datatype                                                               | Cases |
+| ---------------------- | ------------------ | -------------------------------------------------------------------------- | ----- |
+| rounding               | `mfrintm/n/p/z.ew` | 1 nominal + 6 rounding modes                                               | 43    |
+| reciprocal             | `mrec.ew`          | 1 + 24 (12 poles at ±0 + 12 overflows at ±smallest subnormal)              | 151   |
+| reciprocal square root | `mrsqrt.ew`        | 1 + 18 (12 poles + 6 negative invalid)                                     | 115   |
+| square root            | `msqrt.ew`         | 1 + 12 (6 negative invalid + 6 inexact √2)                                 | 79    |
+| transcendental         | `mcos/sin/tanh.ew` | 6 (±0, qNaN, ±inf, 1.0 numeric cases; E4M3 has no inf encoding, so only 4) | 35    |
+
+| Declaration | Values                          | Description                                                                                                            |
+| ----------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `operation` | 10 members, one per instruction | the enum member carries its own nominal stimulus, boundary scenarios, and the host libm entry name for transcendentals |
+
+Three idioms that appear only in `float_math`:
+
+- **The domain must be the formed version**: `formed_softfloat`. `softfloat` goes through
+  `semantic_dtypes` (which is what `mmul` uses), while this family goes through `formed_dtypes` —
+  at UDS=16 the 8-bit OCP formats are packed storage and must still be covered, so using the wrong
+  domain would drop two datatypes entirely.
+- **Expected values come from the host libm, not from a table**: the narrow-format cases of the
+  transcendental functions replicate the simulator's path (widen to f32 → call the **host**
+  `cosf`/`sinf`/`tanhf` → narrow back with RNE), and cross-check against a 30-bit mpmath reference
+  at generation time with a 2 ulp budget — host libm drift blows up at generation time instead of
+  becoming a flaky failure in the test.
+- **The reference tables are reused module-wide**: the bit-pattern tables come from
+  `mmul_gen/fp_semantics.py`, and `tests/test_fp_semantics_parity.py` guards every table and every
+  rule for equality.
+
+The `integer_shift` family has two templates, split by "where the shift amount comes from" rather
+than by instruction: the three shift instructions (`msll`/`msrl`/`msra`) each choose one of them, so
+one template serves three instructions.
+
+| Template              | Template name           | Datatype domain  | Instructions using it               | Cases/datatype | dtypes            |
+| --------------------- | ----------------------- | ---------------- | ----------------------------------- | -------------- | ----------------- |
+| `ShiftRegisterSource` | `shift_register_source` | `formed_integer` | `msll.ew`/`msrl.ew`/`msra.ew`       | 1              | 10 (5 for `msra`) |
+| `ShiftScalarSource`   | `shift_scalar_source`   | `formed_integer` | `msll.ew.x`/`msrl.ew.x`/`msra.ew.x` | 1              | 10 (5 for `msra`) |
+
+The two differ only in "where the shift amount comes from": the register form reads a per-element
+amount from a second M operand, and the scalar form reuses a single integer register. The shift
+amount sweeps the boundaries `0, 1, bits-1, bits, bits+1, 2*bits-1` — only amounts **equal to or
+exceeding the element width** can exercise the hardware's modulo reduction of the shift amount,
+which a "constant shift" test can never reach. The source pattern makes every element's sign bit
+constantly 1.
+
+This family is the first to use three new framework capabilities:
+
+- the `formed_integer` domain (`machine.formed_dtypes`) has **sub-UDS** 4/8-bit descriptors in
+  addition to the `integer` domain, so narrow types such as `AME_UINT4_DTYPE` enter the cases too;
+  four-bit elements pack two nibbles onto the same `.byte` line (not split across lines, otherwise
+  the bytes would no longer match).
+- `choose_m_group_base(num_m_regs, bits, uds, preferred=16)` keeps the preferred `m16` base address
+  and falls back to the last aligned group when the register file is too small.
+- `fits(machine, instruction, dtype)` can now see the instruction: `msra` has one more restriction
+  than the other two — only signed descriptors have arithmetic right-shift semantics, and since the
+  three instructions share the same template, the restriction belongs to the **operation** and not
+  to the template.
+
+The `memory_order` family has two templates, one per direction, and each direction is shared by its
+load and store instructions:
+
+| Template              | Datatype domain | Instructions using it | Cases/datatype | dtypes |
+| --------------------- | --------------- | --------------------- | -------------- | ------ |
+| `MemoryOrderRowToCol` | `integer`       | `mls.rm`, `mss.cm`    | 1              | 8      |
+| `MemoryOrderColToRow` | `integer`       | `mls.cm`, `mss.rm`    | 1              | 8      |
+
+A single case executes the whole round trip of "load in one memory order, then store back in the
+other", so the assembly of `mls.rm` and `mss.cm` is identical, differing only in the header and the
+`# case` line — another example of one template serving two instructions. The two directions are
+inverse transforms, so the expected values are exactly swapped (whether the second element and the
+first element of the next storage row are `N+1`/`2` or `2`/`N+1`). The `# input:` label appears only
+once, before the whole dtype loop, expressed by "the case of the first dtype carries a
+`description` and the rest are `None`" (the same pattern as `raw_transfer`).
+
+The `debug_move` family has four templates, one per width, and each width is shared by two
+instructions:
+
+| Template      | Datatype domain | Instructions using it        | Cases/datatype | dtypes |
+| ------------- | --------------- | ---------------------------- | -------------- | ------ |
+| `DebugMove8`  | none (`None`)   | `mmove8.m.x`, `mmove8.x.m`   | 1              | —      |
+| `DebugMove16` | none (`None`)   | `mmove16.m.x`, `mmove16.x.m` | 1              | —      |
+| `DebugMove32` | none (`None`)   | `mmove32.m.x`, `mmove32.x.m` | 1              | —      |
+| `DebugMove64` | none (`None`)   | `mmove64.m.x`, `mmove64.x.m` | 1              | —      |
+
+The cases of all four instructions go in both directions (write into the M register, then read it
+back), so the assembly of `.m.x` and `.x.m` is **completely identical**, differing only in the header
+line — which is why there is "one template serving two instructions" rather than two nearly
+identical templates. The four templates share the family base class in `debug_move_common.py`, and
+subclasses declare only three constants (`element_bits`, `position`, `value`).
+
+This family is also the only one whose **source set varies with the configuration**: an instruction
+whose width exceeds one row (`n * uds` bits) does not generate a source at all in that configuration,
+because the model reports an Illegal Instruction for it and there is nothing to test. So at
+`n=4, uds=8` there are only 6 sources, and 8 sources only from `n=8, uds=8` onwards.
+
+The `pack` family has two templates, sharing the shape and the three input patterns of
+`pack_common.py`:
+
+| Template      | Datatype domain     | Instructions using it | Cases/datatype | dtypes |
+| ------------- | ------------------- | --------------------- | -------------- | ------ |
+| `PackSlots`   | `packed_conversion` | only `mpack.ew.x`     | 3              | 2      |
+| `UnpackSlots` | `packed_conversion` | only `munpack.ew.x`   | 3              | 2      |
+
+Both templates inherit the dtype-free family base class `PackedSlotConversion` in `pack_common.py`,
+with the input patterns fixed to the three `selected_slot` / `preserved_slot` /
+`signed_boundary_values`, and the selected slot is always 3. "The selected slot is written
+correctly, not one byte of the unselected slots is touched, and the signed boundary values are
+correct" must be tested separately, so there are three cases rather than three sections of one case
+— any single failure can be located immediately to one class of error.
+
+The `mconv` family has only one template, and it is also the only template used by conversions in
+both directions at once:
+
+| Template         | Datatype domain     | Instructions using it | Cases/datatype | dtypes |
+| ---------------- | ------------------- | --------------------- | -------------- | ------ |
+| `MconvRoundtrip` | `packed_conversion` | `mconv.ew`            | 1              | 2      |
+
+`mconv.ew` performs conversions in both directions at once (widening the packed storage square
+matrix, then narrowing the two compute square matrices back), so only one template can be used. Its
+datatype domain selects **two** descriptors under this configuration (one unsigned and one signed),
+each descriptor produces **one** case, and the expected value rotates through seven boundary values.
+Its header also has a line `UDS=<uds>: storage=<uds/2>, compute=<uds>`, appended by the instruction
+file overriding `banner(machine)`.
+
+The number of cases per datatype is exactly the number of legal M/ACC layout pairs that
+`paired_cases` finds for that datatype, so it varies with the configuration and drops as registers
+get scarcer. Under `--m 16 --acc 1`: `ones_uniform`, `matrix_small` and `saturating_boundary` become
+1 or 3, `float_pair_sweep` becomes 2 or 6, `packed_small` and `mixed_signedness_multiple_square`
+become 3, while `ones_uniform_128` and `multi_acc_independent` do not run at all — their `fits`
+predicates reject that configuration outright instead of re-laying out the operands.
+
+`elementwise` is the only family where the **scenarios are written in the instruction**: there are 7
+scenario classes, and which ones an instruction runs is decided by its own `templates` list — the
+list is the catalog of what runs, and behavior not written into it does not exist on that
+instruction. So `--list` reports each instruction's own scenario count: `mand.ew` reports 2 and
+`madd.ew` reports 7, rather than everyone reporting 7. The 7 templates are listed in the order their
+cases appear in the source:
+
+| Template                              | Datatype domain             | Instructions that actually emit cases | Total cases (`--m 32`) | dtypes | How the entry is constructed                                                   |
+| ------------------------------------- | --------------------------- | ------------------------------------- | ---------------------- | ------ | ------------------------------------------------------------------------------ |
+| `elementwise_integer_value_rules`     | `formed_integer`            | 46/46                                 | 2040                   | 10     | 46/46 (integer list + that instruction's `evaluate`)                           |
+| `elementwise_integer_value_rules_128` | `integer128`                | 46/46                                 | 268                    | 2      | 46/46 (same, with `wide=True`)                                                 |
+| `elementwise_saturating_boundary`     | `formed_saturating_integer` | 7/46                                  | 65                     | 10     | `SaturatingExpectation` + `CasePlan`                                           |
+| `elementwise_saturating_boundary_128` | `saturating_integer128`     | 6/46                                  | 11                     | 2      | same as above                                                                  |
+| `elementwise_float_nominal`           | `formed_softfloat`          | 27/46                                 | 162                    | 6      | that instruction's `evaluate_float` (`comparison=True` for comparison classes) |
+| `elementwise_float_special_values`    | `formed_softfloat`          | 27/46                                 | 541                    | 6      | `FloatArithmeticRole` or `FloatSpecialRole`                                    |
+| `elementwise_float_semantics_sweep`   | `formed_softfloat`          | 18/46                                 | 108                    | 6      | `FloatArithmeticRole`                                                          |
+
+The "instructions that actually emit cases" column is not hand-written but **counted from the
+`templates` of the 46 classes**: 7 = the number of `SATURATING_EXPECTED_KIND` entries, 6 =
+`SATURATING_128_INSTRUCTIONS`, 27 = `FLOAT_EXPECTED_KEYS` (23 nominal + 4 comparison), 27 = 9
+special-case + 18 arithmetic special-case, 18 = `ELEMENTWISE_FP_ROUNDING_INSTRUCTIONS`. If the list
+changes, these four numbers change immediately.
+
+"Which scenario runs" is decided by the instruction, and in exactly one place: the instruction
+**constructs each template it wants to run** into `templates`, passing the values into the
+constructor on the spot — **there is no other gate**, and a template not written into the list does
+not run, so the instruction file is its complete check list. The two 128-bit ones follow their
+respective roots and receive the same values. The order of the scenario classes is given by
+`ELEMENTWISE_TEMPLATE_CLASSES`, and the test verifies each instruction's list.
+Together the two are compared point by point by `test_elementwise_template_table_parity.py` (46
+instructions × 7 scenarios × 120 configurations), so a wrong order, a wrong argument or a missing
+scenario immediately becomes a comparison failure. The scenarios themselves only answer "does this
+configuration have room for my cases", and do not guess whether the instruction has this behavior.
+
+The two integer templates take "list + formula", and the floating-point nominal one takes "formula +
+a `comparison` flag" — both paths are functions written in the class, differing only in the body:
+arithmetic for integers, a `FLOAT_OPERATION_VALUES` lookup for floating-point nominal (comparison
+classes give all ones/0 and rely on that flag to seed the destination and to walk the three M
+register groups). The other two cells take a role, because their expected value is a set of cases
+rather than a single number.
+The first four templates separate "integer/saturating" from "128-bit" because 128-bit datatypes have
+completely different case construction and expected-value computation (spanning multiple M
+registers); the three floating-point templates share the `formed_softfloat` domain but each filters
+different instructions: nominal, special values (NaN/infinity/signed zero and invalid operations),
+and the rounding sweep. Of the 6 dtypes in `float_special_values`, one emits only 1 case and the
+rest emit 3 each, the difference coming from `NO_INFINITY_DTYPES` — `AME_OCP_E4M3_DTYPE` has no
+infinity encoding, so it has no infinity case.
+
+The **case count of the floating-point scenarios varies with the configuration**:
+`float_semantics_sweep` only emits cases for instructions that declare `float_arithmetic` and are
+not in scalar form (the scalar form has a different rounding path, covered by two other blocks); the
+ternary form of `float_special_values` uses the destination's NaN rather than the addend's NaN; these
+differences are all dispatched inside the template by `form`, and do not require a copy in each
+instruction file.
+
+## Template by template
+
+### `ones_uniform` — whole-register smoke test
+
+- **Coverage** all non-saturating integers that can make up a full M register.
+- **Stimulus** both source square matrices are all ones, and the accumulator is zeroed with
+  `mzero.2d.acc`, so the destination value is the sum of N 1×1 products.
+- **Expected value** `uniform_ones_product` = N; −N when the instruction negates the product.
+- **Self-check** load the starting bytes of the first, second and last elements byte by byte, and
+  compare each against the expected byte (`check_dst_lines`).
+- **Why it is needed** it is the cheapest test that can fail. No value depends on position, sign,
+  packing or saturation, so if it fails here the problem must be in the formation, the datatype or
+  the accumulate/subtract semantics, not in the numbers themselves.
+- **Who uses it** only `mmulacc.2d`: it is the only instruction that reads the accumulator back with
+  just `mmov.m.a` after obtaining a new product, which is exactly the precondition that makes the
+  "accumulator already zeroed, image uniform" case meaningful.
+
+### `ones_uniform_128` — a destination spanning multiple registers
+
+- **Coverage** `AME_{UINT,INT}128`, i.e. descriptors spanning multiple M registers.
+- **Stimulus and expected value** inherited verbatim from `ones_uniform`; only the renderer, the
+  datatype domain and the predicate differ.
+- **Self-check** compare the first and last 128-bit elements. The value of a 128-bit element is N in
+  the **first byte** of each 16-byte slot (the remaining bytes are two's-complement filled when
+  negated), so the endpoint comparison verifies the address and layout of the cross-register image.
+- **Why it is needed** 128-bit destinations are where cross-register formation of M registers and
+  `movv.m.a` multi-register write-back go wrong.
+- **Who uses it** only `mmulacc.2d`, and only when both M register spans fit.
+
+### `matrix_small` — a position-dependent product
+
+- **Coverage** all non-saturating integers that make up a full M register.
+- **Stimulus** `small_matrix_inputs` builds `a[i][j] = (i + 2j + 1) mod 3` and
+  `b[i][j] = (2i + j + 2) mod 3` in row-major order. The values are always less than 3, so the exact
+  product is representable under every datatype here.
+- **Expected value** `small_matrix_product` replays the dot product exactly and applies the
+  instruction's `product_flags` (transpose left, transpose right, negate).
+- **Self-check** it checks 5 element positions — first element, second element, first element of the
+  second row, some position in the middle of the square matrix, last element
+  (`check_dst_element_lines`) — which is exactly what makes "position dependence" genuinely
+  observable.
+- **Why it is needed** it is the only integer template whose expected value depends on row and
+  column, so it can catch strides, indexing and row/column mix-ups that a uniform square matrix
+  cannot see. Transpose variants are distinguished here too: `reference.py` replays the dot product
+  according to the instruction's `product_flags`, so a transpose shows up only in the emitted
+  expected value, with the stimulus and the code byte-for-byte identical.
+- **Who uses it** the 5 ordinary product instructions; `mmulacc.2d` uses `ones_uniform` instead.
+
+### `float_pair_sweep` — one template, two payloads
+
+- **Coverage** `E4M3`, `E5M2`, `FP16`, `BF16`, `FP32`, `FP64`.
+- **Stimulus and expected value** two payloads, dispatched in `render`:
+  - `FloatNominalPayload` — all-ones product, exactly representable, with expected value
+    `softfloat_product_expected`, i.e. N as a power of two (narrow formats are limited by their
+    mantissa width).
+  - `FloatOverflowPayload` — largest finite value times 2, walking all rounding modes and signs,
+    with the expected value taken from `float_overflow_boundaries` per mode.
+- **Self-check** nominal compares the expected square matrix; overflow additionally asserts the
+  exception flags (`EXPECT` on `fflags` is inexact) and checks together with the infinity image.
+- **Why it is needed** it is the only template that checks **flags** and not just data, and the only
+  one covering rounding modes. The overflow sweep is what exposes regressions in rounding-mode or
+  flag propagation.
+- **Who uses it** all 6 instructions.
+
+### `packed_small` — sources whose storage width is narrower than the UDS
+
+- **Coverage** every integer descriptor whose storage width is narrower than the current UDS.
+- **Stimulus** left-hand 1, right-hand 2, accumulate. Packed instructions fold each storage slot in
+  a row into the destination element, so the expected value is `2 * pack * N`, where
+  `pack = uds / element_bits`.
+- **Expected value** `packed_product`, with the destination datatype selected by
+  `packed_compute_dtype` — a whole-register type, not a storage type.
+- **Self-check** compare the first and last elements of the whole-register destination image
+  (`check_dst_lines`).
+- **Why it is needed** the source storage width differs from the destination formation width, so
+  this is where widening or write-back errors are caught. Selecting the wrong destination datatype
+  changes the storage image, and no same-width template would notice.
+- **Who uses it** all 6 instructions.
+
+### `saturating_boundary` — data plus the exception flag
+
+- **Coverage** `AME_*_SAT` integer descriptors.
+- **Stimulus** a single accumulation: all ones multiplied by the maximum representable value. If the
+  reference product does **not** actually saturate, `saturating_edge_product` raises outright, so
+  when the stimulus no longer touches the boundary it is a generation-time failure rather than a
+  quiet degradation into an ordinary boundary test.
+- **Expected value** the saturated result, plus `amexsat` reading 1, asserted with `EXPECT`.
+- **Self-check** check the first and last elements (`check_dst_element_lines`), and separately assert
+  `amexsat`.
+- **Why it is needed** it is the only integer template that asserts that saturation is **reported**,
+  not merely clamped. Wrap-around regressions and missing flags are two different classes of defect,
+  and this is the only place that pins both down at once.
+- **Who uses it** all 6 instructions, and only when both M register spans fit.
+
+### `multi_acc_independent` — one accumulator does not stand in for another
+
+- **Coverage** non-saturating whole-register integers.
+- **Stimulus** seed each legal accumulator with `mmov.a.m` using `0x11 * (index + 1)`, then
+  accumulate the same all-ones product into all accumulators, and finally read each back into its own
+  destination square matrix.
+- **Expected value** `seeded_ones_product` = seed + N, per accumulator.
+- **Self-check** each accumulator's destination square matrix is compared independently
+  (`check_dst_lines`), and each has its own data label (`..._acc0_dst`, `..._acc1_dst`, ...), so a
+  mismatch points to which accumulator it is.
+- **Why it is needed** the seeds are distinct and spaced apart, so "one accumulator bleeding into
+  another" or "one operand aliasing two accumulators to the same register" changes the stored result
+  immediately. Uniform seeds would hide all of this.
+- **Who uses it** only `mmulacc.2d`, and only when at least two accumulators exist.
+
+### `mixed_signedness_multiple_square` — one operand holding two square matrices
+
+- **Coverage** signed integer descriptors half the width of the current UDS.
+- **Stimulus** `_packed_square_data_lines` packs two **logical** square matrices (differing in both
+  sign and value) into the same physically formed operand, so a single `mls.rm` load obtains both at
+  once.
+- **Expected value** `mixed_signedness_product` returns a `MixedSignednessProduct` describing the
+  two halves; the check proceeds by geometric width rather than element width.
+- **Self-check** compare the storage square matrix against the expected image byte by byte
+  (`check_dst_lines`), by geometric width rather than element width.
+- **Why it is needed** it is the only template that puts "two differently signed square matrices in
+  one operand"; sign extension of the packed source and "whether the product read both halves" are
+  decided here.
+- **Who uses it** all 6 instructions.
+
+### `MTypeRoundtrip` / `AccTypeRoundtrip` — descriptor round-trips
+
+For **every** descriptor declared in the macro file (`every_dtype`, with no UDS filtering: a
+round-trip does not form an operand, so there is no storage ratio to speak of), write the type code
+into the register and read it back, then compare against the type-code macro. The M side covers
+every legal placement (landing on low and on high when spanning 1/2/4/8/16 registers) and the ACC
+side covers every accumulator. The description text on the `# case N:` line comes from the
+instruction's `case_action`, because that sentence names both the writer and the reader.
+
+### `MTypeUnsupportedProbe` / `AccTypeUnsupportedProbe` — illegal type codes
+
+First seed the register with `AME_INT8_DTYPE`, then feed in the out-of-encoding `0x80000008`: the
+status bit must report rejection, and the descriptor must still read back the seeded value. This is
+**error-path** coverage, a different matter from the round-trip templates, so it is a separate
+template rather than a branch inside the round-trip template.
+
+## Checking machinery
+
+The generator emits only the **static N** form: N is known at generation time, so expected values
+can be computed exactly and emitted as immediates, and the check only has to compare a few fixed
+positions. All renderers share two primitives:
+
+| Primitive                 | Purpose                                                                                   |
+| ------------------------- | ----------------------------------------------------------------------------------------- |
+| `check_dst_lines`         | uniform expected square matrix: compare the first and last elements                       |
+| `check_dst_element_lines` | position-dependent expected square matrix: compare exactly the element at one given index |
+
+Both carry the element index, so the assertion itself states which position it checks; the
+comparison is done through the `EXPECT` macro, and on failure `RVMODEL_HALT_FAIL` writes the uniform
+code 3 to `tohost` — that is, the static form only tells you **that this source failed**, and
+locating the failure means reading the assembly. This is coarser than the runtime encoding mentioned
+below, but it is how these 720 generated sources have actually been used all along.
+
+### Why there is no `--generic-n`
+
+An earlier version also supported a `--generic-n` mode: tables were generated for the maximum N, the
+check loops were bounded by the `amenlen` read at runtime, and so one binary could run with the same
+set of different N configurations ≤ 32. It has been removed.
+
+The reason is that it **conflicts with the goals** of static N: the expected value changes when N
+changes, while the immediates in the binary are fixed at generation time. So `--generic-n` could
+only switch to recomputing expected values in assembly inside the test, giving up the strong
+guarantee that "expected values come from the Python reference implementation" in exchange for "one
+binary across N". And that "across N" capability has no consumer in this project:
+`run_ztt_tests.py` renders one model configuration per configuration and always builds the binary
+for one N and runs it for that same N. More importantly, the set of N values one binary could cover
+would not grow — N is a power of two in the model, and the powers below 32 are exactly 4/8/16/32,
+the same as the static matrix.
+
+If "one binary covering multiple N configurations" is genuinely needed in the future, the right
+approach is to bake the expected values for every supported N into the binary and select at runtime
+based on `amenlen`, rather than recomputing the formula inside the test; but that is only worth
+introducing given a real requirement.
+
+## Inheritance and reuse
+
+Only one template inherits from another: `OnesUniform128` inherits `OnesUniform`, overrides
+`render`, `dtypes` and `fits`, and inherits `build` verbatim. This is the only place in the whole
+generator where a template body is genuinely shared through inheritance, and it is the pattern to
+follow: use a subclass only when the case construction is completely identical and only the
+rendering or the applicable domain differs.
+
+`FloatPairSweep` shows another seam — `render` dispatches to `self._render_nominal` /
+`self._render_overflow`, so "one template with two payload shapes" can keep one public entry point
+and two private implementations.
+
+Instructions reuse templates by **composition**, not inheritance: they hold the same instances. 6
+instructions share `float_pair_sweep`, `packed_small`, `saturating_boundary` and
+`mixed_signedness_multiple_square`; 5 share `matrix_small`; only `mmulacc.2d` additionally adds
+`ones_uniform`, `ones_uniform_128` and `multi_acc_independent`.
+`mmul_gen.tests.test_templates` pins down both "the same object is shared" and the inheritance
+relationship above.
+
+## Adding a template
+
+1. Add `<name>.py` with the payload, the class and the docstring.
+2. Instantiate it in `__init__.py` and add it to `ALL_TEMPLATES`.
+3. Add the instance to the `templates` tuple of every instruction that should cover it.
+4. Add a row to the coverage table in the README one level up.
+
+`build` and `render` are the only required members; `fits` is only needed when the template requires
+more than one M register span. Apart from the new module and the two declarations above, nothing
+needs changing.
