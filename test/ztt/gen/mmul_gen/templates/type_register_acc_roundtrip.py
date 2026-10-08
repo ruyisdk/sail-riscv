@@ -12,16 +12,10 @@ accumulator file rather than a sample of it.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-累加器描述符往返：写入类型编码，再读回。
-
-宏文件声明的每个描述符都被写入配置提供的每个累加器并读回，因此往返覆盖整个累加器文件，而不是其中的抽样。
-"""
-
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
-from mmul_gen.case_description import description_zh
+from mmul_gen.case_description import description
 from mmul_gen.machine import DType, EVERY_DTYPE, MachineConfig
 from mmul_gen.registers import RegisterLayout, accumulator_operands
 from mmul_gen.templates.base import Case, CaseOutput, Template
@@ -33,7 +27,6 @@ if TYPE_CHECKING:
 class AccTypeRoundtrip(Template):
     """Write the descriptor into an accumulator and read it back."""
 
-    summary_zh = "将描述符写入累加器再读回，验证往返一致。"
     name = "supported_dtype_roundtrip"
     dtypes = EVERY_DTYPE
 
@@ -50,7 +43,7 @@ class AccTypeRoundtrip(Template):
                 number=0,
                 dtype=dtype,
                 layout=RegisterLayout(acc=operand),
-                description=description_zh(self.name),
+                description=description(self.name),
             )
             for operand in accumulator_operands(machine.num_acc_regs)
         ]

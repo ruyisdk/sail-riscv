@@ -27,7 +27,6 @@ class McolzipEw(MatrixOpsInstruction):
 
     name = "mcolzip.ew"
     summary = "interleave two source squares into one column stream"
-    summary_zh = "将两个源方阵交错合并为一路列流"
     subject = "zip/unzip test cases."
     operands = (FIRST_SOURCE_OPERAND, SECOND_SOURCE_OPERAND)
     templates = (

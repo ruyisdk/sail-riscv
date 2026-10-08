@@ -11,12 +11,6 @@ through ``mmov.m.a``, so a zeroed descriptor with a stale payload still fails.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-将累加器清零再拷贝出来，结果必须是全零方阵。
-
-拷贝才让检查有意义：它通过 ``mmov.m.a`` 把累加器读回，因此描述符已清零但载荷陈旧的实现仍会失败。
-"""
-
 from typing import TYPE_CHECKING
 
 from mmul_gen.registers import RegisterLayout
@@ -34,7 +28,6 @@ if TYPE_CHECKING:
 class AccumulatorZeroAcc(AccumulatorUtilityTemplate):
     """Zeroing an accumulator and copying it out must leave an all-zero square."""
 
-    summary_zh = "将累加器清零再拷贝出来，结果必须是全零方阵。"
     name = "zero_acc"
     uses_accumulator = True
 

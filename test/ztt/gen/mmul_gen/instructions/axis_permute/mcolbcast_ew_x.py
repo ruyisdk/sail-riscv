@@ -23,7 +23,6 @@ class McolbcastEwX(Instruction):
 
     name = "mcolbcast.ew.x"
     summary = "replicate one source column across every column of each row"
-    summary_zh = "将源方阵的某一列复制到每一行的所有列"
     subject = "row/column semantic test cases."
     operands = (DESTINATION_OPERAND, SCALAR_SOURCE_OPERAND, FIRST_SOURCE_OPERAND)
     templates = (COLUMN_BROADCAST,)

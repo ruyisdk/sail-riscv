@@ -21,7 +21,6 @@ class AmeRelease(BackendInstruction):
 
     name = "ame.release"
     summary = "release ownership of the AME backend"
-    summary_zh = "释放 AME 后端的所有权"
     # ``ame.release`` takes no operands; the empty tuple is the declaration.
     operands = ()
     templates = (RELEASE_STATE, RELEASE_IDLE_STATE)

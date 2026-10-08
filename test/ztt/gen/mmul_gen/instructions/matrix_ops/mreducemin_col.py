@@ -25,7 +25,6 @@ class MreduceminCol(MatrixOpsInstruction):
 
     name = "mreducemin.col"
     summary = "smallest element of each column, replicated down it"
-    summary_zh = "求每列的最小元素并沿该列复制"
     subject = "reduce/prefix test cases."
     operands = (DESTINATION_OPERAND, FIRST_SOURCE_OPERAND)
     templates = (

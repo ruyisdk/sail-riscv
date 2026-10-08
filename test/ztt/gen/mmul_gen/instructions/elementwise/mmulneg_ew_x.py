@@ -29,7 +29,6 @@ class MmulnegEwX(ElementwiseInstruction):
 
     name = "mmulneg.ew.x"
     summary = "negated multiply of a scalar and a matrix operand"
-    summary_zh = "标量与矩阵操作数逐元素取负相乘"
     subject = "elementwise test cases."
     operands = ()
     form = ElementwiseForm.BINARY_X

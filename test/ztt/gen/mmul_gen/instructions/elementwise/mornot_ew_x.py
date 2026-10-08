@@ -22,7 +22,6 @@ class MornotEwX(ElementwiseInstruction):
 
     name = "mornot.ew.x"
     summary = "bitwise or-not of a scalar and a matrix operand"
-    summary_zh = "标量与矩阵操作数逐元素按位或非"
     subject = "elementwise test cases."
     operands = ()
     form = ElementwiseForm.BINARY_X

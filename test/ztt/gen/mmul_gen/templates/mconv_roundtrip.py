@@ -20,14 +20,6 @@ them rather than restating the nibble-packing rule.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-``mconv.ew`` 存储/计算 datatype 转换往返。
-
-该指令在有效 UDS 一半处存储的描述符与其同符号性的满 UDS 对应者之间转换已成形的 M 方阵。一个用例同时演练两个方向：把打包存储方阵扩展为计算方阵并存储回去，再把两个计算方阵收窄为一个打包存储方阵并存储回去。``mconv.ew`` 是 ``md, ms1`` 且只寻址 M 寄存器，因此没有用例声明寄存器布局。
-
-字节镜像辅助函数（``data_lines``/``destination_lines``/``encoded_values``）与索引打包槽模板使用同一组通用 M 方阵发射器：``mconv.ew`` 是那种转换的非索引对应者，因此复用它们，而不是重述半字节打包规则。
-"""
-
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
@@ -38,7 +30,7 @@ from mmul_gen.asm import (
     data_element_lines,
     sign_extend,
 )
-from mmul_gen.case_description import description_zh
+from mmul_gen.case_description import description
 from mmul_gen.machine import PACKED_CONVERSION, MachineConfig, dtype_is_signed_int
 from mmul_gen.reference import packed_compute_dtype
 from mmul_gen.templates.base import Case, CaseOutput, Template, case_payload
@@ -85,7 +77,6 @@ def _boundary_cycle(storage_bits: int) -> list[int]:
 class MconvRoundtrip(Template):
     """Widen a packed storage square and narrow two compute squares back."""
 
-    summary_zh = "将打包存储方阵扩展，并把两个计算方阵收窄写回。"
     name = INPUT_CASE
     dtypes = PACKED_CONVERSION
 
@@ -104,7 +95,7 @@ class MconvRoundtrip(Template):
                     compute_dtype=packed_compute_dtype(dtype.name, machine.uds),
                     is_signed=dtype_is_signed_int(dtype.name),
                 ),
-                description=description_zh(self.name) if dtype == first else None,
+                description=description(self.name) if dtype == first else None,
             )
         ]
 

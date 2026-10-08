@@ -11,19 +11,12 @@ checked in the stored image and not just the low byte.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-16 位调试搬移对回绕位置 35 及其字节镜像做往返验证。
-
-16 位元素跨两个字节，因此存储镜像中检查元素的两端，而不只是低字节。
-"""
-
 from mmul_gen.templates.debug_move_common import DebugMoveTemplate
 
 
 class DebugMove16(DebugMoveTemplate):
     """A 16-bit debug move roundtrips the wrapped position 35 and its byte image."""
 
-    summary_zh = "16 位调试搬移对回绕位置 35 及其字节镜像做往返验证。"
     element_bits = 16
     position = 35
     value = 0x1C3D

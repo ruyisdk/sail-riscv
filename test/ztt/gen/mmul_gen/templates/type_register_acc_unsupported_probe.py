@@ -12,12 +12,6 @@ rejected write and each accumulator must still read back as its seed.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-累加器描述符错误探针：不可用的编码不得改变任何状态。
-
-每个累加器先用汇编器确实定义的描述符播种，再被写入一个编码之外的编码。状态标志必须报告被拒绝的写入，且每个累加器必须仍读回其播种值。
-"""
-
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
@@ -38,7 +32,6 @@ UNSUPPORTED_DTYPE_CODE = 0x80000008
 class AccTypeUnsupportedProbe(Template):
     """An out-of-encoding descriptor code must be rejected and change nothing."""
 
-    summary_zh = "编码之外的描述符编码必须被拒绝且不改变任何状态。"
     name = "unsupported_dtype"
     dtypes = PROBE_DTYPE
 

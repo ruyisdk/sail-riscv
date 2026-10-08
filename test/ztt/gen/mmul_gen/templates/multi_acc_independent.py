@@ -7,10 +7,6 @@
 
 from __future__ import annotations
 
-DOC_ZH = """\
-独立多累加器模板。
-"""
-
 from typing import TYPE_CHECKING
 
 from dataclasses import dataclass
@@ -62,7 +58,6 @@ def _multi_acc_fits(machine: MachineConfig, dtype: DType) -> bool:
 class MultiAccIndependent(Template):
     """Every legal accumulator seeded, accumulated, and read independently."""
 
-    summary_zh = "为每个合法累加器播种、累加并独立读回。"
     name = "multi_acc_independent"
     dtypes = INTEGER
 
@@ -86,7 +81,7 @@ class MultiAccIndependent(Template):
             base=0,
             span=count,
         )
-        description = "每个合法累加器独立播种并累加"
+        description = "all legal accumulators independently seeded and accumulated"
         return [
             Case(
                 number=0,

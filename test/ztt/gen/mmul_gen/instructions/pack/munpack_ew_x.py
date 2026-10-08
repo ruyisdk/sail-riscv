@@ -21,7 +21,6 @@ from mmul_gen.templates.unpack_slots import (
 class MunpackEwX(PackInstruction):
     name = "munpack.ew.x"
     summary = "widen one packed storage slot into a compute square"
-    summary_zh = "将一个打包存储槽扩展为计算方阵"
     operands = (DESTINATION_OPERAND, PACK_SLOT_OPERAND, PACK_SOURCE_OPERAND)
     templates = (UNPACK_SLOTS,)
 

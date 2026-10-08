@@ -29,7 +29,6 @@ class MmuladdEw(ElementwiseInstruction):
 
     name = "mmuladd.ew"
     summary = "fused multiply-add of two matrix operands into the destination"
-    summary_zh = "两个矩阵操作数逐元素融合乘加到目的操作数"
     subject = "elementwise test cases."
     operands = ()
     form = ElementwiseForm.TERNARY_M

@@ -13,12 +13,6 @@ knowing how its operands are loaded.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-一条 elementwise 指令在求值单个元素时看到的内容。
-
-形态决定操作数如何到达指令（``integer_elements``）；指令声明它用这些操作数算什么（``Instruction.evaluate``）。把两者分开，指令才能在不了解操作数如何加载的情况下陈述自己的算式。
-"""
-
 from dataclasses import dataclass
 
 from mmul_gen.reference import IntegerDType

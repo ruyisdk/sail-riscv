@@ -25,7 +25,6 @@ class MldexpaccEwX(LogExpInstruction):
 
     name = "mldexpacc.ew.x"
     summary = "accumulate a mantissa square scaled by one scalar exponent"
-    summary_zh = "累加按同一标量指数缩放的尾数方阵"
     subject = "integer log/exp test cases."
     operands = (DESTINATION_OPERAND, SCALAR_SOURCE_OPERAND, FIRST_SOURCE_OPERAND)
     templates = (

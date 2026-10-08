@@ -12,12 +12,6 @@ missing element.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-以元素的列坐标填充每个元素。
-
-源斜坡被加载但不被读取：期望方阵就是列索引本身，因此有效长度错误会表现为坐标错误，而不是缺少元素。
-"""
-
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
@@ -33,7 +27,6 @@ if TYPE_CHECKING:
 class ColumnIndex(AxisPermuteTemplate):
     """Fill every element with its own column coordinate."""
 
-    summary_zh = "以元素的列坐标填充每个元素。"
     name = "column_index"
     input_cases = ("coordinate_ramp",)
 

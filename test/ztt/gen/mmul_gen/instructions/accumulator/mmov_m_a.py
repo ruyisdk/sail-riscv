@@ -22,7 +22,6 @@ class MmovMA(Instruction):
 
     name = "mmov.m.a"
     summary = "copy one accumulator into an M register"
-    summary_zh = "将一个累加器拷贝到 M 寄存器"
     subject = "accumulator test cases."
     operands = (DESTINATION_OPERAND, ACCUMULATOR_OPERAND)
     templates = (ACCUMULATOR_ACC_TO_M,)

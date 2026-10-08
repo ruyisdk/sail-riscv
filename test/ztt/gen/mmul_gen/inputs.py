@@ -206,37 +206,37 @@ class IntegerInputCase:
 
 SMALL_VALUES = IntegerInputCase(
     "small_values",
-    "普通算术路径的小幅有符号/无符号操作数",
+    "small signed/unsigned operands on the ordinary arithmetic path",
     "small_values",
 )
 BOUNDARIES = IntegerInputCase(
     "boundaries",
-    "可表示的下界与上界",
+    "representable lower and upper bounds",
     "boundaries",
 )
 POWER_OF_TWO = IntegerInputCase(
     "power_of_two",
-    "含元素宽度边界的 2 的幂序列",
+    "powers of two, including the element-width boundary",
     "power_of_two",
 )
 BIT_PATTERNS = IntegerInputCase(
     "bit_patterns",
-    "0x55/0xaa 交替位模式",
+    "alternating 0x55/0xaa bit pattern",
     "bit_patterns",
 )
 OVERFLOW_ADD = IntegerInputCase(
     "overflow_add",
-    "最大加最大：回绕或饱和",
+    "maximum plus maximum: wrap or saturate",
     "overflow_add",
 )
 OVERFLOW_SUB = IntegerInputCase(
     "overflow_sub",
-    "反向端相减：回绕或饱和",
+    "subtraction from the opposite extreme: wrap or saturate",
     "overflow_sub",
 )
 OVERFLOW_MUL = IntegerInputCase(
     "overflow_mul",
-    "最大乘二：回绕或饱和",
+    "maximum times two: wrap or saturate",
     "overflow_mul",
 )
 

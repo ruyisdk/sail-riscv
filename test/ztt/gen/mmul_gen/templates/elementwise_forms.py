@@ -13,12 +13,6 @@ variation, and it is enumerated here rather than spelled as bare strings.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-elementwise 家族的操作数形态。
-
-一条 elementwise 指令由它的助记符、操作数形态以及它想要的输入用例定义；存储布局、检查与期望值都由形态导出。因此形态是该家族唯一真正的变化轴，这里将其枚举出来，而不是写成裸字符串。
-"""
-
 from enum import Enum
 
 

@@ -48,7 +48,6 @@ class MbcastMX(Instruction):
 
     name = "mbcast.m.x"
     summary = "broadcast one scalar into every element of a formed descriptor"
-    summary_zh = "将一个标量广播到已成形描述符的每个元素"
     subject = "scalar-ingress and packed-storage broadcast test cases."
     operands = (DESTINATION_OPERAND, SCALAR_SOURCE_OPERAND, SCALAR_SOURCE_OPERAND)
     templates = (

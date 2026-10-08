@@ -25,7 +25,6 @@ class MprefixmaxCol(MatrixOpsInstruction):
 
     name = "mprefixmax.col"
     summary = "running maximum down each column"
-    summary_zh = "沿每列向下求前缀最大值"
     subject = "reduce/prefix test cases."
     operands = (DESTINATION_OPERAND, FIRST_SOURCE_OPERAND)
     templates = (

@@ -26,7 +26,6 @@ class MlsSt(StridedMemoryInstruction):
 
     name = "mls.st"
     summary = "load one square with a stride, one element per segment"
-    summary_zh = "按步长加载一个方阵，每段一个元素"
     subject = "strided-memory semantic test cases."
     operands = ()
     templates = (

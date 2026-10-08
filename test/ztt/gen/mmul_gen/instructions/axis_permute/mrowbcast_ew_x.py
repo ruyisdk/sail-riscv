@@ -23,7 +23,6 @@ class MrowbcastEwX(Instruction):
 
     name = "mrowbcast.ew.x"
     summary = "replicate one source row across every row of each column"
-    summary_zh = "将源方阵的某一行复制到每一列的所有行"
     subject = "row/column semantic test cases."
     operands = (DESTINATION_OPERAND, SCALAR_SOURCE_OPERAND, FIRST_SOURCE_OPERAND)
     templates = (ROW_BROADCAST,)

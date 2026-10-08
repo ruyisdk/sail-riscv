@@ -23,7 +23,6 @@ class MsllEw(Instruction):
 
     name = "msll.ew"
     summary = "shift every element left by its own modulo-reduced amount"
-    summary_zh = "每个元素按各自的取模归约位移量左移"
     subject = "integer shift semantic test cases."
     operands = (DESTINATION_OPERAND, FIRST_SOURCE_OPERAND, SECOND_SOURCE_OPERAND)
 

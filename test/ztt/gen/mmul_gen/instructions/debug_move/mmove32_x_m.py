@@ -23,7 +23,6 @@ class Mmove32XM(Instruction):
 
     name = "mmove32.x.m"
     summary = "read one 32-bit scalar back out of an M register element"
-    summary_zh = "从 M 寄存器的指定元素读回一个 32 位标量"
     subject = "debug move semantic test cases."
     operands = (SCALAR_DESTINATION_OPERAND, M_TRANSFER_OPERAND, SCALAR_POSITION_OPERAND)
     templates = (DEBUG_MOVE32,)

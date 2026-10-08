@@ -7,10 +7,6 @@
 
 from __future__ import annotations
 
-DOC_ZH = """\
-无竞争时获取后端：所有权被授予且可观察。
-"""
-
 from typing import TYPE_CHECKING
 
 from mmul_gen.machine import MachineConfig
@@ -30,7 +26,6 @@ if TYPE_CHECKING:
 class AcquireReleaseState(BackendCase):
     """Ownership taken without contention is reported and observable."""
 
-    summary_zh = "无竞争地取得所有权，状态可观察。"
     name = "acquire_release_state"
 
     def render(

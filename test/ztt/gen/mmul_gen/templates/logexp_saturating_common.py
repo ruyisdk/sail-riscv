@@ -18,14 +18,6 @@ group and again for the 128-bit group.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-饱和 log/exp 用例的共享形态。
-
-饱和用例检查两件独立的事情：结果钳到最大可表示值，*并且*运算通过 ``amexsat`` 报告了饱和。两者都被断言，因此错误结果与缺失状态位不会互相掩盖。
-
-该组有自己的模板，因为它的 datatype 域是饱和描述符而不是普通描述符，也因为这些用例单独编号——``# saturating case 0`` 在饱和组重新开始，在 128 位组再重新开始。
-"""
-
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 

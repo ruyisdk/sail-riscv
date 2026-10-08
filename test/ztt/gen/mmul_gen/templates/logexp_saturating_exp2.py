@@ -12,12 +12,6 @@ exactly the situation the saturating variant exists for: the result clamps and
 
 from __future__ import annotations
 
-DOC_ZH = """\
-就地求 2 的幂的饱和用例。
-
-对宽值就地取幂会使窄描述符上溢，这正是饱和变体存在的情形：结果被钳位，``amexsat`` 报告它。
-"""
-
 from typing import TYPE_CHECKING
 
 from mmul_gen.asm import repeated_square_lines
@@ -33,7 +27,6 @@ if TYPE_CHECKING:
 class Exp2SaturatingBoundary(SaturatingLogExpTemplate):
     """Raise two to a power that the descriptor cannot hold."""
 
-    summary_zh = "对描述符无法容纳的指数求 2 的幂。"
     name = "exp2_saturating_boundary"
 
     def saturating_operand_lines(

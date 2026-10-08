@@ -40,7 +40,6 @@ class MachineConfigTests(unittest.TestCase):
             with self.subTest(domain=domain.name):
                 self.assertTrue(domain.name)
                 self.assertTrue(domain.description)
-                self.assertTrue(domain.description_zh)
                 self.assertTrue(domain(self.machine(8)))
 
     def test_semantic_and_formed_domains_track_uds(self) -> None:

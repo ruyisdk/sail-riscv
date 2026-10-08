@@ -7,10 +7,6 @@
 
 from __future__ import annotations
 
-DOC_ZH = """\
-未持有时释放后端：释放必须是空操作。
-"""
-
 from typing import TYPE_CHECKING
 
 from mmul_gen.machine import MachineConfig
@@ -28,7 +24,6 @@ if TYPE_CHECKING:
 class ReleaseIdleState(BackendCase):
     """Releasing an unowned backend is a no-op that leaves it idle."""
 
-    summary_zh = "释放未持有的后端是空操作，后端保持 idle。"
     name = "busy_state"
 
     def render(

@@ -23,7 +23,6 @@ class McolshiftEwX(Instruction):
 
     name = "mcolshift.ew.x"
     summary = "shift every row by a signed column amount, zero-filling the edge"
-    summary_zh = "按带符号的列位移量平移每一行，移出有效方阵的部分补零"
     subject = "row/column semantic test cases."
     operands = (DESTINATION_OPERAND, SCALAR_SOURCE_OPERAND, FIRST_SOURCE_OPERAND)
     templates = (COLUMN_SHIFT,)

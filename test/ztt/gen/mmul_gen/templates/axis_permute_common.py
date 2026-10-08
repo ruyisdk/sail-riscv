@@ -23,22 +23,12 @@ checked twice.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-行/列控制模板的共享形态。
-
-该家族每条指令都把线性斜坡 ``1..nelem`` 加载进 ``m0``，施加一个行/列操作，存储目的方阵，并抽样同样的五个元素位置。指令之间只有两处不同：操作的操作数行和它应产生的值。
-
-每条指令运行一小组*输入用例*——从第一列或最后一列广播、正向或反向平移等。这些是用例，不是模板：每条指令一个模板，按每个 datatype 的每个输入用例发射一个用例，从而保持同一 datatype 的所有输入用例在一起，并让驱动器继续为整个文件编号。
-
-抽样位置是元组 ``(0, 1, n-1, n, nelem-1)``，重复项也保留：在 ``n = 2`` 时第二、三项重合，该元素会被检查两次。
-"""
-
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from mmul_gen.asm import check_dst_element_lines, data_element_lines
-from mmul_gen.case_description import description_zh
+from mmul_gen.case_description import description
 from mmul_gen.machine import INTEGER, MachineConfig, dtype_stem
 from mmul_gen.registers import choose_m_group_base
 from mmul_gen.templates.base import Case, CaseOutput, Template, case_payload
@@ -142,7 +132,7 @@ class AxisPermuteTemplate(Template, family_base=True):
                     input_case=input_case,
                     expected=tuple(self.expected_values(machine, source, input_case)),
                 ),
-                description=description_zh(input_case),
+                description=description(input_case),
             )
             for input_case in self.input_cases
         ]

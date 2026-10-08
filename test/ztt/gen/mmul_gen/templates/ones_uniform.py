@@ -10,12 +10,6 @@ the renderer, the datatype domain, and the resource predicate."""
 
 from __future__ import annotations
 
-DOC_ZH = """\
-全 1 乘积模板。
-
-``OnesUniform128`` 复用 ``OnesUniform`` 的用例构造器，只替换渲染器、datatype 域和资源谓词。
-"""
-
 from typing import TYPE_CHECKING
 
 from dataclasses import dataclass
@@ -57,7 +51,6 @@ class OnesUniformPayload:
 class OnesUniform(Template):
     """All-ones integer product with a cleared accumulator."""
 
-    summary_zh = "累加器清零后的全 1 整数乘积。"
     name = "ones_uniform"
     dtypes = INTEGER
 
@@ -144,7 +137,6 @@ class OnesUniform(Template):
 class OnesUniform128(OnesUniform):
     """All-ones 128-bit integer product spanning several M registers."""
 
-    summary_zh = "跨多个 M 寄存器的全 1 128 位整数乘积。"
     name = "ones_uniform_128"
     dtypes = INTEGER128
 

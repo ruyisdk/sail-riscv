@@ -15,12 +15,6 @@ is computed here in one place and checked byte-for-byte by
 
 from __future__ import annotations
 
-DOC_ZH = """\
-步长内存搬运的段布局与字节期望。
-
-步长搬运按步长走过一个方阵的*段*：普通搬运每段一个元素，转置搬运每段一个方阵列，打包（仅存储）搬运每段填入 ``UDS / element_bits`` 个方阵。地址算术就是整个测试，因此它在这里集中计算，并由 ``tests/test_strided_memory_parity.py`` 逐字节校验。
-"""
-
 from dataclasses import dataclass
 
 from mmul_gen.asm import (

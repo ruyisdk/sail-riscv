@@ -30,7 +30,6 @@ class Mexp2Ew(LogExpInstruction):
 
     name = "mexp2.ew"
     summary = "raise two to each element's exponent"
-    summary_zh = "以 2 为底、每个元素为指数求幂"
     subject = "integer log/exp test cases."
     operands = (DESTINATION_OPERAND, FIRST_SOURCE_OPERAND)
     templates = (

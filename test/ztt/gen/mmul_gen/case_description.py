@@ -3,113 +3,116 @@
 # Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
 # SPDX-License-Identifier: BSD-3-Clause-Clear
 #
-"""Chinese text of every ``# input:`` case description the generator emits.
+"""English text of every ``# input:`` case description the generator emits.
 
 The templates address their input cases by stable identifiers, and the same
 identifier also names the case in the design document.  This module is the one
-place that turns such an identifier into the Chinese text the generated
-assembly comment and the design document carry, so the delivered prose has a
-single source and cannot drift from a translation kept beside it.
+place that turns such an identifier into the text the generated assembly
+comment carries, so the emitted prose has a single source and cannot drift from
+a translation kept beside it.
+
+The design document is Chinese; its wording lives in
+``doc/ztt_case_text_zh.json``, keyed by the English text this module returns.
 
 A name with no entry is a generator defect: emitting the identifier instead
-would leave an untranslated comment in a delivered document, so the lookup
-fails loudly.
+would leave an undescribed comment in a delivered source, so the lookup fails
+loudly.
 """
 
 from __future__ import annotations
 
-#: Chinese text of the row/column control input cases.
-ROW_COLUMN_CASES_ZH: dict[str, str] = {
-    "coordinate_ramp": "坐标斜坡",
-    "first_column": "首列",
-    "last_column": "末列",
-    "first_row": "首行",
-    "last_row": "末行",
-    "forward_shift": "正向平移",
-    "reverse_shift": "反向平移",
+#: Text of the row/column control input cases.
+ROW_COLUMN_CASES: dict[str, str] = {
+    "coordinate_ramp": "coordinate ramp",
+    "first_column": "first column",
+    "last_column": "last column",
+    "first_row": "first row",
+    "last_row": "last row",
+    "forward_shift": "forward shift",
+    "reverse_shift": "reverse shift",
 }
 
-#: Chinese text of the packed-slot input cases.
-PACKED_SLOT_CASES_ZH: dict[str, str] = {
-    "selected_slot": "选中槽位",
-    "preserved_slot": "保留槽位",
-    "signed_boundary_values": "有符号边界值",
+#: Text of the packed-slot input cases.
+PACKED_SLOT_CASES: dict[str, str] = {
+    "selected_slot": "selected slot",
+    "preserved_slot": "preserved slot",
+    "signed_boundary_values": "signed boundary values",
 }
 
-#: Chinese text of the packed accumulator-span input cases.
-SPAN_CASES_ZH: dict[str, str] = {
-    "span_low": "低端打包累加器跨度",
-    "span_high": "高端打包累加器跨度",
-    "overlapping_readback": "重叠读回",
-    "crossing_span": "跨累加器文件末端的跨度",
-    "unsupported_span": "不支持的跨度",
+#: Text of the packed accumulator-span input cases.
+SPAN_CASES: dict[str, str] = {
+    "span_low": "low packed accumulator span",
+    "span_high": "high packed accumulator span",
+    "overlapping_readback": "overlapping readback",
+    "crossing_span": "span crossing the end of the accumulator file",
+    "unsupported_span": "unsupported span",
 }
 
-#: Chinese text of the case names that double as template names.
-TEMPLATE_CASES_ZH: dict[str, str] = {
-    "supported_dtype_roundtrip": "受支持 datatype 的往返",
-    "physical_image_and_register_edge": "物理镜像与寄存器边界",
-    "roundtrip_with_boundary_values": "边界值往返",
-    "row_column_roundtrip_with_edge_checks": "行/列往返并检查边界",
-    "position_roundtrip_and_memory_image": "位置往返与内存镜像",
-    "acquire_release_state": "获取与释放状态",
-    "busy_state": "忙状态",
-    "acc_to_m": "累加器读回 M 寄存器",
-    "m_to_acc": "M 寄存器搬入累加器",
-    "zero_acc": "累加器清零",
-    "zero_m": "M 寄存器清零",
+#: Text of the case names that double as template names.
+TEMPLATE_CASES: dict[str, str] = {
+    "supported_dtype_roundtrip": "round trip of a supported datatype",
+    "physical_image_and_register_edge": "physical image and register edge",
+    "roundtrip_with_boundary_values": "round trip with boundary values",
+    "row_column_roundtrip_with_edge_checks": "row/column round trip with edge checks",
+    "position_roundtrip_and_memory_image": "position round trip and memory image",
+    "acquire_release_state": "acquire and release state",
+    "busy_state": "busy state",
+    "acc_to_m": "accumulator read back into an M register",
+    "m_to_acc": "M register moved into an accumulator",
+    "zero_acc": "accumulator zeroed",
+    "zero_m": "M register zeroed",
 }
 
-#: Chinese text of the integer-shift input case.
-INTEGER_SHIFT_CASE_ZH: dict[str, str] = {
+#: Text of the integer-shift input case.
+INTEGER_SHIFT_CASE: dict[str, str] = {
     "sign and width edge values with modulo-reduced shift amounts": (
-        "符号与位宽边界值，位移量按元素宽度取模"
+        "sign and width edge values with modulo-reduced shifts"
     ),
 }
 
-#: Chinese text of the floating-point special-value cases.
-FLOAT_SPECIAL_CASES_ZH: dict[str, str] = {
-    "signed_zero": "有符号零",
-    "negative_infinity": "负无穷",
-    "negative_qnan": "负 quiet NaN",
+#: Text of the floating-point special-value cases.
+FLOAT_SPECIAL_CASES: dict[str, str] = {
+    "signed_zero": "signed zero",
+    "negative_infinity": "negative infinity",
+    "negative_qnan": "negative quiet NaN",
     "quiet_nan": "quiet NaN",
     "signaling_nan": "signaling NaN",
-    "positive_infinity": "正无穷",
-    "infinity_minus_infinity": "无穷减无穷",
-    "zero_times_infinity": "零乘无穷",
+    "positive_infinity": "positive infinity",
+    "infinity_minus_infinity": "infinity minus infinity",
+    "zero_times_infinity": "zero times infinity",
 }
 
-#: Every case name the generator may emit, mapped to its Chinese text.
-CASE_DESCRIPTION_ZH: dict[str, str] = {
-    **ROW_COLUMN_CASES_ZH,
-    **PACKED_SLOT_CASES_ZH,
-    **SPAN_CASES_ZH,
-    **TEMPLATE_CASES_ZH,
-    **INTEGER_SHIFT_CASE_ZH,
-    **FLOAT_SPECIAL_CASES_ZH,
+#: Every case name the generator may emit, mapped to its text.
+CASE_DESCRIPTION: dict[str, str] = {
+    **ROW_COLUMN_CASES,
+    **PACKED_SLOT_CASES,
+    **SPAN_CASES,
+    **TEMPLATE_CASES,
+    **INTEGER_SHIFT_CASE,
+    **FLOAT_SPECIAL_CASES,
 }
 
 
-def description_zh(case_name: str) -> str:
-    """The Chinese description of one case name.
+def description(case_name: str) -> str:
+    """The description of one case name.
 
     The name is the generator's own case identifier; an unknown name is a
     defect rather than a value to fall back on, so the lookup raises.
     """
 
     try:
-        return CASE_DESCRIPTION_ZH[case_name]
+        return CASE_DESCRIPTION[case_name]
     except KeyError:
-        raise KeyError(f"no Chinese case description for {case_name!r}") from None
+        raise KeyError(f"no case description for {case_name!r}") from None
 
 
 __all__ = [
-    "CASE_DESCRIPTION_ZH",
-    "FLOAT_SPECIAL_CASES_ZH",
-    "INTEGER_SHIFT_CASE_ZH",
-    "PACKED_SLOT_CASES_ZH",
-    "ROW_COLUMN_CASES_ZH",
-    "SPAN_CASES_ZH",
-    "TEMPLATE_CASES_ZH",
-    "description_zh",
+    "CASE_DESCRIPTION",
+    "FLOAT_SPECIAL_CASES",
+    "INTEGER_SHIFT_CASE",
+    "PACKED_SLOT_CASES",
+    "ROW_COLUMN_CASES",
+    "SPAN_CASES",
+    "TEMPLATE_CASES",
+    "description",
 ]

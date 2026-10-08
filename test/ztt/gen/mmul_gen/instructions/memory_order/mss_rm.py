@@ -15,6 +15,10 @@ from mmul_gen.instruction import (
 from mmul_gen.templates.memory_order_col_to_row import (
     MEMORY_ORDER_COL_TO_ROW,
 )
+from mmul_gen.templates.store_fault_atomicity import (
+    StoreFaultAtomicity,
+    StoreForm,
+)
 
 
 class MssRm(Instruction):
@@ -22,10 +26,12 @@ class MssRm(Instruction):
 
     name = "mss.rm"
     summary = "store one M register with row-major addressing"
-    summary_zh = "以行主序寻址存储一个 M 寄存器"
     subject = "row/column-major memory-order test cases."
     operands = (M_TRANSFER_OPERAND, SCALAR_DESTINATION_OPERAND)
-    templates = (MEMORY_ORDER_COL_TO_ROW,)
+    templates = (
+        MEMORY_ORDER_COL_TO_ROW,
+        StoreFaultAtomicity(StoreForm("rm", strided=False)),
+    )
 
 
 __all__ = ["MssRm"]

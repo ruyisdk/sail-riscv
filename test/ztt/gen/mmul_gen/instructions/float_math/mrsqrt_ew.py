@@ -22,7 +22,6 @@ class MrsqrtEw(FloatMathInstruction):
 
     name = "mrsqrt.ew"
     summary = "reciprocal square root of each element"
-    summary_zh = "对每个元素取倒数平方根"
     operands = (DESTINATION_OPERAND, FIRST_SOURCE_OPERAND)
     templates = (
         FloatMathCases(MathOperation.RECIPROCAL_SQRT),

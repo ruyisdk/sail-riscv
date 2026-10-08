@@ -25,7 +25,6 @@ class MrdexpaccEw(LogExpInstruction):
 
     name = "mrdexpacc.ew"
     summary = "accumulate a reconstructed mantissa"
-    summary_zh = "累加重建后的尾数"
     subject = "integer log/exp test cases."
     operands = (DESTINATION_OPERAND, FIRST_SOURCE_OPERAND, SECOND_SOURCE_OPERAND)
     templates = (

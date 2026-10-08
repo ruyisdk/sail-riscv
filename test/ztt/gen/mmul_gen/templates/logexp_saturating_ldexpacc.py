@@ -12,12 +12,6 @@ reaches saturation through its accumulator rather than through its exponent.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-缩放累加的饱和用例。
-
-把一个可表示值缩放后累加进以最大可表示值播种的目的方阵，按构造就会上溢，因此累加形式通过累加器而不是指数到达饱和。
-"""
-
 from typing import TYPE_CHECKING
 
 from mmul_gen.asm import repeated_square_lines
@@ -36,7 +30,6 @@ if TYPE_CHECKING:
 class LdexpaccSaturatingBoundary(SaturatingLogExpTemplate):
     """Accumulate a scaled mantissa into a maximal accumulator."""
 
-    summary_zh = "将缩放后的尾数累加进已达最大值的累加器。"
     name = "ldexpacc_saturating_boundary"
 
     def saturating_operand_lines(

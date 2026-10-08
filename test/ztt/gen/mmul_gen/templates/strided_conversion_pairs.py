@@ -14,12 +14,6 @@ than through bit preservation alone.  Pair ``0`` is the unsigned pair and pair
 
 from __future__ import annotations
 
-DOC_ZH = """\
-打包镜像的步长搬运，其方阵被转换并扩展。
-
-第三种步长内存配方：存储描述符是有效 UDS 的一半，并在满 UDS 处有同符号性对应者，因此搬运通过真实转换检查——进入时扩展，退出时收窄——而不是只靠位保持。配对 ``0`` 是无符号对，配对 ``1`` 是有符号对，这是标签打印的旧编号。
-"""
-
 from typing import TYPE_CHECKING, cast
 
 from mmul_gen.machine import (
@@ -49,7 +43,6 @@ MIN_PAIR_SEGMENT_STRIDE = 8
 class StridedConversionPairs(Template):
     """A half-UDS image widened to its full-UDS twin, one conversion pair at a time."""
 
-    summary_zh = "将半个 UDS 的镜像逐个转换对扩展为其满 UDS 的对应方阵。"
     name = "strided_conversion_pairs"
     dtypes = STRIDED_CONVERSION
 

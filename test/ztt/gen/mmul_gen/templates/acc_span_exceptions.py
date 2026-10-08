@@ -19,15 +19,6 @@ discipline as a positive test:
 
 from __future__ import annotations
 
-DOC_ZH = """\
-打包累加器跨度的两条边界路径。
-
-两者都是“搬运必须不发生”的用例，并且与正向用例按同样的标准检查：
-
-* ``pack_factor`` 大于累加器文件时置位 ``amestatus.UN`` 且不写入任何内容——通过读回目的方阵、确认整个 poison 镜像完好来证明。
-* 跨度越过文件末尾属于非法指令且没有部分写入——先经陷阱守护证明，再读回该跨度的*每一个*累加器：用例故意清零的那个累加器读为 0，其余仍读为 poison。
-"""
-
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
@@ -74,7 +65,6 @@ class SpanException:
 class AccumulatorSpanExceptions(Template):
     """Emit the ``amestatus.UN`` and illegal-span boundary paths."""
 
-    summary_zh = "发射 `amestatus.UN` 与非法跨度两条边界路径。"
     name = "acc_span_exceptions"
     dtypes = PACKED_INTEGER
 

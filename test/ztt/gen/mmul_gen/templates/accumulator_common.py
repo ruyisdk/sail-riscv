@@ -25,21 +25,11 @@ the template's Chinese name.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-累加器工具模板的共享形态。
-
-每个用例把一个寄存器文件清零并把结果拷贝到另一个，因此一次全零镜像检查同时证明三件事：清零写满了整个操作数、拷贝搬移了整个操作数、操作数之外没有被扰动。四条指令之间只有操作不同，因此操作是钩子，管线逻辑放在这里。
-
-与矩阵乘用例不同，工具每条用例只触及一个累加器，因此这些模板轮转*每一个*合法累加器，而不是 low/boundary/high 代表性子集：跳过中间的累加器会让它得不到测试。
-
-``# input:`` 标签发在寄存器布局注释*之后*，与 type-register 家族相反。这就是这些用例不携带 ``description``、而由 ``render`` 发射标签的原因：驱动器先写布局注释，再写模板的文本，标签取模板的中文名。
-"""
-
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, ClassVar
 
 from mmul_gen.asm import load_byte_lines
-from mmul_gen.case_description import description_zh
+from mmul_gen.case_description import description
 from mmul_gen.machine import INTEGER, MachineConfig, dtype_stem
 from mmul_gen.registers import (
     MRegisterRole,
@@ -173,7 +163,7 @@ class AccumulatorUtilityTemplate(Template, family_base=True):
 
         out.text.extend(
             [
-                f"    # input: {description_zh(self.name)}",
+                f"    # input: {description(self.name)}",
                 f"    # case {case.number}: {instruction.name} {case.dtype.name}",
                 f"    li      t0, {case.dtype.name}",
                 *self.operation_lines(instruction, case.layout, destination_label),

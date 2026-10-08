@@ -26,7 +26,6 @@ class McolscataddEw(MatrixOpsInstruction):
 
     name = "mcolscatadd.ew"
     summary = "scatter-add columns through an index table"
-    summary_zh = "通过索引表按列散射相加"
     subject = "gather/scatter test cases."
     operands = (DESTINATION_OPERAND, FIRST_SOURCE_OPERAND, SECOND_SOURCE_OPERAND)
     templates = (

@@ -7,10 +7,6 @@
 
 from __future__ import annotations
 
-DOC_ZH = """\
-有竞争时获取后端：请求被拒绝且不改变任何状态。
-"""
-
 from typing import TYPE_CHECKING
 
 from mmul_gen.machine import MachineConfig
@@ -30,7 +26,6 @@ if TYPE_CHECKING:
 class AcquireBusyState(BackendCase):
     """A contended request is refused and leaves the backend unowned."""
 
-    summary_zh = "有竞争时请求被拒绝，后端保持未持有。"
     name = "busy_state"
 
     def render(

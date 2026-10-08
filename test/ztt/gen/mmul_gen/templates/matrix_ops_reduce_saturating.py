@@ -13,12 +13,6 @@ mask each other.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-归约或前缀运算的饱和用例。
-
-对已经持有最大可表示值的方阵做归约无法产生可表示结果，因此运算必须钳位*并且*报告饱和。两者都被断言：错误结果与缺失状态位不会互相掩盖。
-"""
-
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
@@ -35,7 +29,6 @@ if TYPE_CHECKING:
 class ReducePrefixSaturating(Template):
     """Clamp a reduce of the all-maximum square and report saturation."""
 
-    summary_zh = "对全最大值方阵的归约结果做钳位，并报告饱和。"
     name = "reduce_saturating_boundary"
     dtypes = SATURATING_INTEGER
 

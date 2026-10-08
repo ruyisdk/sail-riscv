@@ -15,12 +15,6 @@ step instead.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-elementwise 整数配方的期望结果。
-
-每个期望都是交给整数模板的算式的结果——指令自己的 ``evaluate``——由用例发射的操作数算出，并按元素宽度重新编码。算式是传入的，而不是从指令上查来的，因此模板携带它所检查的内容；这条路径不查阅共享 oracle ``numeric_reference``，而是由测试让两者保持一致。
-"""
-
 from collections.abc import Callable
 
 from mmul_gen.machine import dtype_is_signed_int

@@ -16,18 +16,10 @@ Each builds exactly one case whose expected values are architecture constants.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-后端状态模板的共享形态与架构常量。
-
-所有权握手由请求掩码驱动、通过状态 CSR 观察，四个场景都用同一对，因此它们放在这里而不是各自的场景文件里。
-
-所有权是状态机属性而不是数据布局属性：这些模板没有 datatype 维度、没有寄存器布局、也没有数据段。每个模板只构造一个用例，其期望值是架构常量。
-"""
-
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
-from mmul_gen.case_description import description_zh
+from mmul_gen.case_description import description
 from mmul_gen.machine import MachineConfig
 from mmul_gen.templates.base import Case, Template
 
@@ -59,7 +51,7 @@ class BackendCase(Template, family_base=True):
     def build(
         self, machine: MachineConfig, instruction: Instruction, dtype: None = None
     ) -> Sequence[Case]:
-        return [Case(number=1, dtype=None, description=description_zh(self.name))]
+        return [Case(number=1, dtype=None, description=description(self.name))]
 
 
 __all__ = [

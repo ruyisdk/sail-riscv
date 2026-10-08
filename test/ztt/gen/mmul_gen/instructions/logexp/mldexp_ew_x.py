@@ -25,7 +25,6 @@ class MldexpEwX(LogExpInstruction):
 
     name = "mldexp.ew.x"
     summary = "scale a mantissa square by one scalar exponent"
-    summary_zh = "按同一标量指数缩放尾数方阵"
     subject = "integer log/exp test cases."
     operands = (DESTINATION_OPERAND, SCALAR_SOURCE_OPERAND, FIRST_SOURCE_OPERAND)
     templates = (

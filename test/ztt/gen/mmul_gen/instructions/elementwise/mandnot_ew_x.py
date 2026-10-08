@@ -22,7 +22,6 @@ class MandnotEwX(ElementwiseInstruction):
 
     name = "mandnot.ew.x"
     summary = "bitwise and-not of a scalar and a matrix operand"
-    summary_zh = "标量与矩阵操作数逐元素按位与非"
     subject = "elementwise test cases."
     operands = ()
     form = ElementwiseForm.BINARY_X

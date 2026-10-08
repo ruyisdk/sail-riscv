@@ -18,14 +18,6 @@ template: ``expectation`` says which end of the range the result clamps to, and
 
 from __future__ import annotations
 
-DOC_ZH = """\
-饱和 elementwise 配方：必须置位 amexsat 的边界操作数。
-
-elementwise 指令中只有七条会饱和，每条都需要不同的操作数对把结果推出范围：给 datatype 最大值加一、最大值乘二、从下界做减法等。每个用例在运算前清除 amexsat，运算后要求它被置位，然后把目的方阵与饱和值比较。
-
-指令自己陈述这两半，作为其饱和模板的两个参数：``expectation`` 指出结果钳到范围的哪一端，``plan`` 指出哪些方阵把它推过去。
-"""
-
 from dataclasses import dataclass
 from enum import Enum
 
@@ -149,7 +141,7 @@ def saturating_case_lines(
         "    csrw    amexsat, t6",
     ]
     if form in (ElementwiseForm.BINARY_X, ElementwiseForm.TERNARY_X):
-        lines.insert(-1, "    csrw    ame_scalar_dtype, t0")
+        lines.insert(-1, "    csrw    amestype, t0")
     lines.extend(
         plan_lines(
             plan,

@@ -35,7 +35,6 @@ class MabsEw(ElementwiseInstruction):
 
     name = "mabs.ew"
     summary = "absolute value of a matrix operand"
-    summary_zh = "对矩阵操作数逐元素取绝对值"
     subject = "elementwise test cases."
     operands = ()
     form = ElementwiseForm.UNARY_ABS

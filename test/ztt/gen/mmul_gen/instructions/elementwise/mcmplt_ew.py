@@ -25,7 +25,6 @@ class McmpltEw(ElementwiseInstruction):
 
     name = "mcmplt.ew"
     summary = "compare less-than of two matrix operands"
-    summary_zh = "两个矩阵操作数逐元素比较小于"
     subject = "elementwise test cases."
     operands = ()
     form = ElementwiseForm.BINARY_M

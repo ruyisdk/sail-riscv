@@ -26,7 +26,6 @@ class MmaxEw(ElementwiseInstruction):
 
     name = "mmax.ew"
     summary = "maximum of two matrix operands"
-    summary_zh = "两个矩阵操作数逐元素取最大值"
     subject = "elementwise test cases."
     operands = ()
     form = ElementwiseForm.BINARY_M

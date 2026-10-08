@@ -22,7 +22,6 @@ class MsinEw(FloatMathInstruction):
 
     name = "msin.ew"
     summary = "sine of each element"
-    summary_zh = "对每个元素取正弦"
     operands = (DESTINATION_OPERAND, FIRST_SOURCE_OPERAND)
     templates = (
         FloatMathCases(MathOperation.SIN),

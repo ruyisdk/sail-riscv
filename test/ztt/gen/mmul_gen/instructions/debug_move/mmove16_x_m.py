@@ -23,7 +23,6 @@ class Mmove16XM(Instruction):
 
     name = "mmove16.x.m"
     summary = "read one 16-bit scalar back out of an M register element"
-    summary_zh = "从 M 寄存器的指定元素读回一个 16 位标量"
     subject = "debug move semantic test cases."
     operands = (SCALAR_DESTINATION_OPERAND, M_TRANSFER_OPERAND, SCALAR_POSITION_OPERAND)
     templates = (DEBUG_MOVE16,)

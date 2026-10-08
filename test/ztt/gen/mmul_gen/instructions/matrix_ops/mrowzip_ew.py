@@ -27,7 +27,6 @@ class MrowzipEw(MatrixOpsInstruction):
 
     name = "mrowzip.ew"
     summary = "interleave two source squares into one row stream"
-    summary_zh = "将两个源方阵交错合并为一路行流"
     subject = "zip/unzip test cases."
     operands = (FIRST_SOURCE_OPERAND, SECOND_SOURCE_OPERAND)
     templates = (

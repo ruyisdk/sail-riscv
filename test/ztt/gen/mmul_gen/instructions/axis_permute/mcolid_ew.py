@@ -21,7 +21,6 @@ class McolidEw(Instruction):
 
     name = "mcolid.ew"
     summary = "fill every element with its own column coordinate"
-    summary_zh = "以元素的列坐标填充每个元素"
     subject = "row/column semantic test cases."
     operands = (DESTINATION_OPERAND,)
     templates = (COLUMN_INDEX,)

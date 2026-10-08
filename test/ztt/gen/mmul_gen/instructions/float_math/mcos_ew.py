@@ -22,7 +22,6 @@ class McosEw(FloatMathInstruction):
 
     name = "mcos.ew"
     summary = "cosine of each element"
-    summary_zh = "对每个元素取余弦"
     operands = (DESTINATION_OPERAND, FIRST_SOURCE_OPERAND)
     templates = (
         FloatMathCases(MathOperation.COS),

@@ -22,7 +22,6 @@ class MmovMM(ElementwiseInstruction):
 
     name = "mmov.m.m"
     summary = "move between matrix operands"
-    summary_zh = "在矩阵操作数之间搬移"
     subject = "elementwise test cases."
     operands = ()
     form = ElementwiseForm.MOVE_M

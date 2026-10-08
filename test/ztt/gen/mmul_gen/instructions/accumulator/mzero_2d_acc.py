@@ -21,7 +21,6 @@ class Mzero2dAcc(Instruction):
 
     name = "mzero.2d.acc"
     summary = "zero one accumulator and prove the accumulator file came out clean"
-    summary_zh = "将一个累加器清零，并验证整个累加器文件保持干净"
     subject = "accumulator test cases."
     operands = (ACCUMULATOR_OPERAND,)
     templates = (ACCUMULATOR_ZERO_ACC,)

@@ -22,7 +22,6 @@ class MselltEw(ElementwiseInstruction):
 
     name = "msellt.ew"
     summary = "select on less-than of two matrix operands"
-    summary_zh = "按小于条件在两个矩阵操作数之间逐元素选择"
     subject = "elementwise test cases."
     operands = ()
     form = ElementwiseForm.BINARY_M

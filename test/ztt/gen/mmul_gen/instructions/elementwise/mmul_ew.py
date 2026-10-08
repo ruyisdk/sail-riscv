@@ -39,7 +39,6 @@ class MmulEw(ElementwiseInstruction):
 
     name = "mmul.ew"
     summary = "multiply of two matrix operands"
-    summary_zh = "两个矩阵操作数逐元素相乘"
     subject = "elementwise test cases."
     operands = ()
     form = ElementwiseForm.BINARY_M

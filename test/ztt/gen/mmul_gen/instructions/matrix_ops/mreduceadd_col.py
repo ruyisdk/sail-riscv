@@ -19,17 +19,20 @@ from mmul_gen.instructions.matrix_ops.base import (
 from mmul_gen.templates.matrix_ops_reduce_ramp import (
     ReducePrefixRamp,
 )
+from mmul_gen.templates.matrix_ops_saturating_fold import (
+    ReducePrefixSaturatingFold,
+)
 
 class MreduceaddCol(MatrixOpsInstruction):
     """Sum each column and replicate it down the column."""
 
     name = "mreduceadd.col"
     summary = "sum each column and replicate it down the column"
-    summary_zh = "求每列元素之和并沿该列复制"
     subject = "reduce/prefix test cases."
     operands = (DESTINATION_OPERAND, FIRST_SOURCE_OPERAND)
     templates = (
         ReducePrefixRamp(MatrixAxis.COLUMN, Reduction.SUM),
+        ReducePrefixSaturatingFold(MatrixAxis.COLUMN),
     )
 
 __all__ = ["MreduceaddCol"]

@@ -7,10 +7,6 @@
 
 from __future__ import annotations
 
-DOC_ZH = """\
-位置相关的小矩阵乘积模板。
-"""
-
 from dataclasses import dataclass
 
 from mmul_gen.asm import (
@@ -45,7 +41,6 @@ class MatrixSmallPayload:
 class MatrixSmall(Template):
     """Position-dependent small-matrix product with transposed/negated variants."""
 
-    summary_zh = "位置相关的小矩阵乘积，含转置与取负变体。"
     name = "matrix_small"
     dtypes = INTEGER
 

@@ -22,7 +22,6 @@ class MfrintpEw(FloatMathInstruction):
 
     name = "mfrintp.ew"
     summary = "round each element toward plus infinity"
-    summary_zh = "将每个元素向正无穷方向舍入"
     operands = (DESTINATION_OPERAND, FIRST_SOURCE_OPERAND)
     templates = (
         FloatMathCases(MathOperation.CEIL),

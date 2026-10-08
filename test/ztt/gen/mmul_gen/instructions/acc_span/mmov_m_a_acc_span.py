@@ -18,7 +18,6 @@ class MmovMAAccSpan(Instruction):
 
     name = "mmov.m.a"
     summary = "write a packed M square into a consecutive accumulator span"
-    summary_zh = "将打包的 M 方阵写入连续的累加器跨度"
     subject = "packed accumulator span test cases."
     operands = (ACCUMULATOR_OPERAND, FIRST_SOURCE_OPERAND)
     templates = (

@@ -12,12 +12,6 @@ value (1.0 for 32/64-bit, 1.0 for the 16-bit pair).
 
 from __future__ import annotations
 
-DOC_ZH = """\
-将一个浮点标量广播到每个元素。
-
-标量是原始位模式而不是数值字面量，因此没有主机浮点库决定编码：每种宽度都使用一个已知值的模式（32/64 位用 1.0，16 位那一对也用 1.0）。
-"""
-
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
@@ -40,7 +34,6 @@ if TYPE_CHECKING:
 class FloatingBroadcast(Template):
     """Broadcast a raw floating-point pattern into every element."""
 
-    summary_zh = "将原始浮点位模式广播到每个元素。"
     name = "floating_ingress"
     dtypes = SOFTFLOAT
 

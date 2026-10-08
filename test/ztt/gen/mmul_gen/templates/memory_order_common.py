@@ -21,19 +21,11 @@ row -- so the expectations are a generation-time function of N.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-行/列主序内存顺序模板的共享形态。
-
-用例以一种寻址模式（``mls.rm`` 或 ``mls.cm``）加载表，再以另一种（``mss.cm`` 或 ``mss.rm``）把同一个 M 寄存器存回。因此存储方阵通过有效方阵尺寸的 (行, 列) 重新编码线性元素索引：``rm`` -> ``cm`` 行程把元素 ``(r, c)`` 放到列主序偏移 ``c * N + r``，而 ``cm`` -> ``rm`` 行程恢复线性顺序。
-
-一次行程的两条助记符都在同一个用例内运行，因此加载与存储指令共用一个模板，只在横幅和 ``# case`` 标签上不同。三处边界检查钉死能区分两种顺序的两个元素——第二个元素和下一个存储行的第一个元素——因此期望是 N 的生成期函数。
-"""
-
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, ClassVar
 
 from mmul_gen.asm import data_element_lines, row_col_values
-from mmul_gen.case_description import description_zh
+from mmul_gen.case_description import description
 from mmul_gen.machine import (
     INTEGER,
     MachineConfig,
@@ -55,7 +47,6 @@ UNTOUCHED_BYTE = 0xA5
 class MemoryOrderTemplate(Template, family_base=True):
     """One direction of the row/column-major round trip."""
 
-    summary_zh = "行/列主序往返的一个方向。"
     name = INPUT_CASE
     dtypes = INTEGER
 
@@ -82,7 +73,7 @@ class MemoryOrderTemplate(Template, family_base=True):
             Case(
                 number=0,
                 dtype=dtype,
-                description=description_zh(self.name) if dtype == first else None,
+                description=description(self.name) if dtype == first else None,
             )
         ]
 

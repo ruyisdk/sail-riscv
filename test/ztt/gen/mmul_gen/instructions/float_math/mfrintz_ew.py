@@ -22,7 +22,6 @@ class MfrintzEw(FloatMathInstruction):
 
     name = "mfrintz.ew"
     summary = "round each element toward zero"
-    summary_zh = "将每个元素向零方向舍入"
     operands = (DESTINATION_OPERAND, FIRST_SOURCE_OPERAND)
     templates = (
         FloatMathCases(MathOperation.TRUNC),

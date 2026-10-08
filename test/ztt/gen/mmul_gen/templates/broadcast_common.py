@@ -27,16 +27,6 @@ some configuration might not produce.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-标量入口广播模板的共享形态。
-
-``mbcast.m.x`` 是一条指令，其单个输出文件依次走过七组 datatype：普通整数、128 位整数、饱和整数、饱和 128 位整数、打包存储、浮点，以及一个故意不支持的描述符。每组都是自己的模板，因为每组拥有自己的 datatype 域，而在组*内*给用例编号——每个组都从 ``# case 0`` 重新开始——因此用例号是 datatype 在自身模板域中的位置，而不是用例在文件中的位置。
-
-标量入口各组只在域上不同，因此共享下面的主体；打包存储、浮点与不支持 datatype 三组各自发射不同的内容，放在各自的模板文件里。
-
-与其他所有家族的一处不同：文件在第一个用例之前以一连串 ``# input:`` 注释给出完整的输入用例清单，而这一串不依赖配置。因此它是自己的一个无 datatype 模板，声明在最前，而不是挂在某个配置可能不产生的用例上的标签。
-"""
-
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 

@@ -14,17 +14,11 @@ exercised inside one case (load to seed, store to read back).
 
 from __future__ import annotations
 
-DOC_ZH = """\
-原始物理寄存器搬运：一个 M 寄存器作为不透明字节镜像移动。
-
-``mls.1r``/``mss.1r`` 恰好移动一个物理 M 寄存器——``nelem * uds / 8`` 字节——且从不查询描述符。因此描述符只决定汇编器接受哪种编码：字节镜像、寄存器边界与哨兵寄存器对每个描述符都相同，两条助记符都在同一个用例内演练（加载播种，存储读回）。
-"""
-
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from mmul_gen.asm import data_element_lines, load_byte_lines
-from mmul_gen.case_description import description_zh
+from mmul_gen.case_description import description
 from mmul_gen.machine import EVERY_DTYPE, MachineConfig, dtype_stem
 from mmul_gen.templates.base import Case, CaseOutput, Template
 
@@ -101,7 +95,6 @@ def fill_lines(label: str, byte_count: int, machine: MachineConfig) -> list[str]
 class RawTransfer(Template):
     """A fixed-size transfer reproduces its byte image for every descriptor."""
 
-    summary_zh = "固定大小的搬运为每个描述符复现其字节镜像。"
     name = "physical_image_and_register_edge"
     dtypes = EVERY_DTYPE
 
@@ -115,7 +108,7 @@ class RawTransfer(Template):
             Case(
                 number=0,
                 dtype=dtype,
-                description=description_zh(self.name) if dtype == first else None,
+                description=description(self.name) if dtype == first else None,
             )
         ]
 

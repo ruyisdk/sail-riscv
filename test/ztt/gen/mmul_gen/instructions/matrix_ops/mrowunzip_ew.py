@@ -27,7 +27,6 @@ class MrowunzipEw(MatrixOpsInstruction):
 
     name = "mrowunzip.ew"
     summary = "split one interleaved row stream into two"
-    summary_zh = "将一路交错的行流拆分为两路"
     subject = "zip/unzip test cases."
     operands = (FIRST_SOURCE_OPERAND, SECOND_SOURCE_OPERAND)
     templates = (

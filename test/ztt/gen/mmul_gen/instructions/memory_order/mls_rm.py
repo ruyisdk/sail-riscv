@@ -22,7 +22,6 @@ class MlsRm(Instruction):
 
     name = "mls.rm"
     summary = "load one M register with row-major addressing"
-    summary_zh = "以行主序寻址加载一个 M 寄存器"
     subject = "row/column-major memory-order test cases."
     operands = (M_TRANSFER_OPERAND, SCALAR_SOURCE_OPERAND)
     templates = (MEMORY_ORDER_ROW_TO_COL,)

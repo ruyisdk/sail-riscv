@@ -7,10 +7,6 @@
 
 from __future__ import annotations
 
-DOC_ZH = """\
-释放后端：状态寄存器必须回到 idle。
-"""
-
 from typing import TYPE_CHECKING
 
 from mmul_gen.machine import MachineConfig
@@ -31,7 +27,6 @@ if TYPE_CHECKING:
 class ReleaseState(BackendCase):
     """Releasing owned backend returns the state register to idle."""
 
-    summary_zh = "释放已持有的后端使状态寄存器回到 idle。"
     name = "acquire_release_state"
 
     def render(

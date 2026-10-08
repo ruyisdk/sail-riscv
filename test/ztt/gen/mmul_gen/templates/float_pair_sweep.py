@@ -7,10 +7,6 @@
 
 from __future__ import annotations
 
-DOC_ZH = """\
-可精确表示的浮点乘积与上溢扫描模板。
-"""
-
 from dataclasses import dataclass
 
 from mmul_gen.asm import (
@@ -60,7 +56,6 @@ class FloatOverflowPayload:
 class FloatPairSweep(Template):
     """Exactly representable float product plus a sign x rounding overflow sweep."""
 
-    summary_zh = "可精确表示的浮点乘积，外加符号 × 舍入的上溢扫描。"
     name = "float_pair_sweep"
     dtypes = SOFTFLOAT
 

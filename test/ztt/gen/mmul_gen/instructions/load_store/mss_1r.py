@@ -15,6 +15,10 @@ from mmul_gen.instruction import (
 from mmul_gen.templates.raw_transfer import (
     RAW_TRANSFER,
 )
+from mmul_gen.templates.store_fault_atomicity import (
+    StoreFaultAtomicity,
+    StoreForm,
+)
 
 
 class Mss1r(Instruction):
@@ -22,10 +26,12 @@ class Mss1r(Instruction):
 
     name = "mss.1r"
     summary = "store one physical M register to memory"
-    summary_zh = "将一个物理 M 寄存器存入内存"
     subject = "raw load/store test cases."
     operands = (M_TRANSFER_OPERAND, SCALAR_DESTINATION_OPERAND)
-    templates = (RAW_TRANSFER,)
+    templates = (
+        RAW_TRANSFER,
+        StoreFaultAtomicity(StoreForm("raw", strided=False)),
+    )
 
 
 __all__ = ["Mss1r"]

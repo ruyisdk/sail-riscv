@@ -14,12 +14,6 @@ poison/corrupt pair is what proves that a rejected transfer wrote nothing.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-两个打包累加器跨度配方共享的取值配方。
-
-打包（仅存储）datatype 使一个 M 寄存器容纳 ``pack_factor = UDS / element_bits`` 个方阵，因此一次搬运会移动整段累加器跨度。这里的配方让该跨度中的每个方阵在读回时可区分：每个方阵都有各自的取值，而 poison/corrupt 这一对用来证明被拒绝的搬运没有写入任何内容。
-"""
-
 from collections.abc import Sequence
 
 from mmul_gen.asm import check_dst_element_lines, repeated_square_lines

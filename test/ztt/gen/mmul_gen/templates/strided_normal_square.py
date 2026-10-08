@@ -14,12 +14,6 @@ generated source carries the whole datatype matrix.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-整方阵步长搬运，每段一个元素。
-
-三种步长内存配方的第一种，也是所有大于等于 UDS 的描述符采用的那种：步长加载每段读一个元素，步长存储每段写一个元素，步长为零时所有段重叠到同一地址。每个 datatype 都有私有标签，因为一个生成源承载整个 datatype 矩阵。
-"""
-
 from typing import TYPE_CHECKING, cast
 
 from mmul_gen.machine import SEMANTIC, MachineConfig, dtype_stem
@@ -44,7 +38,6 @@ MIN_SEGMENT_STRIDE = 16
 class StridedNormalSquare(Template):
     """A whole square moved one element per segment, for every semantic datatype."""
 
-    summary_zh = "每个语义 datatype 都按每段一个元素搬移整个方阵。"
     name = "strided_normal_square"
     dtypes = SEMANTIC
 

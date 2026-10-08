@@ -13,12 +13,6 @@ wrongly interleaved result visible.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-zip 或 unzip 运算的双源用例。
-
-加载两个斜坡，运算合并或拆分它们，结果的两半都被存储并检查。两个斜坡起始值相距足够远，使某个元素的值能说明它来自哪个源方阵，这正是让交错错误的结果可见的原因。
-"""
-
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
@@ -77,7 +71,6 @@ def checked_indices(machine: MachineConfig) -> tuple[int, ...]:
 class ZipDualSource(Template):
     """Merge or split two ramps and check both halves of the result."""
 
-    summary_zh = "合并或拆分两个斜坡，并检查结果的两半。"
     name = "zip_dual_source_ramp"
     dtypes = INTEGER
 

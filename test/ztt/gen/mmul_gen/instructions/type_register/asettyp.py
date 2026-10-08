@@ -25,7 +25,6 @@ class Asettyp(Instruction):
 
     name = "asettyp"
     summary = "write the datatype descriptor of an accumulator"
-    summary_zh = "写入累加器的 datatype 描述符"
     subject = "type-register roundtrip test cases."
     operands = (ACC_TYPE_OPERAND, SCALAR_SOURCE_OPERAND,)
     templates = (

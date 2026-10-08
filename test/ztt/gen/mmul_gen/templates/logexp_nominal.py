@@ -13,12 +13,6 @@ arguments, which is what lets one template cover all twelve instructions.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-标称整数 log/exp 用例，由所有指令共享。
-
-每个 datatype 一个用例：加载指令命名的源方阵，按指令命名的操作数形态施加运算，存储目的方阵，并逐元素与指令命名的值比较。这些都作为构造参数传入，这正是让一个模板覆盖全部十二条指令的原因。
-"""
-
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
@@ -43,7 +37,6 @@ if TYPE_CHECKING:
 class LogExpNominal(Template):
     """Run the operation on source squares and check the stored result."""
 
-    summary_zh = "在源方阵上执行运算并检查存储结果。"
     name = "nominal"
     dtypes = INTEGER
 
@@ -65,7 +58,7 @@ class LogExpNominal(Template):
         second square for the forms that read one; ``scalar`` is the immediate of
         the ``binary_x`` form; ``initialize_destination`` seeds the destination
         from a data square instead of trusting its contents; ``scalar_dtype_csr``
-        points ``ame_scalar_dtype`` at the case datatype first.
+        points ``amestype`` at the case datatype first.
         """
 
         self.src1_label = src1_label
@@ -158,7 +151,7 @@ class LogExpNominal(Template):
         if self.form.reads_second_source:
             out.text.append(f"    msettyp m{src2_reg}, t0")
         if self.scalar_dtype_csr:
-            out.text.append("    csrw    ame_scalar_dtype, t0")
+            out.text.append("    csrw    amestype, t0")
         out.text.extend(
             [
                 "",

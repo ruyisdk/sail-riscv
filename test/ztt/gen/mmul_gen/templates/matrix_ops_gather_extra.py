@@ -14,12 +14,6 @@ the wrong entry here.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-列聚集的额外置换用例。
-
-索引表是字节镜像而不是元素宽度的方阵，因此无论元素宽度如何，聚集都通过 UINT8 描述符读取它。这正是该用例的要点：索引宽度与元素宽度相互独立，若聚集把表悄悄当成元素描述符，就会在这里读到错误的表项。
-"""
-
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
@@ -47,7 +41,6 @@ INDEX_DTYPE = "AME_UINT8_DTYPE"
 class GatherExtraIndex(Template):
     """Gather through a byte-sized index table on a full-width descriptor."""
 
-    summary_zh = "在满宽描述符上通过字节宽度的索引表聚集。"
     name = "gather_extra_dtype_index"
     dtypes = EXTRA_PERMUTE
 

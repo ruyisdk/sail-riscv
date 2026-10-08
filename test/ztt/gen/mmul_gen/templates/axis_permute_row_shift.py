@@ -12,12 +12,6 @@ expected-value walk encodes.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-将每一列平移一行，移出有效方阵的部分被丢弃。
-
-正向与反向平移共同证明两条边界：移出有效方阵的行必须读为 0，这正是期望值遍历中范围判断所编码的内容。
-"""
-
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
@@ -35,7 +29,6 @@ if TYPE_CHECKING:
 class RowShift(AxisPermuteTemplate):
     """Shift every column by one row, dropping what leaves the active square."""
 
-    summary_zh = "将每一列平移一行，移出有效方阵的部分被丢弃。"
     name = "row_shift"
     input_cases = ("forward_shift", "reverse_shift")
 

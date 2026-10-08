@@ -25,7 +25,6 @@ class Mlog2subEwX(LogExpInstruction):
 
     name = "mlog2sub.ew.x"
     summary = "scalar base-2 logarithm of a ratio"
-    summary_zh = "对标量比值取以 2 为底的对数"
     subject = "integer log/exp test cases."
     operands = (DESTINATION_OPERAND, SCALAR_SOURCE_OPERAND, FIRST_SOURCE_OPERAND)
     templates = (

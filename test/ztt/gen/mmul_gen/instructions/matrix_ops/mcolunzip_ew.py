@@ -27,7 +27,6 @@ class McolunzipEw(MatrixOpsInstruction):
 
     name = "mcolunzip.ew"
     summary = "split one interleaved column stream into two"
-    summary_zh = "将一路交错的列流拆分为两路"
     subject = "zip/unzip test cases."
     operands = (FIRST_SOURCE_OPERAND, SECOND_SOURCE_OPERAND)
     templates = (

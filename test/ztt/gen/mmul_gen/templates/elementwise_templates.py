@@ -31,28 +31,6 @@ source and the parity check depend on the order.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-七个 elementwise 模板，以及每个模板拿到什么。
-
-每个模板都由类用自己的输入构造：
-
-    templates = (
-        ElementwiseIntegerValueRules(BASE_INTEGER_INPUT_CASES),
-        ElementwiseSaturatingBoundary(SaturatingExpectation.MAX, CasePlan(...)),
-        ElementwiseFloatSpecialValues(FloatArithmeticRole.ADD),
-    )
-
-因此实例携带它所检查的值，这个列表*就是*指令自己的检查清单，书写顺序就是其用例在生成文件中的出现顺序。每条指令的模板表因此写在它的类体里——有重复，但直接从类体读出：
-
-* 整数取值规则，然后对 128 位 datatype 再来一次；
-* 饱和边界，然后对 128 位 datatype 再来一次；
-* 标称软浮点用例；
-* 特殊值，分为算术角色与其余角色；
-* 舍入模式扫描，用于算术角色。
-
-:data:`ELEMENTWISE_TEMPLATE_CLASSES` 按该规范顺序保存这七个类；测试逐条核对指令的列表，因为生成源与对拍检查都依赖顺序。
-"""
-
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
@@ -194,7 +172,6 @@ class ElementwiseTemplate(Template, family_base=True):
 class ElementwiseIntegerValueRules(ElementwiseTemplate):
     """Nominal integer operands and answers, one case per input rule."""
 
-    summary_zh = "标称整数操作数与答案，每条输入规则一个用例。"
     name = "elementwise_integer_value_rules"
     dtypes = domains.FORMED_INTEGER
 
@@ -260,7 +237,6 @@ class ElementwiseIntegerValueRules(ElementwiseTemplate):
 class ElementwiseIntegerValueRules128(ElementwiseIntegerValueRules):
     """The same integer value rules, for datatypes that span M registers."""
 
-    summary_zh = "同一套整数取值规则，用于跨多个 M 寄存器的 datatype。"
     name = "elementwise_integer_value_rules_128"
     dtypes = domains.INTEGER128
 
@@ -285,7 +261,6 @@ class ElementwiseIntegerValueRules128(ElementwiseIntegerValueRules):
 class ElementwiseSaturatingBoundary(ElementwiseTemplate):
     """Edge operands that force a saturating instruction to set amexsat."""
 
-    summary_zh = "迫使饱和指令置位 amexsat 的边界操作数。"
     name = "elementwise_saturating_boundary"
     dtypes = domains.FORMED_SATURATING_INTEGER
 
@@ -343,7 +318,6 @@ class ElementwiseSaturatingBoundary(ElementwiseTemplate):
 class ElementwiseSaturatingBoundary128(ElementwiseSaturatingBoundary):
     """The saturating boundary for 128-bit datatypes, which no scalar form has."""
 
-    summary_zh = "128 位 datatype 的饱和边界，标量形式没有这一项。"
     name = "elementwise_saturating_boundary_128"
     dtypes = domains.SATURATING_INTEGER128
 
@@ -356,7 +330,6 @@ class ElementwiseSaturatingBoundary128(ElementwiseSaturatingBoundary):
 class ElementwiseFloatNominal(ElementwiseTemplate):
     """One nominal softfloat case per datatype."""
 
-    summary_zh = "每个 datatype 一个标称软浮点用例。"
     name = "elementwise_float_nominal"
     dtypes = domains.FORMED_SOFTFLOAT
 
@@ -408,7 +381,6 @@ class ElementwiseFloatNominal(ElementwiseTemplate):
 class ElementwiseFloatSpecialValues(ElementwiseTemplate):
     """NaN, infinity, and signed-zero behaviour, plus invalid operations."""
 
-    summary_zh = "NaN、无穷与有符号零的行为，以及无效运算。"
     name = "elementwise_float_special_values"
     dtypes = domains.FORMED_SOFTFLOAT
 
@@ -519,7 +491,6 @@ class ElementwiseFloatSpecialValues(ElementwiseTemplate):
 class ElementwiseFloatSemanticsSweep(ElementwiseTemplate):
     """The rounding-mode sweep: overflow, underflow, and halfway cases."""
 
-    summary_zh = "舍入模式扫描：上溢、下溢与半值用例。"
     name = "elementwise_float_semantics_sweep"
     dtypes = domains.FORMED_SOFTFLOAT
 

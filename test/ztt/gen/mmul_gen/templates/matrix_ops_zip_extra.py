@@ -13,12 +13,6 @@ interleaving is checked on descriptors the plain integers cannot reach.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-zip 或 unzip 运算的额外置换用例。
-
-发射与双源用例相同；只有 datatype 域和运算所用的寄存器组不同，因此这是域特化。它运行饱和与浮点描述符，从而在普通整数触及不到的描述符上检查同样的交错。
-"""
-
 from mmul_gen.machine import EXTRA_PERMUTE
 from mmul_gen.templates.matrix_ops_zip_dual import ZipDualSource
 
@@ -26,7 +20,6 @@ from mmul_gen.templates.matrix_ops_zip_dual import ZipDualSource
 class ZipExtraSource(ZipDualSource):
     """Merge or split two ramps of a full-width non-integer descriptor."""
 
-    summary_zh = "合并或拆分满宽非整数描述符的两个斜坡。"
     name = "zip_extra_dtype_ramp"
     dtypes = EXTRA_PERMUTE
     extra = True

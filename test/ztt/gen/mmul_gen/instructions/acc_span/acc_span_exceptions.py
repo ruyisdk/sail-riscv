@@ -22,7 +22,6 @@ class AccSpanExceptions(Instruction):
 
     name = "mmov"
     summary = "reject an over-long or file-crossing packed accumulator span"
-    summary_zh = "拒绝过长或跨越寄存器文件边界的打包累加器跨度"
     subject = "accumulator span exception test cases (amestatus.UN and illegal span)."
     operands = ()
     templates = (

@@ -11,12 +11,6 @@ datatype domain and the case numbering restart per group.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-整寄存器整数描述符经标量入口广播。
-
-主体继承自共享的标量入口模板；只有 datatype 域和每组的用例编号重新开始。
-"""
-
 from mmul_gen.machine import INTEGER
 from mmul_gen.templates.broadcast_common import ScalarIngressTemplate
 
@@ -24,7 +18,6 @@ from mmul_gen.templates.broadcast_common import ScalarIngressTemplate
 class ScalarIngressBroadcast(ScalarIngressTemplate):
     """Whole-register integer descriptors broadcast through the scalar ingress."""
 
-    summary_zh = "整寄存器整数描述符经标量入口广播。"
     name = "scalar_ingress"
     dtypes = INTEGER
 

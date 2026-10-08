@@ -23,7 +23,6 @@ class MsllEwX(Instruction):
 
     name = "msll.ew.x"
     summary = "shift every element left by one shared scalar amount"
-    summary_zh = "所有元素按同一标量位移量左移"
     subject = "integer shift semantic test cases."
     operands = (DESTINATION_OPERAND, SCALAR_SOURCE_OPERAND, FIRST_SOURCE_OPERAND)
 

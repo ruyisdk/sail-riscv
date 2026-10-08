@@ -57,7 +57,6 @@ class DTypeDomain:
 
     name: str
     description: str
-    description_zh: str
     select: Callable[["MachineConfig"], tuple[DType, ...]]
 
     def __call__(self, machine: "MachineConfig") -> tuple[DType, ...]:
@@ -296,7 +295,6 @@ def _select_probe_dtype(machine: "MachineConfig") -> tuple[DType, ...]:
 INTEGER = DTypeDomain(
     "integer",
     "non-saturating integers formed as whole M registers",
-    "以整个 M 寄存器形成的非饱和整数",
     _select_integer,
 )
 def _select_extra_permute(machine: "MachineConfig") -> tuple[DType, ...]:
@@ -318,103 +316,86 @@ def _select_extra_permute(machine: "MachineConfig") -> tuple[DType, ...]:
 EXTRA_PERMUTE = DTypeDomain(
     "extra_permute",
     "full-width non-integer descriptors",
-    "满宽度的非整数描述符",
     _select_extra_permute,
 )
 STRIDED_STORAGE = DTypeDomain(
     "strided_storage",
     "sub-UDS descriptors a strided transfer packs into one register",
-    "跨步传输可打包进一个寄存器的亚 UDS 描述符",
     _select_strided_storage,
 )
 STRIDED_CONVERSION = DTypeDomain(
     "strided_conversion",
     "the storage half of each conversion pair, unsigned before signed",
-    "每个转换对的存储侧，无符号在前、有符号在后",
     _select_strided_conversion,
 )
 SEMANTIC = DTypeDomain(
     "semantic",
     "every descriptor forming a whole-register operand at this UDS",
-    "在当前 UDS 下形成整寄存器操作数的每个描述符",
     _select_semantic,
 )
 PACKED_STORAGE = DTypeDomain(
     "packed_storage",
     "every descriptor stored at half the active UDS",
-    "存储在有效 UDS 一半处的每个描述符",
     _select_packed_storage,
 )
 SATURATING_INTEGER128 = DTypeDomain(
     "saturating_integer128",
     "128-bit saturating integers",
-    "128 位饱和整数",
     _select_saturating_integer128,
 )
 FORMED_INTEGER = DTypeDomain(
     "formed_integer",
     "non-saturating integers formed packed or whole",
-    "以打包或整寄存器形式形成的非饱和整数",
     _select_formed_integer,
 )
 INTEGER128 = DTypeDomain(
     "integer128",
     "128-bit integers spanning several M registers",
-    "跨越多个 M 寄存器的 128 位整数",
     _select_integer128,
 )
 SATURATING_INTEGER = DTypeDomain(
     "saturating_integer",
     "saturating integers formed as whole M registers",
-    "以整个 M 寄存器形成的饱和整数",
     _select_saturating_integer,
 )
 PACKED_INTEGER = DTypeDomain(
     "packed_integer",
     "integers stored narrower than the active UDS",
-    "存储宽度小于有效 UDS 的整数",
     _select_packed_integer,
 )
 PACKED_CONVERSION = DTypeDomain(
     "packed_conversion",
     "the storage half of each packed-storage/widened-compute pair",
-    "每个打包存储/加宽计算对的存储侧",
     _select_packed_conversion,
 )
 SOFTFLOAT = DTypeDomain(
     "softfloat",
     "IEEE/OCP floating-point formats",
-    "IEEE/OCP 浮点格式",
     _select_softfloat,
 )
 FORMED_SATURATING_INTEGER = DTypeDomain(
     "formed_saturating_integer",
     "saturating integers formed packed or whole",
-    "以打包或整寄存器形式形成的饱和整数",
     _select_formed_saturating_integer,
 )
 FORMED_SOFTFLOAT = DTypeDomain(
     "formed_softfloat",
     "softfloat descriptors usable as a formed operand",
-    "可作为成形操作数使用的 softfloat 描述符",
     _select_formed_softfloat,
 )
 SIGNED_PACKED_SOURCE = DTypeDomain(
     "signed_packed_source",
     "the signed integer at half the active UDS",
-    "有效 UDS 一半处的有符号整数",
     _select_signed_packed_source,
 )
 EVERY_DTYPE = DTypeDomain(
     "every_dtype",
     "every datatype descriptor the macro file declares",
-    "宏文件声明的每个 datatype 描述符",
     _select_every_dtype,
 )
 PROBE_DTYPE = DTypeDomain(
     "probe_dtype",
     "the descriptor an unsupported-datatype probe seeds a register with",
-    "不支持 datatype 探测用于播种寄存器的描述符",
     _select_probe_dtype,
 )
 

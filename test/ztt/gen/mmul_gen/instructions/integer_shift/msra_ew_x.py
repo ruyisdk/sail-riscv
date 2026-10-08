@@ -23,7 +23,6 @@ class MsraEwX(Instruction):
 
     name = "msra.ew.x"
     summary = "arithmetically shift every signed element right by one shared amount"
-    summary_zh = "所有带符号元素按同一标量位移量算术右移"
     subject = "integer shift semantic test cases."
     operands = (DESTINATION_OPERAND, SCALAR_SOURCE_OPERAND, FIRST_SOURCE_OPERAND)
 

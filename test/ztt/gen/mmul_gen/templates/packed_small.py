@@ -7,10 +7,6 @@
 
 from __future__ import annotations
 
-DOC_ZH = """\
-小于 UDS 的打包源模板。
-"""
-
 from dataclasses import dataclass
 
 from mmul_gen.asm import (
@@ -50,7 +46,6 @@ class PackedPayload:
 class PackedSmall(Template):
     """Sub-UDS packed integer source widened into a whole-register product."""
 
-    summary_zh = "小于 UDS 的打包整数源，扩展为整寄存器乘积。"
     name = "packed_small"
     dtypes = PACKED_INTEGER
 

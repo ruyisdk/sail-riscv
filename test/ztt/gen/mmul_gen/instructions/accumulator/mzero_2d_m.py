@@ -21,7 +21,6 @@ class Mzero2dM(Instruction):
 
     name = "mzero.2d.m"
     summary = "zero one M register"
-    summary_zh = "将一个 M 寄存器清零"
     subject = "accumulator test cases."
     operands = (DESTINATION_OPERAND,)
     templates = (ACCUMULATOR_ZERO_M,)

@@ -22,7 +22,6 @@ class MandEw(ElementwiseInstruction):
 
     name = "mand.ew"
     summary = "bitwise and of two matrix operands"
-    summary_zh = "两个矩阵操作数逐元素按位与"
     subject = "elementwise test cases."
     operands = ()
     form = ElementwiseForm.BINARY_M

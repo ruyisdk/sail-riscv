@@ -15,12 +15,6 @@ instructions come in, so an instruction states its shape as a template argument.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-整数 log/exp 家族的数据词汇与操作数形态。
-
-每个用例都作用于整个方阵：目的方阵在 ``m0``，第一源在 ``m1``，对于读取两个方阵的形式，第二源在 ``m2``。这些方阵持有的值在这里命名，因此指令声明它读取*哪个*方阵，而不是重述数字，同一个标称模板服务全部十二条指令；这里还命名这些指令的四种操作数形态，因此指令以模板参数的形式陈述自己的形态。
-"""
-
 from enum import StrEnum
 from typing import TYPE_CHECKING
 

@@ -42,8 +42,6 @@ class MmulAcc2d(MatrixMultiplyInstruction):
 
     name = "mmulacc.2d"
     summary = "C = C + A x B"
-    summary_zh = "矩阵乘累加：C = C + A × B"
-    manual_zh = "矩阵乘累加。将 `ms1` 与 `ms2` 的矩阵乘积累加进 `acc`；`acc` 既是源又是目的：先读出它的当前值，加上矩阵乘积，再把结果写回。"
     operands = PRODUCT_OPERANDS
     templates = (
         ONES_UNIFORM,

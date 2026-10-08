@@ -23,7 +23,6 @@ class MrowshiftEwX(Instruction):
 
     name = "mrowshift.ew.x"
     summary = "shift every column by a signed row amount, zero-filling the edge"
-    summary_zh = "按带符号的行位移量平移每一列，移出有效方阵的部分补零"
     subject = "row/column semantic test cases."
     operands = (DESTINATION_OPERAND, SCALAR_SOURCE_OPERAND, FIRST_SOURCE_OPERAND)
     templates = (ROW_SHIFT,)

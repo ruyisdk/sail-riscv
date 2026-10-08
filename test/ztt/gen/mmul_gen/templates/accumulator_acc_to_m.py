@@ -12,12 +12,6 @@ they report.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-累加器读回 M 寄存器后仍是清零后的镜像。
-
-与 ``zero_acc`` 模板发射相同的操作，因为搬移前用 ``mzero.2d.acc`` 给累加器播种；两者只是报告的输入标签不同。
-"""
-
 from typing import TYPE_CHECKING
 
 from mmul_gen.registers import RegisterLayout
@@ -35,7 +29,6 @@ if TYPE_CHECKING:
 class AccumulatorAccToM(AccumulatorUtilityTemplate):
     """An accumulator read back into an M register carries the zeroed image."""
 
-    summary_zh = "累加器读回 M 寄存器后仍是清零后的镜像。"
     name = "acc_to_m"
     uses_accumulator = True
 

@@ -20,19 +20,11 @@ configuration.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-调试标量/M 寄存器搬移模板的共享形态。
-
-一种宽度一个模板：用例用 ``mmove<width>.m.x`` 把一个标量写入 M 寄存器的某个元素位置，用 ``mmove<width>.x.m`` 读回，再用 ``mss.rm`` 检查原始内存镜像。两个方向都在同一个用例内进行，因此 ``.m.x`` 与 ``.x.m`` 指令共用一个模板，只在横幅上不同。
-
-调试位置寻址原始 M 寄存器位视图，手册将其描述为 N 行、每行 ``(N * uds) / width`` 个元素。宽于一行宽度的元素根本无法放置——模型会抛非法指令——因此这种宽度在这里没有可测内容，该指令在该配置下不产生源。
-"""
-
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, ClassVar
 
 from mmul_gen.asm import hex_value
-from mmul_gen.case_description import description_zh
+from mmul_gen.case_description import description
 from mmul_gen.machine import MachineConfig
 from mmul_gen.templates.base import Case, CaseOutput, Template
 
@@ -50,7 +42,6 @@ DESTINATION_LABEL = "debug_move_dst"
 class DebugMoveTemplate(Template, family_base=True):
     """One debug move width, parameterised by the three constants below."""
 
-    summary_zh = "一种调试搬移宽度，由下面三个常量参数化。"
     name = INPUT_CASE
     dtypes = None
 
@@ -78,7 +69,7 @@ class DebugMoveTemplate(Template, family_base=True):
     def build(
         self, machine: MachineConfig, instruction: Instruction, dtype: DType | None = None
     ) -> Sequence[Case]:
-        return [Case(number=0, dtype=None, description=description_zh(self.name))]
+        return [Case(number=0, dtype=None, description=description(self.name))]
 
     def render(
         self,

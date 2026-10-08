@@ -22,7 +22,6 @@ class MtanhEw(FloatMathInstruction):
 
     name = "mtanh.ew"
     summary = "hyperbolic tangent of each element"
-    summary_zh = "对每个元素取双曲正切"
     operands = (DESTINATION_OPERAND, FIRST_SOURCE_OPERAND)
     templates = (
         FloatMathCases(MathOperation.TANH),

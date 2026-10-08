@@ -22,7 +22,6 @@ class MselgeEw(ElementwiseInstruction):
 
     name = "mselge.ew"
     summary = "select on greater-or-equal of two matrix operands"
-    summary_zh = "按大于等于条件在两个矩阵操作数之间逐元素选择"
     subject = "elementwise test cases."
     operands = ()
     form = ElementwiseForm.BINARY_M

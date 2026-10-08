@@ -19,7 +19,7 @@
     li      t0, AME_INT128_DTYPE
     msettyp m0, t0
     msettyp m16, t0
-    csrw    ame_scalar_dtype, t0
+    csrw    amestype, t0
 
     li      t4, 10
     la      t2, b_square

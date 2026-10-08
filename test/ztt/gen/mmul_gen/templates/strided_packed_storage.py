@@ -14,12 +14,6 @@ saturating and floating descriptors are covered too.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-小于 UDS 的打包镜像的位保持步长搬运。
-
-第二种步长内存配方：所有窄于 UDS 存储的描述符在一个物理 M 寄存器中形成 ``UDS / element_bits`` 个逻辑方阵，搬运移动这些打包槽而不做任何转换。它直接作用于存储描述符，而不是通过仅整数的转换，因此饱和与浮点描述符也被覆盖。
-"""
-
 from typing import TYPE_CHECKING, cast
 
 from mmul_gen.machine import STRIDED_STORAGE, MachineConfig, dtype_stem
@@ -44,7 +38,6 @@ MIN_PACKED_SEGMENT_STRIDE = 8
 class StridedPackedStorage(Template):
     """A sub-UDS image moved slot by slot, for every packed storage descriptor."""
 
-    summary_zh = "每个打包存储描述符都按槽逐个搬移小于 UDS 的镜像。"
     name = "strided_packed_storage"
     dtypes = STRIDED_STORAGE
 

@@ -28,7 +28,6 @@ class MldexpaccEw(LogExpInstruction):
 
     name = "mldexpacc.ew"
     summary = "accumulate a per-element scaled mantissa"
-    summary_zh = "累加按每个元素缩放的尾数"
     subject = "integer log/exp test cases."
     operands = (DESTINATION_OPERAND, FIRST_SOURCE_OPERAND, SECOND_SOURCE_OPERAND)
     templates = (

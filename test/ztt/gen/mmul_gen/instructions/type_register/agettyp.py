@@ -22,7 +22,6 @@ class Agettyp(Instruction):
 
     name = "agettyp"
     summary = "read the datatype descriptor of an accumulator"
-    summary_zh = "读取累加器的 datatype 描述符"
     subject = "type-register roundtrip test cases."
     operands = (SCALAR_DESTINATION_OPERAND, ACC_TYPE_OPERAND,)
     templates = (AccTypeRoundtrip("agettyp reads a descriptor seeded by asettyp"),)

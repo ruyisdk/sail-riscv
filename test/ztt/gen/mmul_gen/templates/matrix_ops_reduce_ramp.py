@@ -13,12 +13,6 @@ exact expected value without any randomness.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-归约或前缀运算的行斜坡用例。
-
-源是线性斜坡 ``1..nelem``，这使每个结果都是有效长度上的闭式：源的每一行持有自己的行索引加一，因此整行归约、列归约以及两种前缀形态都有精确期望值，不需要任何随机性。
-"""
-
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
@@ -46,7 +40,6 @@ PREFERRED_DESTINATION_BASE = 8
 class ReducePrefixRamp(Template):
     """Reduce or prefix a linear ramp and check three sampled elements."""
 
-    summary_zh = "对线性斜坡做归约或前缀运算，并检查三个抽样元素。"
     name = "reduce_row_ramp"
     dtypes = INTEGER
 

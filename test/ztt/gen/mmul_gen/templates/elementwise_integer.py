@@ -14,12 +14,6 @@ and checks the destination either element by element (sweep) or as a whole.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-整数 elementwise 配方：一套操作数规则，六种操作数形态。
-
-每条 elementwise 指令都运行这个配方，因为整数语义就在这里；形态决定操作数如何到达指令，以及哪个方阵承载 2 的幂扫描。配方无条件发射每个用例的四个方阵——未使用的方阵仍记录操作数布局——并逐元素（扫描）或整体检查目的方阵。
-"""
-
 from dataclasses import dataclass, field
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
@@ -361,7 +355,7 @@ def integer_case_lines(
         )
     )
     if form in (ElementwiseForm.BINARY_X, ElementwiseForm.TERNARY_X):
-        lines.insert(-1, "    csrw    ame_scalar_dtype, t0")
+        lines.insert(-1, "    csrw    amestype, t0")
     if case.description:
         # The case description is echoed here as well as by the driver above the
         # layout comment, so the input label sits next to the operands.

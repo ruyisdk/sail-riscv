@@ -16,12 +16,6 @@ this one.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-软浮点舍入模式配方：上溢、下溢与半值。
-
-每条算术指令都在六种舍入模式上扫描。上溢块执行精确结果超过格式最大值的运算，按输入符号各一次（绝对差本质无符号，除外），并要求 invalid 与 inexact 标志加上该模式的饱和值。角色同时决定操作数向量以及结果保留还是翻转输入符号，因此驱动无效运算配方的同九个角色也驱动这一个。
-"""
-
 from typing import NamedTuple
 
 from fp_semantics import (
@@ -124,7 +118,7 @@ def rounding_setup_lines(
         f"    li      t0, {dtype_name} | {mode_dtype}",
     ]
     if x_form:
-        lines.append("    csrw    ame_scalar_dtype, t0")
+        lines.append("    csrw    amestype, t0")
     lines.extend(f"    msettyp m{reg}, t0" for reg in sorted(typed_regs))
     return lines
 

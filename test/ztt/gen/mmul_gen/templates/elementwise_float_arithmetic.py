@@ -16,19 +16,13 @@ the case.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-软浮点算术特殊值配方：无效运算。
-
-这些用例是 IEEE 规则判为无效或产生 NaN 的用例：quiet 或 signaling NaN 操作数、零乘无穷、以及无穷减无穷。每个用例先清除 amefflags，按真实操作数顺序执行指令，然后同时要求 NaN 结果和精确的标志集合。携带 NaN 的操作数因角色而异——加法类角色是加数，融合乘类角色是目的方阵——因此驱动用例的是角色而不是助记符。
-"""
-
 from dataclasses import dataclass
 from enum import Enum
 
 from fp_semantics import FFLAGS_NV, FLOAT_BOUNDARIES
 
 from mmul_gen.asm import check_dst_lines, repeated_square_lines
-from mmul_gen.case_description import description_zh
+from mmul_gen.case_description import description
 from mmul_gen.machine import MachineConfig
 from mmul_gen.templates.elementwise_forms import ElementwiseForm
 from mmul_gen.templates.elementwise_float import case_registers
@@ -198,7 +192,7 @@ def float_arithmetic_cases(
                 operands={**operands, "flags": flags},
                 expected=expected,
                 tag=f"fp_{name}",
-                description=f"浮点算术特殊值：{description_zh(name)}",
+                description=f"float arithmetic special value: {description(name)}",
                 squares={},
             )
         )
@@ -337,7 +331,7 @@ def float_arithmetic_case_lines(
         "    csrw    amefflags, x0",
     ]
     if form in (ElementwiseForm.BINARY_X, ElementwiseForm.TERNARY_X):
-        lines.append("    csrw    ame_scalar_dtype, t0")
+        lines.append("    csrw    amestype, t0")
     lines.extend(
         plan_lines(
             shape.plan,

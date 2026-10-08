@@ -22,18 +22,21 @@ from mmul_gen.templates.matrix_ops_reduce_ramp import (
 from mmul_gen.templates.matrix_ops_reduce_saturating import (
     REDUCE_SATURATING,
 )
+from mmul_gen.templates.matrix_ops_saturating_fold import (
+    ReducePrefixSaturatingFold,
+)
 
 class MreduceaddRow(MatrixOpsInstruction):
     """Sum each row and replicate it across the row."""
 
     name = "mreduceadd.row"
     summary = "sum each row and replicate it across the row"
-    summary_zh = "求每行元素之和并沿该行复制"
     subject = "reduce/prefix test cases."
     operands = (DESTINATION_OPERAND, FIRST_SOURCE_OPERAND)
     templates = (
         ReducePrefixRamp(MatrixAxis.ROW, Reduction.SUM),
         REDUCE_SATURATING,
+        ReducePrefixSaturatingFold(MatrixAxis.ROW),
     )
 
 __all__ = ["MreduceaddRow"]

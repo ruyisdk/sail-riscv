@@ -23,7 +23,6 @@ class Mmove64MX(Instruction):
 
     name = "mmove64.m.x"
     summary = "write one 64-bit scalar into an M register at an element position"
-    summary_zh = "将一个 64 位标量写入 M 寄存器的指定元素位置"
     subject = "debug move semantic test cases."
     operands = (M_TRANSFER_OPERAND, SCALAR_SOURCE_OPERAND, SCALAR_POSITION_OPERAND)
     templates = (DEBUG_MOVE64,)

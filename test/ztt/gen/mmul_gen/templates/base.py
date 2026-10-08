@@ -13,12 +13,6 @@ M/ACC layout pairing, and the "both spans must fit" resource predicate.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-用例构造与模板契约。
-
-每个模板都是本包其他位置的 :class:`Template` 子类。本模块保存它们共享的契约，以及不止一个模板需要的机制：用例模型、载荷类型检查、操作数角色声明、M/ACC 布局配对，以及“两段跨度都必须放得下”的资源谓词。
-"""
-
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass, field
@@ -82,11 +76,6 @@ class Template(ABC):
 
     #: Label for this template in generated comments, tests, and ``--list``.
     name: ClassVar[str] = ""
-    #: Chinese one-line description.  The design document reads this field and
-    #: nothing else, so the delivered prose has exactly one source and cannot
-    #: drift from a translation kept beside it.  The English class docstring is
-    #: unchanged and stays the source of :attr:`summary`.
-    summary_zh: ClassVar[str] = ""
     #: The datatype domain this template iterates for every configuration, or
     #: ``None`` for a template with no datatype dimension at all (backend state
     #: and ordering tests).  Such a template builds once per configuration with
@@ -123,8 +112,6 @@ class Template(ABC):
             raise TypeError(f"{cls.__name__} must document what it tests")
         if not cls.name:
             raise TypeError(f"{cls.__name__} must declare 'name'")
-        if not cls.summary_zh.strip():
-            raise TypeError(f"{cls.__name__} must declare 'summary_zh'")
         if cls.dtypes is _UNDECLARED:
             raise TypeError(f"{cls.__name__} must declare 'dtypes' (None if dtype-free)")
 

@@ -22,7 +22,6 @@ class MsqrtEw(FloatMathInstruction):
 
     name = "msqrt.ew"
     summary = "square root of each element"
-    summary_zh = "对每个元素取平方根"
     operands = (DESTINATION_OPERAND, FIRST_SOURCE_OPERAND)
     templates = (
         FloatMathCases(MathOperation.SQRT),

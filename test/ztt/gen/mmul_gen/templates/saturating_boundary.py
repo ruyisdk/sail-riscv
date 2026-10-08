@@ -7,10 +7,6 @@
 
 from __future__ import annotations
 
-DOC_ZH = """\
-饱和“最大值乘一”模板。
-"""
-
 from typing import TYPE_CHECKING
 
 from dataclasses import dataclass
@@ -51,7 +47,6 @@ class SaturatingPayload:
 class SaturatingBoundary(Template):
     """One-times-max product that must saturate the destination dtype."""
 
-    summary_zh = "必须使目的 datatype 饱和的“最大值乘一”乘积。"
     name = "saturating_boundary"
     dtypes = SATURATING_INTEGER
 

@@ -25,7 +25,6 @@ class MhdiffEw(ElementwiseInstruction):
 
     name = "mhdiff.ew"
     summary = "halving difference of two matrix operands"
-    summary_zh = "两个矩阵操作数逐元素求折半差"
     subject = "elementwise test cases."
     operands = ()
     form = ElementwiseForm.BINARY_M

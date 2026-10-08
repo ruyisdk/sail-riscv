@@ -22,7 +22,6 @@ class MfrintnEw(FloatMathInstruction):
 
     name = "mfrintn.ew"
     summary = "round each element to nearest, ties to even"
-    summary_zh = "将每个元素按就近偶数舍入"
     operands = (DESTINATION_OPERAND, FIRST_SOURCE_OPERAND)
     templates = (
         FloatMathCases(MathOperation.NEAREST),

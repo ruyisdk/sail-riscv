@@ -44,10 +44,11 @@ ZTT_PRELUDE = <<~'SAIL'
   // M register; typed transfers use their datatype only to arrange a portable
   // row- or column-major memory image.
 
-  function ame_memory_exception_at_base(rs1 : regidx, result : ExecutionResult)
+  function ame_memory_exception_at_base(rs1 : regidx, access : MemoryAccessType(mem_payload),
+                                        result : ExecutionResult)
     -> ExecutionResult = {
     match result {
-      Trap(_, exc, _) => memory_exception(Virtaddr(X(rs1)), exc.trap),
+      Trap(_, exc, _) => memory_exception(exc.trap, bits_of(Virtaddr(X(rs1))), access),
       _ => result,
     }
   }
@@ -67,13 +68,13 @@ ZTT_PRELUDE = <<~'SAIL'
       Ext_DataAddr_Error(e) => return Err(Ext_DataAddr_Check_Failure(e)),
       Ext_DataAddr_OK(vaddr) => vaddr,
     };
-    match translateAddr(vaddr, access) {
-      Err(e, _) => Err(memory_exception(Virtaddr(X(rs1)), e)),
+    let eff_priv = effectivePrivilege(access, mstatus, cur_privilege);
+    match translateAddr(vaddr, access, eff_priv) {
+      Err(e, _) => Err(memory_exception(e.trap, bits_of(Virtaddr(X(rs1))), access)),
       Ok(paddr, pbmt, _) => {
-        let ep = effectivePrivilege(access, mstatus, cur_privilege);
-        match phys_access_check(access, pbmt, ep, paddr, 1, false) {
-          Some(e) => Err(memory_exception(Virtaddr(X(rs1)), e)),
-          None() => Ok(()),
+        match phys_access_check(access, pbmt, eff_priv, paddr, 1, false) {
+          Err(e) => Err(memory_exception(e, bits_of(Virtaddr(X(rs1))), access)),
+          Ok(_) => Ok(()),
         }
       }
     }
@@ -88,7 +89,7 @@ ZTT_PRELUDE = <<~'SAIL'
     foreach (byte from 0 to (mlen / 8 - 1)) {
       match vmem_read(rs1, to_bits_unsafe(xlen, byte), 1, Load(Data), false, false, false) {
         Ok(value) => reg_data = [reg_data with (byte * 8 + 7) .. (byte * 8) = value],
-        Err(e) => return ame_memory_exception_at_base(rs1, e),
+        Err(e) => return ame_memory_exception_at_base(rs1, Load(Data), e),
       }
     };
     M(md) = reg_data;
@@ -107,7 +108,7 @@ ZTT_PRELUDE = <<~'SAIL'
       match vmem_write(rs1, to_bits_unsafe(xlen, byte), 1,
                        reg_data[(byte * 8 + 7) .. (byte * 8)], Store(Data), false, false, false) {
         Ok(_) => (),
-        Err(e) => return ame_memory_exception_at_base(rs1, e),
+        Err(e) => return ame_memory_exception_at_base(rs1, Store(Data), e),
       }
     };
     RETIRE_SUCCESS
@@ -127,7 +128,7 @@ ZTT_PRELUDE = <<~'SAIL'
       if byte < byte_count then {
         match vmem_read(rs1, to_bits_unsafe(xlen, byte), 1, Load(Data), false, false, false) {
           Ok(value) => data = [data with (byte * 8 + 7) .. (byte * 8) = value],
-          Err(e) => return Err(ame_memory_exception_at_base(rs1, e)),
+          Err(e) => return Err(ame_memory_exception_at_base(rs1, Load(Data), e)),
         }
       }
     };
@@ -150,7 +151,7 @@ ZTT_PRELUDE = <<~'SAIL'
         match vmem_write(rs1, to_bits_unsafe(xlen, byte), 1,
                          data[(byte * 8 + 7) .. (byte * 8)], Store(Data), false, false, false) {
           Ok(_) => (),
-          Err(e) => return ame_memory_exception_at_base(rs1, e),
+          Err(e) => return ame_memory_exception_at_base(rs1, Store(Data), e),
         }
       }
     };
@@ -202,7 +203,7 @@ ZTT_PRELUDE = <<~'SAIL'
     let total_bytes = ame_square_memory_bytes(dtype);
     let alignment = min(total_bytes, 4096);
     if unsigned(X(rs1)) % max(1, alignment) != 0 then
-      return memory_exception(Virtaddr(X(rs1)), E_Load_Addr_Align());
+      return memory_exception(E_Load_Addr_Align(), bits_of(Virtaddr(X(rs1))), Load(Data));
 
     match ame_read_square_memory_bytes(rs1, total_bytes) {
       Ok(memory_data) => { write_m_square_rm(dtype, md,
@@ -225,7 +226,7 @@ ZTT_PRELUDE = <<~'SAIL'
     let total_bytes = ame_square_memory_bytes(dtype);
     let alignment = min(total_bytes, 4096);
     if unsigned(X(rs1)) % max(1, alignment) != 0 then
-      return memory_exception(Virtaddr(X(rs1)), E_SAMO_Addr_Align());
+      return memory_exception(E_SAMO_Addr_Align(), bits_of(Virtaddr(X(rs1))), Store(Data));
 
     ame_write_square_memory_bytes(rs1,
       ame_square_rm_to_memory(dtype, read_m_square_rm(dtype, ms1), column_major),
@@ -251,7 +252,7 @@ ZTT_PRELUDE = <<~'SAIL'
         match vmem_read(rs1, to_bits_unsafe(xlen, byte_offset + byte), 1,
                         Load(Data), false, false, false) {
           Ok(data) => segment = [segment with (byte * 8 + 7) .. (byte * 8) = data],
-          Err(e) => return Err(ame_memory_exception_at_base(rs1, e)),
+          Err(e) => return Err(ame_memory_exception_at_base(rs1, Load(Data), e)),
         }
       }
     };
@@ -297,7 +298,7 @@ ZTT_PRELUDE = <<~'SAIL'
         match vmem_write(rs1, to_bits_unsafe(xlen, byte_offset + byte), 1,
                          segment[(byte * 8 + 7) .. (byte * 8)], Store(Data), false, false, false) {
           Ok(_) => (),
-          Err(e) => return Err(ame_memory_exception_at_base(rs1, e)),
+          Err(e) => return Err(ame_memory_exception_at_base(rs1, Store(Data), e)),
         }
       }
     };
@@ -320,7 +321,7 @@ ZTT_PRELUDE = <<~'SAIL'
     let element_bytes = (size + 7) / 8;
     let alignment = min(element_bytes, 4096);
     if unsigned(X(rs1)) % max(1, alignment) != 0 then
-      return memory_exception(Virtaddr(X(rs1)), E_Load_Addr_Align());
+      return memory_exception(E_Load_Addr_Align(), bits_of(Virtaddr(X(rs1))), Load(Data));
 
     let segment_count = if transposed then pack_factor * ame_nlen else ame_nlen;
     let segment_bits = if transposed then ame_nlen * size else pack_factor * ame_nlen * size;
@@ -371,7 +372,7 @@ ZTT_PRELUDE = <<~'SAIL'
     let element_bytes = (size + 7) / 8;
     let alignment = min(element_bytes, 4096);
     if unsigned(X(rs1)) % max(1, alignment) != 0 then
-      return memory_exception(Virtaddr(X(rs1)), E_SAMO_Addr_Align());
+      return memory_exception(E_SAMO_Addr_Align(), bits_of(Virtaddr(X(rs1))), Store(Data));
 
     let segment_count = if transposed then pack_factor * ame_nlen else ame_nlen;
     let segment_bits = if transposed then ame_nlen * size else pack_factor * ame_nlen * size;
@@ -672,7 +673,7 @@ BASE_EXECUTE_BODIES = {
   "mls.1r" => [
     "  let byte_count = mlen / 8;",
     "  if unsigned(X(Regidx(trunc(xs1)))) % max(1, min(byte_count, 4096)) != 0 then",
-    "    return memory_exception(Virtaddr(X(Regidx(trunc(xs1)))), E_Load_Addr_Align());",
+    "    return memory_exception(E_Load_Addr_Align(), bits_of(Virtaddr(X(Regidx(trunc(xs1))))), Load(Data));",
     "  ame_load_mreg_raw(Ameregidx(md), Regidx(trunc(xs1)))"
   ],
   "mls.cm" => [
@@ -983,7 +984,7 @@ BASE_EXECUTE_BODIES = {
   "mss.1r" => [
     "  let byte_count = mlen / 8;",
     "  if unsigned(X(Regidx(trunc(xs1)))) % max(1, min(byte_count, 4096)) != 0 then",
-    "    return memory_exception(Virtaddr(X(Regidx(trunc(xs1)))), E_SAMO_Addr_Align());",
+    "    return memory_exception(E_SAMO_Addr_Align(), bits_of(Virtaddr(X(Regidx(trunc(xs1))))), Store(Data));",
     "  ame_store_mreg_raw(Ameregidx(ms1), Regidx(trunc(xs1)))"
   ],
   "mss.cm" => [
@@ -1141,14 +1142,14 @@ EXECUTE_BODIES = BASE_EXECUTE_BODIES
       "ame_ew_ternary_m(MD(Mdregidx(md)), MD(Mdregidx(ms1)), MD(Mdregidx(ms2)), Ameregidx(md), Ameregidx(ms1), Ameregidx(ms2), #{op})"
     )
   end)
-  .merge(PREDICATE_BINARY_M_OPS.transform_values do |select_when_sign_set, preserve_dest_when_false|
+  .merge(PREDICATE_BINARY_M_OPS.transform_values do |select_when_negative, preserve_dest_when_false|
     retire_if_true(
-      "ame_ew_predicate_m(MD(Mdregidx(md)), MD(Mdregidx(ms1)), MD(Mdregidx(ms2)), Ameregidx(md), Ameregidx(ms1), Ameregidx(ms2), #{select_when_sign_set}, #{preserve_dest_when_false})"
+      "ame_ew_predicate_m(MD(Mdregidx(md)), MD(Mdregidx(ms1)), MD(Mdregidx(ms2)), Ameregidx(md), Ameregidx(ms1), Ameregidx(ms2), #{select_when_negative}, #{preserve_dest_when_false})"
     )
   end)
-  .merge(PREDICATE_TERNARY_M_OPS.transform_values do |select_when_sign_set, preserve_dest_when_false|
+  .merge(PREDICATE_TERNARY_M_OPS.transform_values do |select_when_negative, preserve_dest_when_false|
     retire_if_true(
-      "ame_ew_predicate_m(MD(Mdregidx(md)), MD(Mdregidx(ms1)), MD(Mdregidx(ms2)), Ameregidx(md), Ameregidx(ms1), Ameregidx(ms2), #{select_when_sign_set}, #{preserve_dest_when_false})"
+      "ame_ew_predicate_m(MD(Mdregidx(md)), MD(Mdregidx(ms1)), MD(Mdregidx(ms2)), Ameregidx(md), Ameregidx(ms1), Ameregidx(ms2), #{select_when_negative}, #{preserve_dest_when_false})"
     )
   end)
   .merge(INT_EW_TERNARY_X_OPS.transform_values do |op|

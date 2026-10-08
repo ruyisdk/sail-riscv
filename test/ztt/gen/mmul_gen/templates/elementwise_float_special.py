@@ -15,19 +15,13 @@ infinity or signaling-NaN encoding, so those cases are not produced for it.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-特殊值软浮点配方：NaN、无穷与有符号零。
-
-这九条指令不计算标称值；它们钉死该格式的特殊编码行为。指令以它交给模板的单个 ``FloatSpecialRole`` 声明自己具有哪种行为——比较类中该角色还指出它在特殊操作数上得到哪个结果。每个用例先清除 amefflags，执行一次运算，然后同时要求目的方阵的值和精确的标志集合。E4M3 没有无穷与 signaling NaN 编码，不产生这些用例。
-"""
-
 from dataclasses import dataclass
 from enum import Enum
 
 from fp_semantics import FFLAGS_NV, FLOAT_BOUNDARIES
 
 from mmul_gen.asm import check_dst_lines, repeated_square_lines
-from mmul_gen.case_description import description_zh
+from mmul_gen.case_description import description
 from mmul_gen.machine import MachineConfig
 from mmul_gen.templates.elementwise_forms import ElementwiseForm
 from mmul_gen.templates.elementwise_float import (
@@ -134,7 +128,7 @@ def float_special_cases(
                 operands={"lhs": lhs, "rhs": rhs, "value": lhs, "flags": flags},
                 expected=expected,
                 tag=f"fp_{name}",
-                description=f"浮点特殊值：{description_zh(name)}",
+                description=f"float special value: {description(name)}",
                 squares={},
             )
         )
@@ -290,7 +284,7 @@ def float_special_case_lines(
         "    csrw    amefflags, x0",
     ]
     if form is ElementwiseForm.BINARY_X:
-        lines.append("    csrw    ame_scalar_dtype, t0")
+        lines.append("    csrw    amestype, t0")
     if shape.result_reg is not None:
         lines.extend(
             [

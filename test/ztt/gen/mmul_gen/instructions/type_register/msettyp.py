@@ -25,7 +25,6 @@ class Msettyp(Instruction):
 
     name = "msettyp"
     summary = "write the datatype descriptor of an M register"
-    summary_zh = "写入 M 寄存器的 datatype 描述符"
     subject = "type-register roundtrip test cases."
     operands = (M_TYPE_OPERAND, SCALAR_SOURCE_OPERAND,)
     templates = (

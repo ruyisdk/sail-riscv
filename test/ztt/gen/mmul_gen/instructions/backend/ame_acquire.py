@@ -25,7 +25,6 @@ class AmeAcquire(BackendInstruction):
 
     name = "ame.acquire"
     summary = "take ownership of the AME backend"
-    summary_zh = "获取 AME 后端的所有权"
     operands = (SCALAR_DESTINATION_OPERAND, SCALAR_SOURCE_OPERAND)
     templates = (ACQUIRE_RELEASE_STATE, ACQUIRE_BUSY_STATE)
 

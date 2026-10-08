@@ -39,7 +39,6 @@ class MmulaccEw(ElementwiseInstruction):
 
     name = "mmulacc.ew"
     summary = "multiply-accumulate of two matrix operands into the destination"
-    summary_zh = "两个矩阵操作数逐元素乘累加到目的操作数"
     subject = "elementwise test cases."
     operands = ()
     form = ElementwiseForm.TERNARY_M

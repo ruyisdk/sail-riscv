@@ -12,12 +12,6 @@ and the clamped destination together.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-索引加法的饱和用例。
-
-所有索引都指向第一行，目的方阵以最大可表示值播种，因此每次加法都饱和。该用例同时断言状态位与钳位后的目的方阵。
-"""
-
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
@@ -42,7 +36,6 @@ INDEX_DTYPE = "AME_UINT8_DTYPE"
 class ScatterSaturating(Template):
     """Saturate an indexed add into an all-maximum destination."""
 
-    summary_zh = "将索引加法饱和进全最大值目的方阵。"
     name = "scatter_saturating_boundary"
     dtypes = SATURATING_INTEGER
 

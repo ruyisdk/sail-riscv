@@ -11,12 +11,6 @@ its cases carry an M layout and no ACC layout.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-将 M 寄存器清零后存储出来，结果必须是全零方阵。
-
-这是该家族中唯一不寻址累加器的指令，因此它的用例只携带 M 布局，没有 ACC 布局。
-"""
-
 from typing import TYPE_CHECKING
 
 from mmul_gen.registers import RegisterLayout
@@ -33,7 +27,6 @@ if TYPE_CHECKING:
 class AccumulatorZeroM(AccumulatorUtilityTemplate):
     """Zeroing an M register must leave an all-zero square once stored."""
 
-    summary_zh = "将 M 寄存器清零后存储出来，结果必须是全零方阵。"
     name = "zero_m"
     uses_accumulator = False
 

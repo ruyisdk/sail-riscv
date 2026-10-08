@@ -17,14 +17,6 @@ instruction of a group and a new instruction only declares what it does.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-矩阵置换/归约家族的激励与期望。
-
-三种运算形态共享本模块，因为它们共享激励：第一源中是从 1 开始的线性斜坡 ``1..nelem``，第二源中是与之错开的第二个斜坡，对于索引运算还有一张表，硬件将其表项按有效长度取模归约。
-
-期望值在这里由每条指令*声明的*语义（其轴与其聚合）算出，因此一个模板覆盖一组的每条指令，新指令只需声明它做什么。
-"""
-
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 

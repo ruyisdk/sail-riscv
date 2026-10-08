@@ -13,12 +13,6 @@ write and a slot-alignment mistake.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-将一个标量广播到较窄描述符的每个存储槽。
-
-该描述符在物理上以有效 UDS 的一半存储，因此广播仍会填满整个槽：检查读取方阵的首字节与末字节并与重复的槽镜像比较，从而同时捕获写入过短和槽对齐错误。
-"""
-
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
@@ -41,7 +35,6 @@ if TYPE_CHECKING:
 class PackedStorageBroadcast(Template):
     """Broadcast into the storage slots of a half-UDS descriptor."""
 
-    summary_zh = "广播到半个 UDS 描述符的存储槽。"
     name = "packed_storage_ingress"
     dtypes = PACKED_STORAGE
 

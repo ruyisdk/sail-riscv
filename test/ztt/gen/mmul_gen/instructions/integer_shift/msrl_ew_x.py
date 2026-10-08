@@ -23,7 +23,6 @@ class MsrlEwX(Instruction):
 
     name = "msrl.ew.x"
     summary = "logically shift every element right by one shared scalar amount"
-    summary_zh = "所有元素按同一标量位移量逻辑右移"
     subject = "integer shift semantic test cases."
     operands = (DESTINATION_OPERAND, SCALAR_SOURCE_OPERAND, FIRST_SOURCE_OPERAND)
 

@@ -22,7 +22,6 @@ class McmovltEw(ElementwiseInstruction):
 
     name = "mcmovlt.ew"
     summary = "conditional move when less-than of two matrix operands into the destination"
-    summary_zh = "两个矩阵操作数比较小于成立时，将源条件搬移到目的操作数"
     subject = "elementwise test cases."
     operands = ()
     form = ElementwiseForm.TERNARY_M

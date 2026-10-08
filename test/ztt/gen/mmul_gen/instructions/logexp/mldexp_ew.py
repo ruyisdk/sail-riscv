@@ -25,7 +25,6 @@ class MldexpEw(LogExpInstruction):
 
     name = "mldexp.ew"
     summary = "scale a mantissa square by a per-element power of two"
-    summary_zh = "按每个元素各自的 2 的幂缩放尾数方阵"
     subject = "integer log/exp test cases."
     operands = (DESTINATION_OPERAND, FIRST_SOURCE_OPERAND, SECOND_SOURCE_OPERAND)
     templates = (

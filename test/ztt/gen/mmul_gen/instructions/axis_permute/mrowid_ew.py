@@ -21,7 +21,6 @@ class MrowidEw(Instruction):
 
     name = "mrowid.ew"
     summary = "fill every element with its own row coordinate"
-    summary_zh = "以元素的行坐标填充每个元素"
     subject = "row/column semantic test cases."
     operands = (DESTINATION_OPERAND,)
     templates = (ROW_INDEX,)

@@ -12,16 +12,10 @@ case covers both the encoding of the descriptor and where the register sits.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-M 寄存器描述符往返：写入类型编码，再读回。
-
-宏文件声明的每个描述符都被写入一个 M 寄存器，并在该寄存器于 M 寄存器文件中的每个合法放置处读回，因此一个用例同时覆盖描述符的编码和寄存器的位置。
-"""
-
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
-from mmul_gen.case_description import description_zh
+from mmul_gen.case_description import description
 from mmul_gen.machine import DType, EVERY_DTYPE, MachineConfig
 from mmul_gen.registers import MRegisterRole, RegisterLayout, m_register_layouts
 from mmul_gen.templates.base import Case, CaseOutput, Template
@@ -33,7 +27,6 @@ if TYPE_CHECKING:
 class MTypeRoundtrip(Template):
     """Write the descriptor into an M register and read it back."""
 
-    summary_zh = "将描述符写入 M 寄存器再读回，验证往返一致。"
     name = "supported_dtype_roundtrip"
     dtypes = EVERY_DTYPE
 
@@ -51,7 +44,7 @@ class MTypeRoundtrip(Template):
                 number=0,
                 dtype=dtype,
                 layout=RegisterLayout(m=layout),
-                description=description_zh(self.name),
+                description=description(self.name),
             )
             for layout in m_register_layouts(machine.num_m_regs, roles)
         ]

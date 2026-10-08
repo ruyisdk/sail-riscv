@@ -15,12 +15,6 @@ helpers live here while the two renderers own one instruction each.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-索引打包槽模板的共享形态与字节布局。
-
-``mpack.ew.x`` 与 ``munpack.ew.x`` 是在有效 UDS 一半处存储的描述符与其同符号性满 UDS 对应者之间同一种转换的两个方向。两者在同样的打包描述符对上运行同样的三种输入模式，以相同方式布置镜像，只在转换方向上不同，因此配对关系、输入模式与镜像辅助函数放在这里，而两个渲染器各自负责一条指令。
-"""
-
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
@@ -32,7 +26,7 @@ from mmul_gen.asm import (
     hex_value,
     pack_nibbles,
 )
-from mmul_gen.case_description import description_zh
+from mmul_gen.case_description import description
 from mmul_gen.machine import (
     DType,
     MachineConfig,
@@ -195,7 +189,7 @@ class PackedSlotConversion(Template, family_base=True):
                     is_signed=dtype_is_signed_int(dtype.name),
                     input_case=input_case,
                 ),
-                description=description_zh(input_case),
+                description=description(input_case),
             )
             for input_case in INPUT_CASES
         ]

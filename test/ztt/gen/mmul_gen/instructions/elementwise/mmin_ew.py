@@ -26,7 +26,6 @@ class MminEw(ElementwiseInstruction):
 
     name = "mmin.ew"
     summary = "minimum of two matrix operands"
-    summary_zh = "两个矩阵操作数逐元素取最小值"
     subject = "elementwise test cases."
     operands = ()
     form = ElementwiseForm.BINARY_M

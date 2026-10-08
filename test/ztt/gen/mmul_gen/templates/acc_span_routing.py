@@ -17,20 +17,12 @@ consequence of the selected span bases -- including where the two spans overlap.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-打包累加器跨度的数据与路由证明。
-
-将一个 M 镜像搬入一段累加器跨度，再把*第二个*重叠镜像搬入相邻跨度，然后读回两段跨度。重叠写入把跨度中的每个累加器都钉死：落错累加器的搬运会在第二次读回中暴露。
-
-期望镜像不是手写的。``build`` 保留了每个累加器持有哪个方阵的物理映射，因此读回期望是所选跨度基址的结果——包括两段跨度重叠的位置。
-"""
-
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from mmul_gen.asm import repeated_square_lines, square_lines
-from mmul_gen.case_description import description_zh
+from mmul_gen.case_description import description
 from mmul_gen.machine import PACKED_INTEGER, MachineConfig, dtype_stem
 from mmul_gen.registers import (
     AccumulatorOperand,
@@ -75,7 +67,6 @@ class SpanRouting:
 class AccumulatorSpanRouting(Template):
     """Emit the write-overlap-read proof of one packed accumulator span."""
 
-    summary_zh = "发射一个打包累加器跨度的“写覆盖读”证明。"
     name = "acc_span_routing"
     dtypes = PACKED_INTEGER
 
@@ -165,13 +156,13 @@ class AccumulatorSpanRouting(Template):
                     # downward-overlapping second span.
                     descriptor_tag_base = primary.base + pack - 1
 
-            description = (
-                f"{description_zh(primary.name)}：{primary.register_text}"
+            span_description = (
+                f"{description(primary.name)}: {primary.register_text}"
                 + (
-                    f"；重叠读回 {secondary_base}.."
+                    f"; overlapping readback {secondary_base}.."
                     f"{secondary_base + pack - 1}"
                     if secondary_base is not None
-                    else "，无相邻合法跨度"
+                    else ", no adjacent legal span"
                 )
             )
             for layout in m_register_layouts(machine.num_m_regs, tuple(roles)):
@@ -180,7 +171,7 @@ class AccumulatorSpanRouting(Template):
                         number=0,
                         dtype=dtype,
                         payload=SpanRouting(
-                            description=description,
+                            description=span_description,
                             primary=primary,
                             secondary_base=secondary_base,
                             squares_a=tuple(squares_a),
@@ -191,7 +182,7 @@ class AccumulatorSpanRouting(Template):
                             descriptor_tag_base=descriptor_tag_base,
                         ),
                         layout=RegisterLayout(m=layout, acc=primary),
-                        description=description,
+                        description=span_description,
                     )
                 )
         return cases

@@ -20,19 +20,23 @@ from mmul_gen.templates.strided_conversion_pairs import (
     StridedConversionPairs,
 )
 from mmul_gen.templates.strided_memory_common import StridedTransfer
+from mmul_gen.templates.store_fault_atomicity import (
+    StoreFaultAtomicity,
+    StoreForm,
+)
 
 class MssTst(StridedMemoryInstruction):
     """Store one square with a transposed stride, one element per segment."""
 
     name = "mss.tst"
     summary = "store one square with a transposed stride"
-    summary_zh = "按转置步长存储一个方阵"
     subject = "strided-memory semantic test cases."
     operands = ()
     templates = (
         StridedNormalSquare(StridedTransfer(is_load=False, transposed=True)),
         StridedPackedStorage(StridedTransfer(is_load=False, transposed=True)),
         StridedConversionPairs(StridedTransfer(is_load=False, transposed=True)),
+        StoreFaultAtomicity(StoreForm("tst", strided=True)),
     )
 
 __all__ = ["MssTst"]

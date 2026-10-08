@@ -22,7 +22,6 @@ class MrecEw(FloatMathInstruction):
 
     name = "mrec.ew"
     summary = "reciprocal of each element"
-    summary_zh = "对每个元素取倒数"
     operands = (DESTINATION_OPERAND, FIRST_SOURCE_OPERAND)
     templates = (
         FloatMathCases(MathOperation.RECIPROCAL),

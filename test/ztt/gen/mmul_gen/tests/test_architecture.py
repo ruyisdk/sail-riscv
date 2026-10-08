@@ -55,12 +55,10 @@ FAMILY_ATTRIBUTES = {"elementwise": frozenset({"form"})}
 #: What an instruction class may declare: the framework vocabulary plus the
 #: formulas it owns plus the family vocabulary its own templates read.  Everything
 #: else -- a product shape, a stimulus, an operand shape -- is an argument of its
-#: templates.  ``summary_zh`` and ``manual_zh`` are the design document's prose
-#: fields: templates never read them, so they are not part of
-#: :data:`FRAMEWORK_ATTRIBUTES`.
+#: templates.
 FRAMEWORK_MEMBERS = (
     FRAMEWORK_ATTRIBUTES
-    | {"evaluate", "evaluate_float", "manual_zh", "summary_zh"}
+    | {"evaluate", "evaluate_float"}
     | set().union(*FAMILY_ATTRIBUTES.values())
 )
 

@@ -12,12 +12,6 @@ compile-time constant.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-将源方阵的某一行复制到每一列的所有行。
-
-广播第一行证明操作数按列读取，广播最后一行还证明行步长取的是有效长度而不是编译期常量。
-"""
-
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
@@ -33,7 +27,6 @@ if TYPE_CHECKING:
 class RowBroadcast(AxisPermuteTemplate):
     """Replicate one source row across every row of each column."""
 
-    summary_zh = "将源方阵的某一行复制到每一列的所有行。"
     name = "row_broadcast"
     input_cases = ("first_row", "last_row")
 

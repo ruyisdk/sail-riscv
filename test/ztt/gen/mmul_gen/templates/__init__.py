@@ -13,12 +13,6 @@ aggregate tuples below are for the tests that check them.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-模板实例索引，每个模板类一个实例。
-
-每个实例都由定义其类的模块构造，因此模板与它的实例在同一处阅读，导入一条指令也不会牵入整个包。本模块只做再导出；下面的聚合元组供检查它们的测试使用。
-"""
-
 from mmul_gen.templates.acc_span_exceptions import (
     AccumulatorSpanExceptions,
 )
@@ -136,6 +130,9 @@ from mmul_gen.templates.matrix_ops_gather_indexed import (
 from mmul_gen.templates.matrix_ops_reduce_ramp import (
     ReducePrefixRamp,
 )
+from mmul_gen.templates.matrix_ops_saturating_fold import (
+    ReducePrefixSaturatingFold,
+)
 from mmul_gen.templates.matrix_ops_reduce_saturating import (
     REDUCE_SATURATING,
 )
@@ -150,6 +147,9 @@ from mmul_gen.templates.matrix_ops_zip_extra import (
 )
 from mmul_gen.templates.matrix_small import (
     MatrixSmall,
+)
+from mmul_gen.templates.mconv_domain_pairs import (
+    MconvDomainPairs,
 )
 from mmul_gen.templates.mconv_roundtrip import (
     MCONV_ROUNDTRIP,
@@ -181,6 +181,9 @@ from mmul_gen.templates.raw_transfer import (
 )
 from mmul_gen.templates.saturating_boundary import (
     SaturatingBoundary,
+)
+from mmul_gen.templates.store_fault_atomicity import (
+    StoreFaultAtomicity,
 )
 from mmul_gen.templates.strided_conversion_pairs import (
     StridedConversionPairs,
@@ -279,12 +282,15 @@ TEMPLATE_CLASSES = (
     LogExpNominal,
     MTypeRoundtrip,
     MatrixSmall,
+    MconvDomainPairs,
     MixedSignednessMultipleSquare,
     PackedSmall,
     ReducePrefixRamp,
+    ReducePrefixSaturatingFold,
     SaturatingBoundary,
     ShiftRegisterSource,
     ShiftScalarSource,
+    StoreFaultAtomicity,
     StridedConversionPairs,
     StridedNormalSquare,
     StridedPackedStorage,
@@ -332,6 +338,7 @@ __all__ = [
     "MULTI_ACC_INDEPENDENT",
     "M_TYPE_UNSUPPORTED_PROBE",
     "MatrixSmall",
+    "MconvDomainPairs",
     "MixedSignednessMultipleSquare",
     "ONES_UNIFORM",
     "ONES_UNIFORM_128",
@@ -346,6 +353,7 @@ __all__ = [
     "ROW_INDEX",
     "ROW_SHIFT",
     "ReducePrefixRamp",
+    "ReducePrefixSaturatingFold",
     "SATURATING_INGRESS",
     "SATURATING_INTEGER128_INGRESS",
     "SCALAR_INGRESS",
@@ -353,6 +361,7 @@ __all__ = [
     "SaturatingBoundary",
     "ShiftRegisterSource",
     "ShiftScalarSource",
+    "StoreFaultAtomicity",
     "StridedConversionPairs",
     "StridedNormalSquare",
     "StridedPackedStorage",

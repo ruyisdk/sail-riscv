@@ -29,7 +29,6 @@ class MmulsubEwX(ElementwiseInstruction):
 
     name = "mmulsub.ew.x"
     summary = "fused multiply-subtract of a scalar and a matrix operand into the destination"
-    summary_zh = "标量与矩阵操作数逐元素融合乘减到目的操作数"
     subject = "elementwise test cases."
     operands = ()
     form = ElementwiseForm.TERNARY_X

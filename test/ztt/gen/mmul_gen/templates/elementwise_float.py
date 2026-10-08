@@ -19,14 +19,6 @@ something an instruction computes.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-软浮点 elementwise 配方：标称操作数，每个 datatype 一个用例。
-
-每个软浮点 datatype 都有自己的标称操作数元组（同一格式下的同一组标称值），指令用自己的 ``evaluate_float`` 声明它的答案：模型名册中的一个操作数，或者（比较类）结果的掩码。比较类还会用*相反*的结果给目的方阵播种，因此通过的测试证明指令确实写入了目的方阵，而不是置之不理。
-
-模型本身只在一处读取（``FLOAT_OPERATION_VALUES``），因为软浮点答案是格式与操作的属性，不是指令计算出来的。
-"""
-
 from collections.abc import Callable
 from dataclasses import dataclass, replace
 from typing import Any
@@ -296,7 +288,7 @@ def float_case_lines(
         *[f"    msettyp m{reg}, t0" for reg in shape.typed_regs],
     ]
     if form in (ElementwiseForm.BINARY_X, ElementwiseForm.TERNARY_X):
-        lines.append("    csrw    ame_scalar_dtype, t0")
+        lines.append("    csrw    amestype, t0")
     if shape.comparison_reg is not None:
         lines.extend(
             [

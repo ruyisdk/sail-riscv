@@ -14,12 +14,6 @@ one.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-聚集或散射运算的索引用例。
-
-索引表是元素宽度的，并在最高位携带轴选择位，因此同一张表驱动两个轴和两种累加模式。散射先给目的方阵播种——加法形式播 1，取最大形式播一个高于斜坡的值——因此未触及的元素可与已写入的元素区分。
-"""
-
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
@@ -73,7 +67,6 @@ def checked_indices(machine: MachineConfig) -> list[int]:
 class GatherScatterIndexed(Template):
     """Move elements through an index table and check the sampled result."""
 
-    summary_zh = "通过索引表搬移元素，并检查抽样结果。"
     name = "gather_indexed_elements"
     dtypes = INTEGER
 

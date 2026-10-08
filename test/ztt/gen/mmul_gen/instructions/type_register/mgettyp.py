@@ -22,7 +22,6 @@ class Mgettyp(Instruction):
 
     name = "mgettyp"
     summary = "read the datatype descriptor of an M register"
-    summary_zh = "读取 M 寄存器的 datatype 描述符"
     subject = "type-register roundtrip test cases."
     operands = (SCALAR_DESTINATION_OPERAND, M_TYPE_OPERAND,)
     templates = (MTypeRoundtrip("mgettyp reads a descriptor seeded by msettyp"),)

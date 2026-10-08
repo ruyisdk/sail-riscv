@@ -14,12 +14,6 @@ check would pass.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-不支持 datatype 的入口探针。
-
-入口在写入之前先做描述符检查：通过 UINT8 描述符广播一个 UINT16 标量必须置位 UN 状态位，并使目的方阵与播种时完全一致。被播种的方阵在边界处逐字节比较，因此仅检查状态的实现会漏掉的部分写入在这里会被捕获。
-"""
-
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
@@ -50,7 +44,6 @@ REJECTED_SCALAR = "0x1234"
 class UnsupportedDtypeProbe(Template):
     """Prove an unsupported ingress is rejected without a partial write."""
 
-    summary_zh = "证明不支持的入口被拒绝且没有部分写入。"
     name = "unsupported_dtype_probe"
     dtypes = None
 

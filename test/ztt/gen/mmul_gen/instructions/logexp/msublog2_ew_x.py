@@ -25,7 +25,6 @@ class Msublog2EwX(LogExpInstruction):
 
     name = "msublog2.ew.x"
     summary = "scalar base-2 logarithm of a difference"
-    summary_zh = "对标量差值取以 2 为底的对数"
     subject = "integer log/exp test cases."
     operands = (DESTINATION_OPERAND, SCALAR_SOURCE_OPERAND, FIRST_SOURCE_OPERAND)
     templates = (

@@ -24,7 +24,6 @@ class Mlog2Ew(LogExpInstruction):
 
     name = "mlog2.ew"
     summary = "base-2 logarithm of each element"
-    summary_zh = "对每个元素取以 2 为底的对数"
     subject = "integer log/exp test cases."
     operands = (DESTINATION_OPERAND, FIRST_SOURCE_OPERAND)
     templates = (

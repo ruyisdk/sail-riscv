@@ -39,7 +39,6 @@ class MsubEw(ElementwiseInstruction):
 
     name = "msub.ew"
     summary = "subtract of two matrix operands"
-    summary_zh = "两个矩阵操作数逐元素相减"
     subject = "elementwise test cases."
     operands = ()
     form = ElementwiseForm.BINARY_M

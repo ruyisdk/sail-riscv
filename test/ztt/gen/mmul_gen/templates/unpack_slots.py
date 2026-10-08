@@ -12,12 +12,6 @@ descriptor is sign-extended before it is masked into the wider element.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-索引解包模板：将打包存储槽扩展为方阵。
-
-每个用例读取打包存储方阵的选定槽，把它扩展为计算描述符，并验证转换后的元素；有符号存储描述符在掩码进更宽元素之前先做符号扩展。
-"""
-
 from mmul_gen.asm import sign_extend
 from mmul_gen.templates.base import case_payload
 from mmul_gen.templates.pack_common import (
@@ -35,7 +29,6 @@ from mmul_gen.templates.pack_common import (
 class UnpackSlots(PackedSlotConversion):
     """Widen one packed storage slot into a whole-register compute square."""
 
-    summary_zh = "将一个打包存储槽扩展为整寄存器的计算方阵。"
     name = "packed_slot_read"
 
     def render(self, machine, instruction, case, out):

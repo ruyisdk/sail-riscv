@@ -7,10 +7,10 @@
 # ── AME CSR numbers ──────────────────────────────────────────────────────────
 .equ amenlen,          0xCC0
 .equ ameudsz,          0xCC1
-.equ ame_scalar_dtype, 0xCC2
+.equ amestype,         0x810
 .equ ameown,           0xCC3
-.equ amefflags,        0xCC4
-.equ amexsat,          0xCC5
+.equ amefflags,        0x811
+.equ amexsat,          0x812
 .equ amestatus,        0x800
 
 # ── AME datatype constants ────────────────────────────────────────────────────

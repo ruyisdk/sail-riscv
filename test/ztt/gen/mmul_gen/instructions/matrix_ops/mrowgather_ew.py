@@ -26,7 +26,6 @@ class MrowgatherEw(MatrixOpsInstruction):
 
     name = "mrowgather.ew"
     summary = "gather rows through an element-sized index table"
-    summary_zh = "通过元素宽度的索引表按行聚集"
     subject = "gather/scatter test cases."
     operands = (DESTINATION_OPERAND, FIRST_SOURCE_OPERAND, SECOND_SOURCE_OPERAND)
     templates = (

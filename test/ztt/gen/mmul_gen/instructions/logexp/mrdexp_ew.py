@@ -25,7 +25,6 @@ class MrdexpEw(LogExpInstruction):
 
     name = "mrdexp.ew"
     summary = "recover the mantissa of a scaled square"
-    summary_zh = "恢复已缩放方阵的尾数"
     subject = "integer log/exp test cases."
     operands = (DESTINATION_OPERAND, FIRST_SOURCE_OPERAND, SECOND_SOURCE_OPERAND)
     templates = (

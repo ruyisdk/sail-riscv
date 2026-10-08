@@ -14,12 +14,6 @@ labels: the template decides which squares back them.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-哪些数据方阵表达每个舍入用例。
-
-每次舍入扫描都由同样的三个问题驱动——哪些方阵使结果上溢、下溢或恰好落在半值——每个问题在这里按 :class:`FloatArithmeticRole` 回答，因此隔壁的模板渲染器读取计划，而不是按角色分支。答案给出的是标签角色而不是标签：由模板决定用哪些方阵来承载。
-"""
-
 from mmul_gen.machine import MachineConfig
 from mmul_gen.templates.elementwise_float import case_registers
 from mmul_gen.templates.elementwise_float_arithmetic import FloatArithmeticRole

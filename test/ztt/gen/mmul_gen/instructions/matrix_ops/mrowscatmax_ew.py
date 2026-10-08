@@ -26,7 +26,6 @@ class MrowscatmaxEw(MatrixOpsInstruction):
 
     name = "mrowscatmax.ew"
     summary = "scatter-max rows through an index table"
-    summary_zh = "通过索引表按行散射取最大值"
     subject = "gather/scatter test cases."
     operands = (DESTINATION_OPERAND, FIRST_SOURCE_OPERAND, SECOND_SOURCE_OPERAND)
     templates = (

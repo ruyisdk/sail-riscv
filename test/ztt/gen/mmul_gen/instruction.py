@@ -132,14 +132,6 @@ class Instruction:
     name: str = ""
     #: One-line description of what the instruction does.
     summary: str = ""
-    #: Chinese one-line description.  The design document reads this field and
-    #: nothing else, so the delivered prose has exactly one source and cannot
-    #: drift from a translation kept beside it.
-    summary_zh: str = ""
-    #: Chinese rendering of the manual's Synopsis and Description, for the
-    #: instructions whose design-document section carries a manual-sourced
-    #: narrative block.  Empty for an instruction that has no such block yet.
-    manual_zh: str = ""
     #: Ordered architectural operands.
     operands: tuple[Operand, ...] = ()
     #: Ordered templates this instruction is generated from.
@@ -192,7 +184,7 @@ class Instruction:
         super().__init_subclass__(**kwargs)
         if family_base:
             return
-        for attribute in ("name", "summary", "summary_zh", "templates", "subject"):
+        for attribute in ("name", "summary", "templates", "subject"):
             if not getattr(cls, attribute, None):
                 raise TypeError(f"{cls.__name__} must declare {attribute!r}")
         # Instructions without operands declare an empty tuple explicitly, so a

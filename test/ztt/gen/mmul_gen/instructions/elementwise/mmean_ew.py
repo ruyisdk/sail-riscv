@@ -23,7 +23,6 @@ class MmeanEw(ElementwiseInstruction):
 
     name = "mmean.ew"
     summary = "mean of two matrix operands"
-    summary_zh = "两个矩阵操作数逐元素求平均值"
     subject = "elementwise test cases."
     operands = ()
     form = ElementwiseForm.BINARY_M

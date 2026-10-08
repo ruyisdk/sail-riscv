@@ -49,20 +49,35 @@ _start:
 .Lexpect_ok_\@:
 .endm
 
-# ── Illegal-instruction trap guard ────────────────────────────────────────────
+# ── Trap guard ────────────────────────────────────────────────────────────────
 # TRAP_GUARD_ARM installs the guard handler and zeroes the s11 trap counter.
-# Each guarded instruction must be followed by EXPECT_TRAP n, where n counts
-# the traps expected since arming.  The handler fails on any cause other than
-# illegal instruction, steps over the 4-byte trapping instruction, and bumps
-# s11.  Clobbers: t5, t6, s11.
+# The handler always accepts an illegal-instruction trap, and one extra cause
+# configured with TRAP_GUARD_ACCEPT_CAUSE.  s10 holds that cause, or -1 when no
+# extra cause is accepted.  Each guarded instruction must be followed by
+# EXPECT_TRAP n (any accepted cause) or EXPECT_TRAP_CAUSE n, cause (a specific
+# one).  The handler fails on any other cause, steps over the 4-byte trapping
+# instruction, and bumps s11.  Clobbers: t5, t6, s10, s11.
 .macro TRAP_GUARD_ARM
     la    t0, .Ltrap_guard_handler
     csrw  mtvec, t0
     li    s11, 0
+    li    s10, -1
+.endm
+
+# TRAP_GUARD_ACCEPT_CAUSE cause  — also accept this mcause as expected.
+.macro TRAP_GUARD_ACCEPT_CAUSE cause
+    li    s10, \cause
 .endm
 
 .macro EXPECT_TRAP count
     EXPECT s11, \count
+.endm
+
+# EXPECT_TRAP_CAUSE count, cause  — like EXPECT_TRAP, and mcause must be cause.
+.macro EXPECT_TRAP_CAUSE count, cause
+    EXPECT s11, \count
+    csrr  t5, mcause
+    EXPECT t5, \cause
 .endm
 
     j     .Ltrap_guard_done
@@ -70,7 +85,10 @@ _start:
 .Ltrap_guard_handler:
     csrr  t5, mcause
     li    t6, 2
-    bne   t5, t6, .Ltrap_guard_unexpected
+    beq   t5, t6, .Ltrap_guard_step
+    beq   t5, s10, .Ltrap_guard_step
+    j     .Ltrap_guard_unexpected
+.Ltrap_guard_step:
     csrr  t5, mepc
     addi  t5, t5, 4
     csrw  mepc, t5

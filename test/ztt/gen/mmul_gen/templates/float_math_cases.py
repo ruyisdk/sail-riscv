@@ -18,14 +18,6 @@ set, and the exact-semantics scenarios of a transcendental.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-一条浮点一元数学指令的用例。
-
-一个模板承载整个家族，因为生成文件按*每个 datatype* 交错用例：一个 datatype 先贡献其标称用例，再贡献其边界场景，然后下一个 datatype 才开始。按主体形态分模板会把它们按另一种方式分组（先所有标称用例，再所有边界用例），那是另一个文件。
-
-三个主体对应三种用例形态：查表运算的标称用例、带精确结果与标志集合的边界场景、以及超越函数的精确语义场景。
-"""
-
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
@@ -98,7 +90,6 @@ def _acquire_lines() -> list[str]:
 class FloatMathCases(Template):
     """Emit one datatype's nominal (or transcendental) case and its boundaries."""
 
-    summary_zh = "发射一个 datatype 的标称（或超越函数）用例及其边界。"
     name = "float_math_cases"
     dtypes = FORMED_SOFTFLOAT
 

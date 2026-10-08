@@ -32,8 +32,6 @@ class MmulAtAccNeg2d(MatrixMultiplyInstruction):
 
     name = "mmulataccneg.2d"
     summary = "C = C - sum(transpose(A) x B)"
-    summary_zh = "转置 A 的矩阵乘取负累加：C = C − Σ(transpose(A) × B)"
-    manual_zh = "转置 A 的矩阵乘取负累加。从 `acc` 中减去 `ms1` 的转置与 `ms2` 的矩阵乘积；`acc` 既是源又是目的：先读出它的当前值，减去转置 A 的矩阵乘积，再把结果写回。"
     operands = PRODUCT_OPERANDS
     templates = (
         MatrixSmall(ProductFlags(subtract=True, transpose_lhs=True)),

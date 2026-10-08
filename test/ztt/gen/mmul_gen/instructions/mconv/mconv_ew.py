@@ -15,6 +15,9 @@ from mmul_gen.instruction import (
     Instruction,
 )
 from mmul_gen.machine import MachineConfig
+from mmul_gen.templates.mconv_domain_pairs import (
+    MCONV_DOMAIN_PAIRS,
+)
 from mmul_gen.templates.mconv_roundtrip import (
     MCONV_ROUNDTRIP,
 )
@@ -25,10 +28,9 @@ class MconvEw(Instruction):
 
     name = "mconv.ew"
     summary = "convert a formed square between its packed storage and compute datatypes"
-    summary_zh = "在已成形方阵的打包存储 datatype 与计算 datatype 之间转换"
     subject = "storage/compute dtype conversion test cases."
     operands = (DESTINATION_OPERAND, FIRST_SOURCE_OPERAND)
-    templates = (MCONV_ROUNDTRIP,)
+    templates = (MCONV_ROUNDTRIP, MCONV_DOMAIN_PAIRS)
     # The conversion format always carries its data section, even when the
     # active UDS has no conversion pair to put in it.
     always_emits_data = True

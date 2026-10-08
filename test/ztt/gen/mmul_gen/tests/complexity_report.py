@@ -90,20 +90,21 @@ def main() -> None:
     args = parser.parse_args()
 
     modules, functions = collect(args.path)
-    print(f"=== 模块（按代码行，前 {args.top}）===")
+    print(f"=== modules by code lines (top {args.top}) ===")
     for size, name in sorted(modules, reverse=True)[: args.top]:
-        print(f"  {size:4d} 代码行  {name}")
-    print(f"  合计 {len(modules)} 个模块，{sum(s for s, _ in modules)} 代码行")
+        print(f"  {size:4d} code lines  {name}")
+    print(f"  {len(modules)} modules, {sum(s for s, _ in modules)} code lines in total")
 
     production = [f for f in functions if "/tests/" not in f[3]]
-    print(f"\n=== 生产函数（按行数，前 {args.top}）===")
+    print(f"\n=== production functions by lines (top {args.top}) ===")
     for length, depth, name, path in sorted(production, reverse=True)[: args.top]:
-        print(f"  {length:4d} 行, 真实嵌套 {depth}  {name}  ({path})")
-    print(f"  生产函数 {len(production)} 个，测试函数 {len(functions) - len(production)} 个")
+        print(f"  {length:4d} lines, real nesting {depth}  {name}  ({path})")
+    print(f"  {len(production)} production functions, "
+          f"{len(functions) - len(production)} test functions")
     deep = [f for f in production if f[1] >= 3]
-    print(f"  生产代码中真实嵌套 >= 3 的函数: {len(deep)} 个")
+    print(f"  production functions with real nesting >= 3: {len(deep)}")
     for length, depth, name, path in sorted(deep, reverse=True)[:5]:
-        print(f"      嵌套 {depth}, {length} 行  {name}  ({path})")
+        print(f"      nesting {depth}, {length} lines  {name}  ({path})")
 
 
 if __name__ == "__main__":

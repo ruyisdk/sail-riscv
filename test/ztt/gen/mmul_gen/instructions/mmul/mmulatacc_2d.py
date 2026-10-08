@@ -32,8 +32,6 @@ class MmulAtAcc2d(MatrixMultiplyInstruction):
 
     name = "mmulatacc.2d"
     summary = "C = C + sum(transpose(A) x B)"
-    summary_zh = "转置 A 的矩阵乘累加：C = C + Σ(transpose(A) × B)"
-    manual_zh = "转置 A 的矩阵乘累加。将 `ms1` 的转置与 `ms2` 的矩阵乘积累加进 `acc`；`acc` 既是源又是目的：先读出它的当前值，加上转置 A 的矩阵乘积，再把结果写回。"
     operands = PRODUCT_OPERANDS
     templates = (
         MatrixSmall(ProductFlags(transpose_lhs=True)),

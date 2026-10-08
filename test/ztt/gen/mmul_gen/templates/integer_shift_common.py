@@ -23,16 +23,6 @@ is emitted here rather than routed through the multi-per-line element emitter.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-整数移位模板的共享形态。
-
-移位形成一个源操作数，施加移位，再存储结果。两种形式只在位移量的来源上不同：寄存器形式读取第二个 M 操作数，其中每个元素一个位移量；标量形式对所有元素复用同一个整数寄存器。两者都由同一个期望值函数驱动：指令自己的 ``evaluate``，在构造模板时交入，因此每个方向都在自己的类里陈述算式。
-
-源模式让每个元素的符号位保持置位，位移量扫描走过 ``0, 1, bits-1, bits, bits+1, 2*bits-1``：等于和超过元素宽度的位移量钉死硬件对位移量的取模归约，这是普通的按常量移位测试永远触及不到的行为。
-
-4 位元素按两个一个 ``.byte`` 放在一个长行上，因此这里采用该形态，而不走多元素一行的发射器。
-"""
-
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, ClassVar
@@ -43,7 +33,7 @@ from mmul_gen.asm import (
     hex_value,
     pack_nibbles,
 )
-from mmul_gen.case_description import description_zh
+from mmul_gen.case_description import description
 from mmul_gen.machine import FORMED_INTEGER, MachineConfig, dtype_is_signed_int, dtype_stem
 from mmul_gen.registers import choose_m_group_base
 from mmul_gen.templates.base import Case, CaseOutput, Template, case_payload
@@ -199,7 +189,7 @@ class IntegerShiftTemplate(Template, family_base=True):
                 number=0,
                 dtype=dtype,
                 payload=payload,
-                description=description_zh(INPUT_CASE),
+                description=description(INPUT_CASE),
             )
         ]
 

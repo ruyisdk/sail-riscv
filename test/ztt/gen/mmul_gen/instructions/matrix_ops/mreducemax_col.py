@@ -25,7 +25,6 @@ class MreducemaxCol(MatrixOpsInstruction):
 
     name = "mreducemax.col"
     summary = "largest element of each column, replicated down it"
-    summary_zh = "求每列的最大元素并沿该列复制"
     subject = "reduce/prefix test cases."
     operands = (DESTINATION_OPERAND, FIRST_SOURCE_OPERAND)
     templates = (

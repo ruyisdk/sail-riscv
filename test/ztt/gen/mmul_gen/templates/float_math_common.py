@@ -23,16 +23,6 @@ reference inside the documented 2 ulp budget.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-一条浮点一元数学指令的语义。
-
-该家族的每条指令都是 :class:`MathOperation` 的一个成员，成员携带运算自身的行为：哪个激励是标称的、哪些边界场景有架构精确的结果与标志集合、以及（对超越函数）模拟器自己调用哪个主机 libm 函数。
-
-这样十条指令就落在十份声明与三个模板上，任何地方都没有 ``if mnemonic == ...``。
-
-期望值来自 :mod:`mmul_gen.fp_semantics`（从旧参考模块移植的位精确表）以及超越函数单值用例的主机 libm：两个模拟器都把窄格式扩展为 f32，调用*主机*的 ``cosf``/``sinf``/``tanhf``，再舍入回来，因此固化的期望精确复现该路径，并在文档化的 2 ulp 预算内与 30 位精度的 mpmath 参考交叉校验。
-"""
-
 import ctypes
 import struct
 from collections.abc import Sequence

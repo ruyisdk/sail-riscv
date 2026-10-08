@@ -19,14 +19,6 @@ second operand group, :data:`SCALAR_DEST` is the group a scalar form writes, and
 
 from __future__ import annotations
 
-DOC_ZH = """\
-每个 elementwise 配方共享的寄存器词汇与用例发射器。
-
-每个 elementwise 用例形态相同：把操作数方阵加载进 M 寄存器（或把一个标量加载进通用寄存器），执行指令，存储目的方阵。哪些操作数、哪些寄存器、哪条指令行因指令与配方而异，因此这些差异是一个表项（:class:`CasePlan`）；共享形态在这里写一次。
-
-计划以符号方式命名寄存器，使一个表项能描述所有配置：:data:`ZERO` 是寄存器 0 处的组，:data:`SOURCE` 是第二个操作数组，:data:`SCALAR_DEST` 是标量形式写入的组，:data:`SCALAR` 是持有标量操作数的通用寄存器。
-"""
-
 import re
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass

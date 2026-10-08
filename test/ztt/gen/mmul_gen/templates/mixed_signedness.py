@@ -7,10 +7,6 @@
 
 from __future__ import annotations
 
-DOC_ZH = """\
-混合符号性双方阵模板。
-"""
-
 from typing import TYPE_CHECKING
 
 from collections.abc import Sequence
@@ -87,7 +83,6 @@ def _packed_square_data_lines(
 class MixedSignednessMultipleSquare(Template):
     """Two packed squares with different signedness and value."""
 
-    summary_zh = "两个符号性与取值都不同的打包方阵。"
     name = "mixed_signedness_multiple_square"
     dtypes = SIGNED_PACKED_SOURCE
 
@@ -108,7 +103,7 @@ class MixedSignednessMultipleSquare(Template):
             source_bits=machine.uds // 2,
             destination_bits=machine.uds,
             description=(
-                f"两个打包方阵：{product.lhs_dtype} × {product.rhs_dtype} "
+                f"two packed squares: {product.lhs_dtype} × {product.rhs_dtype} "
                 f"-> {product.dest_dtype}"
             ),
         )

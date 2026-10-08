@@ -25,7 +25,6 @@ class McmpgeEw(ElementwiseInstruction):
 
     name = "mcmpge.ew"
     summary = "compare greater-or-equal of two matrix operands"
-    summary_zh = "两个矩阵操作数逐元素比较大于等于"
     subject = "elementwise test cases."
     operands = ()
     form = ElementwiseForm.BINARY_M

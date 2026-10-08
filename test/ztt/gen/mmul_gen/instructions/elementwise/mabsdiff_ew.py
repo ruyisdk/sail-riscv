@@ -29,7 +29,6 @@ class MabsdiffEw(ElementwiseInstruction):
 
     name = "mabsdiff.ew"
     summary = "absolute difference of two matrix operands"
-    summary_zh = "两个矩阵操作数逐元素求绝对差"
     subject = "elementwise test cases."
     operands = ()
     form = ElementwiseForm.BINARY_M

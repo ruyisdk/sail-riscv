@@ -25,7 +25,6 @@ class Mlog2subEw(LogExpInstruction):
 
     name = "mlog2sub.ew"
     summary = "base-2 logarithm of the ratio of two squares"
-    summary_zh = "对两个方阵之比取以 2 为底的对数"
     subject = "integer log/exp test cases."
     operands = (DESTINATION_OPERAND, FIRST_SOURCE_OPERAND, SECOND_SOURCE_OPERAND)
     templates = (

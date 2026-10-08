@@ -21,7 +21,6 @@ from mmul_gen.templates.pack_slots import (
 class MpackEwX(PackInstruction):
     name = "mpack.ew.x"
     summary = "narrow a compute square into one packed storage slot"
-    summary_zh = "将计算方阵收窄写入一个打包存储槽"
     operands = (DESTINATION_OPERAND, PACK_SLOT_OPERAND, PACK_SOURCE_OPERAND)
     templates = (PACK_SLOTS,)
 

@@ -12,12 +12,6 @@ verifies both the converted slot and the preserved one.
 
 from __future__ import annotations
 
-DOC_ZH = """\
-索引打包模板：将计算方阵收窄进一个存储槽。
-
-每个用例把一个计算方阵转换进打包存储方阵的选定槽，同时另一个槽保持加载时的值，并验证转换后的槽与被保留的槽。
-"""
-
 from mmul_gen.templates.base import case_payload
 from mmul_gen.templates.pack_common import (
     SLOT,
@@ -36,7 +30,6 @@ from mmul_gen.templates.pack_common import (
 class PackSlots(PackedSlotConversion):
     """Narrow a whole-register compute square into one packed storage slot."""
 
-    summary_zh = "将整个寄存器的计算方阵收窄写入一个打包存储槽。"
     name = "packed_slot_write"
 
     def render(self, machine, instruction, case, out):

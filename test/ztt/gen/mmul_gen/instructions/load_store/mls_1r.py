@@ -22,7 +22,6 @@ class Mls1r(Instruction):
 
     name = "mls.1r"
     summary = "load one physical M register from memory"
-    summary_zh = "从内存加载一个物理 M 寄存器"
     subject = "raw load/store test cases."
     operands = (M_TRANSFER_OPERAND, SCALAR_SOURCE_OPERAND)
     templates = (RAW_TRANSFER,)

@@ -22,7 +22,6 @@ class MandEwX(ElementwiseInstruction):
 
     name = "mand.ew.x"
     summary = "bitwise and of a scalar and a matrix operand"
-    summary_zh = "标量与矩阵操作数逐元素按位与"
     subject = "elementwise test cases."
     operands = ()
     form = ElementwiseForm.BINARY_X

@@ -22,7 +22,6 @@ class MmovAM(Instruction):
 
     name = "mmov.a.m"
     summary = "copy one M register into an accumulator"
-    summary_zh = "将一个 M 寄存器拷贝到累加器"
     subject = "accumulator test cases."
     operands = (ACCUMULATOR_OPERAND, M_TRANSFER_OPERAND)
     templates = (ACCUMULATOR_M_TO_ACC,)

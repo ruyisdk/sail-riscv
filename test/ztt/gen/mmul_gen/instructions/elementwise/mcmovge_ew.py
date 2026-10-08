@@ -22,7 +22,6 @@ class McmovgeEw(ElementwiseInstruction):
 
     name = "mcmovge.ew"
     summary = "conditional move when greater-or-equal of two matrix operands into the destination"
-    summary_zh = "两个矩阵操作数比较大于等于成立时，将源条件搬移到目的操作数"
     subject = "elementwise test cases."
     operands = ()
     form = ElementwiseForm.TERNARY_M
