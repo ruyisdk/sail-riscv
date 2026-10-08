@@ -92,7 +92,7 @@ def saturating_case(
 
     The absolute value of an *unsigned* element is the identity, so its result
     can never leave the representable range and amexsat must stay clear; no
-    saturating case exists for that combination, and expecting one would be
+    saturating case exists for that configuration, and expecting one would be
     architecturally wrong.
     """
 

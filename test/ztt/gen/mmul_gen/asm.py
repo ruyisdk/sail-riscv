@@ -5,7 +5,7 @@
 #
 """Assembly and data emission primitives shared by every matrix-multiply template.
 
-Nothing here knows about a specific instruction: these helpers turn geometry,
+Nothing here knows about a specific instruction: these helpers turn configuration,
 element widths, and expected values into GAS lines.  Instruction-specific
 operand sequences live in the instruction classes and in :mod:`mmul_gen.templates`.
 """

@@ -60,7 +60,7 @@ The generator has a single one-way data flow:
 3. `gen/mmul_gen/catalog.py` is the entire catalog — an explicit, ordered
    `INSTRUCTION_FAMILIES` tuple — plus the generation loop. There is no function-value registry,
    no decorators, no import side effects and no implicit registration step.
-4. `gen/mmul_gen/__main__.py` parses the geometry parameters, renders and writes out the source
+4. `gen/mmul_gen/__main__.py` parses the configuration parameters, renders and writes out the source
    files, and can print the catalog (`--list`) or a single family (`--family`).
 
 This separation is deliberate: when reading a new instruction, first look at its instruction class

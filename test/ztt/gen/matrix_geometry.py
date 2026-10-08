@@ -3,7 +3,7 @@
 # Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
 # SPDX-License-Identifier: BSD-3-Clause-Clear
 
-"""Legal AME geometry values, and the default test-matrix sweep.
+"""Legal AME configuration values, and the default test-matrix sweep.
 
 ``riscv-attached-matrix-extension/src/parameters.adoc`` is the authority for
 what an implementation may report, and every Ztt command-line front end

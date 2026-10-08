@@ -3,7 +3,7 @@
 # Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
 # SPDX-License-Identifier: BSD-3-Clause-Clear
 #
-"""The store-atomicity recipe's geometry and its registration on every store.
+"""The store-atomicity recipe's configuration and its registration on every store.
 
 The generated sources are frozen by the golden test; these are the properties a
 reader of the recipe should be able to check without hashing assembly: every

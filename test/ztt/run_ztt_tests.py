@@ -38,7 +38,7 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 SAIL_AME_ROOT = SCRIPT_DIR.parents[1]
 
-# The legal geometry values live with the generators; the driver sweeps exactly
+# The legal configuration values live with the generators; the driver sweeps exactly
 # what their command lines accept.
 GEN_DIR = SCRIPT_DIR / "gen"
 if str(GEN_DIR) not in sys.path:
@@ -55,7 +55,7 @@ MREG_VALUES = matrix_geometry.M_REG_VALUES
 ACC_VALUES = matrix_geometry.ACC_REG_VALUES
 
 # Runtime JSON template: a fully rendered Ztt configuration whose Ztt block
-# gets rewritten per combination.  Any rendered matrix JSON works; the
+# gets rewritten per configuration.  Any rendered matrix JSON works; the
 # committed default keeps the script self-contained.
 DEFAULT_CONFIG_TEMPLATE = SCRIPT_DIR / "cfg" / "rv64d_v256_e64_ztt.json.in"
 
@@ -397,7 +397,7 @@ def main() -> int:
     parser.add_argument(
         "--combo",
         action="append",
-        help="run one combination (e.g. n8_u8_m32_a4); repeatable",
+        help="run one configuration (e.g. n8_u8_m32_a4); repeatable",
     )
     parser.add_argument(
         "--n",
@@ -436,7 +436,7 @@ def main() -> int:
         help="parallel worker count (default: CPUs available to this process, like nproc)",
     )
     parser.add_argument("--timeout", type=int, default=300, help="per-test simulator timeout")
-    parser.add_argument("--list", action="store_true", help="list all combinations and exit")
+    parser.add_argument("--list", action="store_true", help="list all configurations and exit")
     parser.add_argument("--stop-fast", action="store_true", help="abort on first failure")
     args = parser.parse_args()
 

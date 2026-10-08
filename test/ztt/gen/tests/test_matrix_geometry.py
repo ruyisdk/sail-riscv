@@ -3,7 +3,7 @@
 # Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
 # SPDX-License-Identifier: BSD-3-Clause-Clear
 
-"""The shared geometry validators accept exactly the manual's values."""
+"""The shared configuration validators accept exactly the manual's values."""
 
 from __future__ import annotations
 
