@@ -247,6 +247,176 @@ function ame_fp32_ternary_result(op : ame_int_ternary_op, rm : bits_rm,
   (fflags, ame_fp32_result(result32))
 }
 
+// ---------------------------------------------------------------------------
+// BF16 fused ternary arithmetic.
+//
+// The manual converts the exact sum `dest + ms1 * ms2` to the destination
+// format once.  SoftFloat exposes no bf16 fused primitive, so the exact sum is
+// computed with Sail's arbitrary-precision `int` and rounded exactly once
+// here.  A finite bf16 value is `significand * 2 ^ exponent` with an 8-bit
+// significand and an exponent in [-133, 120]; a product of two of them keeps
+// at most 16 significant bits, so the exact result is a dyadic rational that
+// fits comfortably in an `int`.
+// ---------------------------------------------------------------------------
+
+// Round `value * 2 ^ (-shift)` to an integer under `rm`; `value` is
+// non-negative and `sign` selects the directed-rounding direction.  A
+// non-positive shift is an exact left shift, so callers can pass the full
+// fractional size and only the required right shifts round.
+function ame_round_scaled_int(sign : bits(1), rm : bits_rm, value : int,
+                              shift : int) -> (bool, int) = {
+  if shift <= 0 then (false, value * 2 ^ (0 - shift))
+  else {
+    let divisor = 2 ^ shift;
+    let quotient = quot_round_zero(value, divisor);
+    let remainder = value - quotient * divisor;
+    let halfway = divisor / 2;
+    let quotient_odd = quotient - quot_round_zero(quotient, 2) * 2 == 1;
+    let increment : bool = match rm {
+      0b000 => remainder > halfway | (remainder == halfway & quotient_odd), // RNE
+      0b001 => false,                                                       // RTZ
+      0b010 => sign == 0b1 & remainder != 0,                                // RDN
+      0b011 => sign == 0b0 & remainder != 0,                                // RUP
+      0b100 => remainder >= halfway,                                        // RMM
+      0b110 => remainder != 0 & not(quotient_odd),                          // RNO
+      _     => remainder > halfway | (remainder == halfway & quotient_odd)
+    };
+    (remainder != 0, if increment then quotient + 1 else quotient)
+  }
+}
+
+// Position of the most significant set bit, i.e. floor(log2(value)) for
+// value >= 1.  The exact bf16 sums reach a few hundred bits, past the fixed
+// element widths, so this must not be bounded by the datatype size.
+function ame_int_floor_log2(value : int) -> int = {
+  var remaining : int = value;
+  var result : int = 0;
+  var running : bool = true;
+  while running do {
+    if remaining >= 2 then {
+      remaining = quot_round_zero(remaining, 2);
+      result = result + 1
+    } else {
+      running = false
+    }
+  };
+  result
+}
+
+function ame_float_overflow_to_inf(sign : bits(1), rm : bits_rm) -> bool =
+  rm == 0b000 | // RNE
+  rm == 0b100 | // RMM
+  (rm == 0b011 & sign == 0b0) | // RUP
+  (rm == 0b010 & sign == 0b1)   // RDN
+
+function ame_bf16_is_nan(value : bits_BF16) -> bool =
+  value[14 .. 7] == ones() & value[6 .. 0] != zeros()
+
+function ame_bf16_is_snan(value : bits_BF16) -> bool =
+  ame_bf16_is_nan(value) & value[6] == 0b0
+
+function ame_bf16_is_inf(value : bits_BF16) -> bool =
+  value[14 .. 7] == ones() & value[6 .. 0] == zeros()
+
+function ame_bf16_is_zero(value : bits_BF16) -> bool =
+  value[14 .. 7] == zeros() & value[6 .. 0] == zeros()
+
+// Decode a finite bf16 into `value = significand * 2 ^ exponent`.
+function ame_bf16_significand_exponent(value : bits_BF16) -> (int, int) = {
+  let exponent = unsigned(value[14 .. 7]);
+  let fraction = unsigned(value[6 .. 0]);
+  if exponent == 0 then (fraction, 0 - 133)
+  else (128 + fraction, exponent - 134)
+}
+
+// Round the exact non-zero magnitude `magnitude * 2 ^ exponent` to bf16 with
+// one rounding, applying tininess-after-rounding (UF only for a tiny delivered
+// result) and overflow (OF+NX, saturating to Inf or the maximum finite value
+// according to `rm`).
+function ame_bf16_round_exact(sign : bits(1), rm : bits_rm, magnitude : int,
+                              exponent : int) -> (bits_fflags, bits_BF16) = {
+  let msb = ame_int_floor_log2(magnitude);
+  let leading = exponent + msb;
+  if leading >= 0 - 126 then {
+    // Normal grid: the unit in the last place is 2 ^ (leading - 7).
+    let (inexact, rounded) = ame_round_scaled_int(sign, rm, magnitude, msb - 7);
+    let carry = rounded == 256;
+    let significand : int = if carry then 128 else rounded;
+    let result_exponent : int = leading + (if carry then 1 else 0);
+    if result_exponent > 127 then {
+      let result : bits_BF16 =
+        if ame_float_overflow_to_inf(sign, rm) then sign @ ones(8) @ zeros(7)
+        else sign @ to_bits_unsafe(8, 254) @ to_bits_unsafe(7, 127);
+      (0b00101, result) // OF | NX
+    } else {
+      let result : bits_BF16 =
+        sign @ to_bits_unsafe(8, result_exponent + 127) @
+        to_bits_unsafe(7, significand - 128);
+      ((if inexact then 0b00001 else 0b00000), result)
+    }
+  } else {
+    // Subnormal grid: the unit in the last place is 2 ^ -133.
+    let (inexact, rounded) = ame_round_scaled_int(sign, rm, magnitude,
+      0 - (exponent + 133));
+    if rounded >= 128 then
+      // Rounded up to the minimum normal: not tiny after rounding.
+      ((if inexact then 0b00001 else 0b00000),
+       sign @ to_bits_unsafe(8, 1) @ zeros(7))
+    else
+      ((if inexact then 0b00011 else 0b00000), // UF | NX
+       sign @ zeros(8) @ to_bits_unsafe(7, rounded))
+  }
+}
+
+// Single-rounding bf16 fused multiply-add `(-1)^negate_product * a * b + c`,
+// matching the reference `bf16_mulAdd` used by the C simulator: NaN operands
+// collapse to the bf16 default NaN (raising NV only for signalling NaNs),
+// zero times infinity is invalid, and an exact zero sum keeps the IEEE sign.
+function ame_bf16_fma(rm : bits_rm, a : bits_BF16, b : bits_BF16, c : bits_BF16,
+                      negate_product : bool) -> (bits_fflags, bits_BF16) = {
+  let sign_c = c[15 .. 15];
+  let sign_product_raw : bits(1) = if a[15 .. 15] == b[15 .. 15] then 0b0 else 0b1;
+  let sign_product : bits(1) =
+    if negate_product then not_bit(sign_product_raw) else sign_product_raw;
+
+  if ame_bf16_is_nan(a) | ame_bf16_is_nan(b) | ame_bf16_is_nan(c) then {
+    let invalid : bits_fflags =
+      if ame_bf16_is_snan(a) | ame_bf16_is_snan(b) | ame_bf16_is_snan(c)
+      then 0b10000 else 0b00000;
+    (invalid, 0x7FC0)
+  } else if (ame_bf16_is_zero(a) & ame_bf16_is_inf(b)) |
+              (ame_bf16_is_inf(a) & ame_bf16_is_zero(b)) then
+    (0b10000, 0x7FC0)
+  else if ame_bf16_is_inf(a) | ame_bf16_is_inf(b) then {
+    if ame_bf16_is_inf(c) & sign_c != sign_product then (0b10000, 0x7FC0)
+    else (zeros(), sign_product @ ones(8) @ zeros(7))
+  } else if ame_bf16_is_inf(c) then
+    (zeros(), sign_c @ ones(8) @ zeros(7))
+  else {
+    let (sig_a, exp_a) = ame_bf16_significand_exponent(a);
+    let (sig_b, exp_b) = ame_bf16_significand_exponent(b);
+    let (sig_c, exp_c) = ame_bf16_significand_exponent(c);
+    let product_exponent = exp_a + exp_b;
+    // Both terms are aligned to the smaller exponent; the shifts stay exact.
+    let common_exponent = min(product_exponent, exp_c);
+    let product_term = sig_a * sig_b * 2 ^ (product_exponent - common_exponent);
+    let addend_term = sig_c * 2 ^ (exp_c - common_exponent);
+    let total =
+      (if sign_product == 0b1 then 0 - product_term else product_term) +
+      (if sign_c == 0b1 then 0 - addend_term else addend_term);
+    if total == 0 then {
+      let zero_sign : bits(1) =
+        if sign_product == sign_c then sign_product
+        else if rm == 0b010 then 0b1 else 0b0;
+      (zeros(), zero_sign @ zeros(15))
+    } else {
+      let sign : bits(1) = if total < 0 then 0b1 else 0b0;
+      let magnitude = if total < 0 then 0 - total else total;
+      ame_bf16_round_exact(sign, rm, magnitude, common_exponent)
+    }
+  }
+}
+
 function ame_bf16_to_f32(value : bits(ame_max_dtype_size)) -> (bits_fflags, bits_S) = {
   let v : bits_BF16 = value[15 .. 0];
   let sign = v[15 .. 15];
@@ -337,29 +507,24 @@ function ame_bf16_ternary_result(op : ame_int_ternary_op, rm : bits_rm,
                                  ms1_val : bits(ame_max_dtype_size),
                                  ms2_val : bits(ame_max_dtype_size))
   -> (bits_fflags, bits(ame_max_dtype_size)) = {
-  let (dest_fflags, dest32) = ame_bf16_to_f32(md_val);
-  let (lhs_fflags, lhs32) = ame_bf16_to_f32(ms1_val);
-  let (rhs_fflags, rhs32) = ame_bf16_to_f32(ms2_val);
-  let input_fflags = dest_fflags | lhs_fflags | rhs_fflags;
-
-  match op {
-    AME_INT_MULACC => {
-      let (op_fflags, result32) = riscv_f32MulAdd(rm, lhs32, rhs32, dest32);
-      ame_bf16_round_result(rm, input_fflags | op_fflags, result32)
-    },
-    AME_INT_MULNACC => {
-      let (op_fflags, result32) = riscv_f32MulAdd(rm, ame_fp32_negate(lhs32), rhs32, dest32);
-      ame_bf16_round_result(rm, input_fflags | op_fflags, result32)
-    },
-    AME_INT_MULADD => {
-      let (op_fflags, result32) = riscv_f32MulAdd(rm, rhs32, dest32, lhs32);
-      ame_bf16_round_result(rm, input_fflags | op_fflags, result32)
-    },
-    AME_INT_MULSUB => {
-      let (op_fflags, result32) = riscv_f32MulAdd(rm, ame_fp32_negate(rhs32), dest32, lhs32);
-      ame_bf16_round_result(rm, input_fflags | op_fflags, result32)
-    }
-  }
+  let dest : bits_BF16 = md_val[15 .. 0];
+  let lhs : bits_BF16 = ms1_val[15 .. 0];
+  let rhs : bits_BF16 = ms2_val[15 .. 0];
+  // The four ternary instructions differ only in operand order and in whether
+  // the product is negated (manual 6.x):
+  //   MULACC  : lhs * rhs + dest
+  //   MULNACC : -(lhs * rhs) + dest
+  //   MULADD  : rhs * dest + lhs
+  //   MULSUB  : -(rhs * dest) + lhs
+  let (a, b, c, negate_product) : (bits_BF16, bits_BF16, bits_BF16, bool) =
+    match op {
+      AME_INT_MULACC  => (lhs, rhs, dest, false),
+      AME_INT_MULNACC => (lhs, rhs, dest, true),
+      AME_INT_MULADD  => (rhs, dest, lhs, false),
+      AME_INT_MULSUB  => (rhs, dest, lhs, true)
+    };
+  let (fflags, result) = ame_bf16_fma(rm, a, b, c, negate_product);
+  (fflags, ame_bf16_result(result))
 }
 
 function ame_bf16_unary_result(op : ame_int_unary_op,
@@ -375,32 +540,8 @@ function ame_ocp_fp8_result(value : bits(8)) -> bits(ame_max_dtype_size) =
   zero_extend(ame_max_dtype_size, value)
 
 function ame_ocp_round_right(sign : bits(1), rm : bits_rm, value : int, shift : nat)
-  -> (bool, int) = {
-  if shift == 0 then (false, value)
-  else {
-    let divisor = 2 ^ shift;
-    let quotient = quot_round_zero(value, divisor);
-    let remainder = value - quotient * divisor;
-    let halfway = divisor / 2;
-    let quotient_odd = quotient - quot_round_zero(quotient, 2) * 2 == 1;
-    let increment : bool = match rm {
-      0b000 => remainder > halfway | (remainder == halfway & quotient_odd), // RNE
-      0b001 => false,                                                       // RTZ
-      0b010 => sign == 0b1 & remainder != 0,                                // RDN
-      0b011 => sign == 0b0 & remainder != 0,                                // RUP
-      0b100 => remainder >= halfway,                                        // RMM
-      0b110 => remainder != 0 & not(quotient_odd),                          // RNO
-      _     => remainder > halfway | (remainder == halfway & quotient_odd)
-    };
-    (remainder != 0, if increment then quotient + 1 else quotient)
-  }
-}
-
-function ame_float_overflow_to_inf(sign : bits(1), rm : bits_rm) -> bool =
-  rm == 0b000 | // RNE
-  rm == 0b100 | // RMM
-  (rm == 0b011 & sign == 0b0) | // RUP
-  (rm == 0b010 & sign == 0b1)   // RDN
+  -> (bool, int) =
+  ame_round_scaled_int(sign, rm, value, shift)
 
 // Tininess is detected after rounding.  An inexact subnormal/zero raises
 // UF+NX, while a tiny exact value and an inexact value rounded up to the

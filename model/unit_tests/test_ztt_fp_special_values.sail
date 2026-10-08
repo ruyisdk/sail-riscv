@@ -267,3 +267,153 @@ function test_ztt_operand_class_validation() -> unit = {
   assert(amestatus == 0b1);
   assert(extract_elem_rm(read_m_square_rm(fp16, Ameregidx(0b00000)), 16, 0)[15 .. 0] == 0x3555);
 }
+
+// BF16 fused multiply-add must round the exact sum once, not first to f32 and
+// then to bf16.  Every vector below fixes a value that the old two-step path
+// got wrong (or that pins the one-rounding contract against a wider format).
+$[test]
+function test_ztt_bf16_fused_single_rounding() -> unit = {
+  let bf16 : bits(32) = 0x20300110;
+  let rne : bits_rm = 0b000;
+
+  // dest + ms1 * ms2 with the exact sum a quarter of an f32 ulp above the
+  // 0x3fc0/0x3fc1 midpoint: two-step rounds down to 0x3fc0, one rounding up.
+  let (forward_flags, forward) = ame_float_ternary_result(bf16, AME_INT_MULACC, rne,
+    zero_extend(ame_max_dtype_size, 0x3300), // 2^-25
+    zero_extend(ame_max_dtype_size, 0x3fa0), // 1.25
+    zero_extend(ame_max_dtype_size, 0x3f9a)); // 1.203125
+  assert(forward_flags == 0b00001);
+  assert(forward[15 .. 0] == 0x3fc1);
+
+  // The same product with the smallest BF16 addend (2^-133).  Borrowing f64
+  // would swallow the addend and land on the midpoint, so this pins the exact
+  // computation.
+  let (min_sub_flags, min_sub) = ame_float_ternary_result(bf16, AME_INT_MULACC, rne,
+    zero_extend(ame_max_dtype_size, 0x0001), // 2^-133
+    zero_extend(ame_max_dtype_size, 0x3fa0),
+    zero_extend(ame_max_dtype_size, 0x3f9a));
+  assert(min_sub_flags == 0b00001);
+  assert(min_sub[15 .. 0] == 0x3fc1);
+
+  // MULACCNEG negates the product: -(1.25 * 1.203125) - 2^-25.
+  let (nacc_flags, nacc) = ame_float_ternary_result(bf16, AME_INT_MULNACC, rne,
+    zero_extend(ame_max_dtype_size, 0xb300), // -2^-25
+    zero_extend(ame_max_dtype_size, 0x3fa0),
+    zero_extend(ame_max_dtype_size, 0x3f9a));
+  assert(nacc_flags == 0b00001);
+  assert(nacc[15 .. 0] == 0xbfc1);
+
+  // MULADD is ms2 * dest + ms1, so the product operands move to ms2/dest.
+  let (add_flags, add) = ame_float_ternary_result(bf16, AME_INT_MULADD, rne,
+    zero_extend(ame_max_dtype_size, 0x3fa0),
+    zero_extend(ame_max_dtype_size, 0x3300),
+    zero_extend(ame_max_dtype_size, 0x3f9a));
+  assert(add_flags == 0b00001);
+  assert(add[15 .. 0] == 0x3fc1);
+
+  // MULSUB is ms1 - ms2 * dest.
+  let (sub_flags, sub) = ame_float_ternary_result(bf16, AME_INT_MULSUB, rne,
+    zero_extend(ame_max_dtype_size, 0x3fa0),
+    zero_extend(ame_max_dtype_size, 0xb300), // -2^-25
+    zero_extend(ame_max_dtype_size, 0x3f9a));
+  assert(sub_flags == 0b00001);
+  assert(sub[15 .. 0] == 0xbfc1);
+
+  // Opposite direction: the exact sum is 2^-28 below a midpoint whose lower
+  // neighbour is odd, so two-step ties up to 0x3e42 while one rounding goes
+  // down to 0x3e41.
+  let (below_flags, below) = ame_float_ternary_result(bf16, AME_INT_MULACC, rne,
+    zero_extend(ame_max_dtype_size, 0xb180), // -2^-28
+    zero_extend(ame_max_dtype_size, 0x3f81), // 1.0078125
+    zero_extend(ame_max_dtype_size, 0x3e40)); // 0.1875
+  assert(below_flags == 0b00001);
+  assert(below[15 .. 0] == 0x3e41);
+
+  // NaN operands collapse to the BF16 default NaN without propagating a
+  // payload; only a signalling NaN raises NV.
+  let (qnan_flags, qnan) = ame_float_ternary_result(bf16, AME_INT_MULACC, rne,
+    zero_extend(ame_max_dtype_size, 0x7fc1),
+    zero_extend(ame_max_dtype_size, 0x3f80),
+    zero_extend(ame_max_dtype_size, 0x3f80));
+  assert(qnan_flags == 0b00000);
+  assert(qnan[15 .. 0] == 0x7fc0);
+  let (snan_flags, snan) = ame_float_ternary_result(bf16, AME_INT_MULACC, rne,
+    zero_extend(ame_max_dtype_size, 0x7f81),
+    zero_extend(ame_max_dtype_size, 0x3f80),
+    zero_extend(ame_max_dtype_size, 0x3f80));
+  assert(snan_flags == 0b10000);
+  assert(snan[15 .. 0] == 0x7fc0);
+
+  // Invalid operations and the infinity result still follow the fused rules.
+  let (zero_inf_flags, zero_inf) = ame_float_ternary_result(bf16, AME_INT_MULACC, rne,
+    zero_extend(ame_max_dtype_size, 0x3f80),
+    zero_extend(ame_max_dtype_size, 0x0000),
+    zero_extend(ame_max_dtype_size, 0x7f80));
+  assert(zero_inf_flags == 0b10000);
+  assert(zero_inf[15 .. 0] == 0x7fc0);
+  let (inf_inf_flags, inf_inf) = ame_float_ternary_result(bf16, AME_INT_MULACC, rne,
+    zero_extend(ame_max_dtype_size, 0xff80),
+    zero_extend(ame_max_dtype_size, 0x7f80),
+    zero_extend(ame_max_dtype_size, 0x3f80));
+  assert(inf_inf_flags == 0b10000);
+  assert(inf_inf[15 .. 0] == 0x7fc0);
+  let (finite_inf_flags, finite_inf) = ame_float_ternary_result(bf16, AME_INT_MULACC, rne,
+    zero_extend(ame_max_dtype_size, 0x3f80),
+    zero_extend(ame_max_dtype_size, 0x7f80),
+    zero_extend(ame_max_dtype_size, 0x3f80));
+  assert(finite_inf_flags == 0b00000);
+  assert(finite_inf[15 .. 0] == 0x7f80);
+
+  // An exactly representable subnormal raises nothing, while a product of the
+  // two smallest subnormals underflows to signed zero with UF+NX.
+  let (exact_flags, exact) = ame_float_ternary_result(bf16, AME_INT_MULACC, rne,
+    zero_extend(ame_max_dtype_size, 0x0000),
+    zero_extend(ame_max_dtype_size, 0x0001),
+    zero_extend(ame_max_dtype_size, 0x3f80));
+  assert(exact_flags == 0b00000);
+  assert(exact[15 .. 0] == 0x0001);
+  let (tiny_flags, tiny) = ame_float_ternary_result(bf16, AME_INT_MULACC, rne,
+    zero_extend(ame_max_dtype_size, 0x0000),
+    zero_extend(ame_max_dtype_size, 0x0001),
+    zero_extend(ame_max_dtype_size, 0x0001));
+  assert(tiny_flags == 0b00011);
+  assert(tiny[15 .. 0] == 0x0000);
+
+  // Overflow saturates with OF+NX: infinity under RNE, maximum finite under a
+  // directed mode.
+  let (ovf_flags, ovf) = ame_float_ternary_result(bf16, AME_INT_MULACC, rne,
+    zero_extend(ame_max_dtype_size, 0x0000),
+    zero_extend(ame_max_dtype_size, 0x7f7f),
+    zero_extend(ame_max_dtype_size, 0x7f7f));
+  assert(ovf_flags == 0b00101);
+  assert(ovf[15 .. 0] == 0x7f80);
+  let (ovf_rtz_flags, ovf_rtz) = ame_float_ternary_result(bf16, AME_INT_MULACC, 0b001,
+    zero_extend(ame_max_dtype_size, 0x0000),
+    zero_extend(ame_max_dtype_size, 0x7f7f),
+    zero_extend(ame_max_dtype_size, 0x7f7f));
+  assert(ovf_rtz_flags == 0b00101);
+  assert(ovf_rtz[15 .. 0] == 0x7f7f);
+
+  // An exact midpoint tie depends only on the destination rounding mode.
+  let (tie_flags, tie) = ame_float_ternary_result(bf16, AME_INT_MULACC, rne,
+    zero_extend(ame_max_dtype_size, 0x0000),
+    zero_extend(ame_max_dtype_size, 0x3fa0),
+    zero_extend(ame_max_dtype_size, 0x3f9a));
+  assert(tie_flags == 0b00001);
+  assert(tie[15 .. 0] == 0x3fc0);
+  let (tie_away_flags, tie_away) = ame_float_ternary_result(bf16, AME_INT_MULACC, 0b100,
+    zero_extend(ame_max_dtype_size, 0x0000),
+    zero_extend(ame_max_dtype_size, 0x3fa0),
+    zero_extend(ame_max_dtype_size, 0x3f9a));
+  assert(tie_away_flags == 0b00001);
+  assert(tie_away[15 .. 0] == 0x3fc1);
+
+  // Tininess after rounding: this product is 2^-140 below the minimum normal,
+  // so the single rounding promotes it to 2^-126 with NX but no UF.
+  let (promote_flags, promote) = ame_float_ternary_result(bf16, AME_INT_MULACC, rne,
+    zero_extend(ame_max_dtype_size, 0x0000),
+    zero_extend(ame_max_dtype_size, 0x007f), // 127 * 2^-133
+    zero_extend(ame_max_dtype_size, 0x3f81)); // 129 * 2^-7
+  assert(promote_flags == 0b00001);
+  assert(promote[15 .. 0] == 0x0080);
+}

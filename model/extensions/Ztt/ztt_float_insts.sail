@@ -26,21 +26,25 @@ function ame_fp32_math_result(op : ame_float_math_op, rm : bits_rm, value : bits
     AME_FLOAT_ROUND_UP      => riscv_f32roundToInt(0b011, value, true),
     AME_FLOAT_ROUND_ZERO    => riscv_f32roundToInt(0b001, value, true),
     AME_FLOAT_COS => {
-      // Spec: cos(+-0) = +1; an infinite input is invalid.  A quiet NaN
-      // input propagates without NV.  Numeric core: host libm (glibc,
-      // documented <= 2 ulp budget).
-      if (value[30 .. 23] == 0xff) & (value[22 .. 0] != zeros()) then (zeros(), defaultNaN32)
+      // Spec: cos(+-0) = +1; an infinite input is invalid.  A signaling NaN
+      // input raises NV and returns the default NaN; a quiet NaN propagates
+      // without NV.  Numeric core: host libm (glibc, documented <= 2 ulp
+      // budget).
+      if (value[30 .. 23] == 0xff) & (value[22 .. 0] != zeros()) then
+        (if value[22] == 0b0 then 0b10000 else zeros(), defaultNaN32)
       else if value[30 .. 23] == 0xff then (0b10000, defaultNaN32)
       else (zeros(), ame_ztt_f32cos(value))
     },
     AME_FLOAT_SIN => {
-      if (value[30 .. 23] == 0xff) & (value[22 .. 0] != zeros()) then (zeros(), defaultNaN32)
+      if (value[30 .. 23] == 0xff) & (value[22 .. 0] != zeros()) then
+        (if value[22] == 0b0 then 0b10000 else zeros(), defaultNaN32)
       else if value[30 .. 23] == 0xff then (0b10000, defaultNaN32)
       else (zeros(), ame_ztt_f32sin(value))
     },
     AME_FLOAT_TANH => {
       // tanh(+-inf) = +-1; the finite/NaN handling matches cos above.
-      if (value[30 .. 23] == 0xff) & (value[22 .. 0] != zeros()) then (zeros(), defaultNaN32)
+      if (value[30 .. 23] == 0xff) & (value[22 .. 0] != zeros()) then
+        (if value[22] == 0b0 then 0b10000 else zeros(), defaultNaN32)
       else (zeros(), ame_ztt_f32tanh(value))
     }
   }
@@ -116,17 +120,20 @@ function ame_float_math_result(dtype : bits(32), op : ame_float_math_op,
         AME_FLOAT_ROUND_UP      => riscv_f64roundToInt(0b011, input, true),
         AME_FLOAT_ROUND_ZERO    => riscv_f64roundToInt(0b001, input, true),
         AME_FLOAT_COS => {
-          if ((value[63 .. 52] & 0x7ff) == 0x7ff) & (value[51 .. 0] != zeros()) then (zeros(), 0x7ff8000000000000)
+          if ((value[63 .. 52] & 0x7ff) == 0x7ff) & (value[51 .. 0] != zeros()) then
+            (if value[51] == 0b0 then 0b10000 else zeros(), 0x7ff8000000000000)
           else if (value[63 .. 52] & 0x7ff) == 0x7ff then (0b10000, 0x7ff8000000000000)
           else (zeros(), ame_ztt_f64cos(input))
         },
         AME_FLOAT_SIN => {
-          if ((value[63 .. 52] & 0x7ff) == 0x7ff) & (value[51 .. 0] != zeros()) then (zeros(), 0x7ff8000000000000)
+          if ((value[63 .. 52] & 0x7ff) == 0x7ff) & (value[51 .. 0] != zeros()) then
+            (if value[51] == 0b0 then 0b10000 else zeros(), 0x7ff8000000000000)
           else if (value[63 .. 52] & 0x7ff) == 0x7ff then (0b10000, 0x7ff8000000000000)
           else (zeros(), ame_ztt_f64sin(input))
         },
         AME_FLOAT_TANH => {
-          if ((value[63 .. 52] & 0x7ff) == 0x7ff) & (value[51 .. 0] != zeros()) then (zeros(), 0x7ff8000000000000)
+          if ((value[63 .. 52] & 0x7ff) == 0x7ff) & (value[51 .. 0] != zeros()) then
+            (if value[51] == 0b0 then 0b10000 else zeros(), 0x7ff8000000000000)
           else (zeros(), ame_ztt_f64tanh(input))
         }
       };

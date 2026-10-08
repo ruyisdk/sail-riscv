@@ -65,7 +65,6 @@ function test_ztt_current_csr_layout() -> unit = {
 // Ztt must not claim the standard Zicntr time and instret CSR addresses.
 $[test]
 function test_ztt_zicntr_csr_integration() -> unit = {
-  let expected_time : bits(64) = 0x0123456789abcdef;
   let expected_instret : bits(64) = 0xfedcba9876543210;
 
   assert(currentlyEnabled(Ext_Zicntr));
@@ -77,8 +76,12 @@ function test_ztt_zicntr_csr_integration() -> unit = {
   // aliases so an overlapping read_CSR clause cannot make this test pass.
   amenlen = 0xffffffffffffffff;
   ameudsz = 0x0000000000000000;
-  mtime = expected_time;
   minstret = expected_instret;
+  // `mtime` is platform-private; read it through the public accessor and
+  // mirror the Zicntr clause so the comparison still detects an overlapping
+  // AME clause at 0xC01.
+  let expected_time : bits(64) = get_mtime() +
+    (if inVirtualPrivilege() then htimedelta else zeros());
   assert(read_CSR(0xC01) == expected_time[xlen - 1 .. 0]);
   assert(read_CSR(0xC02) == expected_instret[xlen - 1 .. 0]);
 }

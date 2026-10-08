@@ -103,5 +103,8 @@ function TEST_AME_MSELGE_EW(md : bits(5), ms1 : bits(5), ms2 : bits(5)) -> instr
 function TEST_AME_MSELLT_EW(md : bits(5), ms1 : bits(5), ms2 : bits(5)) -> instruction =
   CMP_R3_MD_MS_MS_TYPE(AME_MSELLT_EW, md, ms1, ms2)
 
+function TEST_AME_MCMOVGE_EW(md : bits(5), ms1 : bits(5), ms2 : bits(5)) -> instruction =
+  CMP_R3_MD_MS_MS_TYPE(AME_MCMOVGE_EW, md, ms1, ms2)
+
 function TEST_AME_MCMOVLT_EW(md : bits(5), ms1 : bits(5), ms2 : bits(5)) -> instruction =
   CMP_R3_MD_MS_MS_TYPE(AME_MCMOVLT_EW, md, ms1, ms2)

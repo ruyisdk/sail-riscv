@@ -16,7 +16,7 @@ function ztt_nsq_first(dtype : bits(32), reg : ameregidx, square : nat)
 
 $[test]
 function test_ztt_common_nsq_packed_and_expanded() -> unit = {
-  let int4 : bits(32) = 0x00000004;
+  let int4 : bits(32) = 0x40000004;
   let int8 : bits(32) = 0x40000008;
   let int16 : bits(32) = 0x40000010;
 
@@ -60,7 +60,7 @@ function test_ztt_common_nsq_packed_and_expanded() -> unit = {
 
 $[test]
 function test_ztt_mmul_nsq_inner_dimension() -> unit = {
-  let int4 : bits(32) = 0x00000004;
+  let int4 : bits(32) = 0x40000004;
   let int8 : bits(32) = 0x40000008;
   let int16 : bits(32) = 0x40000010;
 
@@ -94,7 +94,7 @@ function test_ztt_mmul_nsq_inner_dimension() -> unit = {
 
 $[test]
 function test_ztt_nsq_remaining_1d_paths() -> unit = {
-  let int4 : bits(32) = 0x00000004;
+  let int4 : bits(32) = 0x40000004;
   let int8 : bits(32) = 0x40000008;
 
   ame_test_enable_context();
@@ -139,7 +139,7 @@ function test_ztt_nsq_remaining_1d_paths() -> unit = {
 
 $[test]
 function test_ztt_nsq_logexp_paths() -> unit = {
-  let int4 : bits(32) = 0x00000004;
+  let int4 : bits(32) = 0x40000004;
 
   ame_test_enable_context();
   MD(Mdregidx(0b00000)) = int4;

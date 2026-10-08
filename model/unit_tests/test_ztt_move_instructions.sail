@@ -1,7 +1,7 @@
 // Current-manual semantics for AME M/accumulator moves, including packed tiles.
 $[test]
 function test_ztt_move_instructions_current_manual() -> unit = {
-  let int4 : bits(32) = 0x00000004;
+  let int4 : bits(32) = 0x40000004;
   let uint8 : bits(32) = 0x00000008;
   let int8 : bits(32) = 0x40000008;
   let int16 : bits(32) = 0x40000010;

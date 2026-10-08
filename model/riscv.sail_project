@@ -352,6 +352,7 @@ extensions {
         extensions/Ztt/ztt_bit_utils.sail,
         extensions/Ztt/ztt_integer_utils.sail,
         extensions/Ztt/ztt_float_utils.sail,
+        extensions/Ztt/ztt_float_logexp_utils.sail,
         extensions/Ztt/ztt_backend_utils.sail
     }
     Ztt_insts {
@@ -656,6 +657,7 @@ unit_tests {
     unit_tests/test_ztt_assembly_disassembly.sail,
     unit_tests/test_ztt_context_status.sail,
     unit_tests/test_ztt_fp_special_values.sail,
+    unit_tests/test_ztt_float_logexp.sail,
     unit_tests/test_ztt_integer_status.sail,
     unit_tests/test_ztt_memory_layout.sail,
     unit_tests/test_ztt_predicate.sail,
