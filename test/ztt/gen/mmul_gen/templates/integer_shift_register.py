@@ -5,6 +5,10 @@
 #
 """Per-element shift amounts read from a second M operand.
 
+Spec:    instructions.adoc:5020-5021 (msll.ew)
+Quote:   "Each shift amount is interpreted as an unsigned raw bit pattern and reduced modulo the ms1 element width."
+Checks:  a second M operand supplies one amount per element, so the modulo reduction is pinned element by element
+
 The amount square walks the boundary amounts, so consecutive elements pin
 down the modulo reduction instead of repeating one sampled amount.
 """

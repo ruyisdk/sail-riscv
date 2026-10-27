@@ -5,6 +5,10 @@
 #
 """Shared shape of the integer shift templates.
 
+Spec:    instruction_semantics.adoc:177-179 (§6.2.2)
+Quote:   "Each instruction applies the Operation defined on its detailed instruction page independently to every logical element of every square selected by operand formation"
+Checks:  one expected-value function evaluates every element from the instruction's own formula, with shift amounts swept up to and past the element width
+
 A shift forms one source operand, applies the shift, and stores the result.  The
 two forms differ only in where the amount comes from: the register form reads a
 second M operand holding one amount per element, the scalar form reuses a single
