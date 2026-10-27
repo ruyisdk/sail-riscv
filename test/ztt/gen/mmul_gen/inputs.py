@@ -21,6 +21,7 @@ from fp_semantics import (
     FLOAT_BOUNDARIES,
     ROUNDING_MODE_DTYPES,
     ROUNDING_MODE_NAMES,
+    SPEC_DEFINED_ROUNDING_MODE_NAMES,
     overflow_result,
     signed,
 )
@@ -159,7 +160,7 @@ def float_overflow_boundaries(
                         mode,
                         overflow_result(dtype_name, element_bits, mode, output_negative),
                     )
-                    for mode in ROUNDING_MODE_NAMES
+                    for mode in SPEC_DEFINED_ROUNDING_MODE_NAMES
                 ),
             )
         )
@@ -170,6 +171,7 @@ __all__ = [
     "FFLAGS_OF_NX",
     "ROUNDING_MODE_DTYPES",
     "ROUNDING_MODE_NAMES",
+    "SPEC_DEFINED_ROUNDING_MODE_NAMES",
     "SOFTFLOAT_LAYOUTS",
     "SOFTFLOAT_ONE",
     "FloatOverflowBoundary",

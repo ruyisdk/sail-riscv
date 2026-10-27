@@ -418,3 +418,23 @@ function test_ztt_bf16_fused_single_rounding() -> unit = {
   assert(promote_flags == 0b00001);
   assert(promote[15 .. 0] == 0x0080);
 }
+
+$[test]
+function test_ztt_rno_destination_is_unsupported() -> unit = {
+  // v0.6 §2.4.3 lists the RNO encoding (rounding_mode = 0b0101) but defines no
+  // algorithm for it, so the model reports RNO as an unsupported tuple rather
+  // than silently choosing an algorithm (see ame_fp_rounding_mode).
+  let fp32 : bits(32) = 0x20300120;
+  let rno_field : bits(32) = zeros(6) @ 0b0101 @ zeros(22);
+  let non_rounding_mask : bits(32) = zeros(6) @ 0b0000 @ ones(22);
+  let fp32_rno : bits(32) = (fp32 & non_rounding_mask) | rno_field;
+
+  match ame_fp_rounding_mode(fp32) {
+    Some(rm) => assert(rm == 0b000),
+    None() => assert(false)
+  };
+  match ame_fp_rounding_mode(fp32_rno) {
+    Some(_) => assert(false),
+    None() => assert(true)
+  }
+}

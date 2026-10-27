@@ -22,7 +22,7 @@ from fp_semantics import (
     FFLAGS_OF_NX,
     FFLAGS_UF_NX,
     FLOAT_BOUNDARIES,
-    ROUNDING_MODES,
+    SPEC_DEFINED_ROUNDING_MODES,
     overflow_result,
     signed,
     tie_result,
@@ -177,7 +177,7 @@ def rounding_overflow_block(
     lines: list[str] = []
     for negative in signs:
         sign_name = "negative" if negative else "positive"
-        for mode_name, mode_dtype in ROUNDING_MODES:
+        for mode_name, mode_dtype in SPEC_DEFINED_ROUNDING_MODES:
             operation_lines, result_negative = emit_rounding_overflow_operation(
                 role, form, mnemonic, labels, element_bits, negative, machine
             )
@@ -246,7 +246,7 @@ def rounding_underflow_block(
     lines: list[str] = []
     for negative in (False, True):
         sign_name = "negative" if negative else "positive"
-        for mode_name, mode_dtype in ROUNDING_MODES:
+        for mode_name, mode_dtype in SPEC_DEFINED_ROUNDING_MODES:
             result_negative = not negative if role.negates_result else negative
             expected = underflow_result(
                 dtype_name, element_bits, mode_name, result_negative
@@ -309,7 +309,7 @@ def rounding_tie_block(
     for lower_key in ("one", "one_ulp"):
         lower = FLOAT_BOUNDARIES[dtype_name][lower_key]
         parity = "even" if lower & 1 == 0 else "odd"
-        for mode_name, mode_dtype in ROUNDING_MODES:
+        for mode_name, mode_dtype in SPEC_DEFINED_ROUNDING_MODES:
             operation_lines = plan_lines(
                 tie_plan(role, lower_key, element_bits, machine),
                 mnemonic,

@@ -39,6 +39,7 @@ from fp_semantics import (
     FFLAGS_OF_NX,
     FLOAT_BOUNDARIES,
     ROUNDING_MODE_NAMES,
+    SPEC_DEFINED_ROUNDING_MODE_NAMES,
     SQRT_TWO_RESULTS,
     overflow_result,
     pole_result,
@@ -155,7 +156,7 @@ class MathOperation(StrEnum):
                     flags=flags,
                     rounding_mode=mode,
                 )
-                for mode in ROUNDING_MODE_NAMES
+                for mode in SPEC_DEFINED_ROUNDING_MODE_NAMES
             )
         return cases
 
@@ -172,7 +173,7 @@ class MathOperation(StrEnum):
                 flags=FFLAGS_NV,
                 rounding_mode=mode,
             )
-            for mode in ROUNDING_MODE_NAMES
+            for mode in SPEC_DEFINED_ROUNDING_MODE_NAMES
         ]
 
     def boundary_cases(
@@ -196,7 +197,7 @@ class MathOperation(StrEnum):
                         flags=FFLAGS_OF_NX,
                         rounding_mode=mode,
                     )
-                    for mode in ROUNDING_MODE_NAMES
+                    for mode in SPEC_DEFINED_ROUNDING_MODE_NAMES
                 )
             return cases
         if self is MathOperation.RECIPROCAL_SQRT:
@@ -215,7 +216,7 @@ class MathOperation(StrEnum):
                         flags=FFLAGS_NX,
                         rounding_mode=mode,
                     )
-                    for mode in ROUNDING_MODE_NAMES
+                    for mode in SPEC_DEFINED_ROUNDING_MODE_NAMES
                 ),
             ]
         if self.rounds_to_integer:

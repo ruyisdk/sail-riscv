@@ -57,6 +57,12 @@ function ame_valid_softfloat_ew_dtype(dtype : bits(32)) -> bool = {
   }
 }
 
+// The destination datatype selects the rounding mode.  v0.6 declares the RNO
+// encoding but defines no rounding algorithm for it, so no implementation can
+// claim v0.6 conformance for a delivered RNO result; this model documents RNO
+// as an unsupported tuple (amestatus.UN, destination unchanged) rather than
+// quietly picking an algorithm.  Every other encoding maps onto the RISC-V
+// rounding-mode bit pattern SoftFloat uses.
 function ame_fp_rounding_mode(dtype : bits(32)) -> option(bits_rm) = {
   match dtype[25 .. 22] {
     0b0000 => Some(0b000), // RNE
@@ -64,7 +70,7 @@ function ame_fp_rounding_mode(dtype : bits(32)) -> option(bits_rm) = {
     0b0010 => Some(0b010), // RDN
     0b0011 => Some(0b011), // RUP
     0b0100 => Some(0b100), // RMM
-    0b0101 => Some(0b110), // RNO (SoftFloat round-to-odd/jamming)
+    0b0101 => None(),      // RNO: encoding defined, algorithm not
     _      => None()
   }
 }
@@ -285,7 +291,10 @@ function ame_round_scaled_int(sign : bits(1), rm : bits_rm, value : int,
       0b010 => sign == 0b1 & remainder != 0,                                // RDN
       0b011 => sign == 0b0 & remainder != 0,                                // RUP
       0b100 => remainder >= halfway,                                        // RMM
-      0b110 => remainder != 0 & not(quotient_odd),                          // RNO
+      // Round-to-odd, reachable only through direct calls to this primitive:
+      // ame_fp_rounding_mode rejects the RNO datatype encoding, so no
+      // instruction can select it (see the comment there).
+      0b110 => remainder != 0 & not(quotient_odd),
       _     => remainder > halfway | (remainder == halfway & quotient_odd)
     };
     (remainder != 0, if increment then quotient + 1 else quotient)

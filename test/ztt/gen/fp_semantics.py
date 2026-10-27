@@ -20,8 +20,20 @@ ROUNDING_MODES = (
     ("RMM", "AME_RND_RMM"),
     ("RNO", "AME_RND_RNO"),
 )
+#: The five rounding modes whose result an expected value can be derived for.
+#:
+#: v0.6 lists `RNO` among the destination rounding-mode encodings (`RNO`,
+#: "round to nearest, ties to odd" in the datatype chapter) but defines no
+#: rounding algorithm for it, so no v0.6-conformant concrete result, tie, or
+#: overflow value exists to assert.  The sweeps that compare a value therefore
+#: iterate over these five modes only; the encoding itself stays declared above
+#: so the full set of legal destination datatypes is still documented here.
+SPEC_DEFINED_ROUNDING_MODES = tuple(
+    (mode, dtype) for mode, dtype in ROUNDING_MODES if mode != "RNO"
+)
 ROUNDING_MODE_NAMES = tuple(mode for mode, _dtype in ROUNDING_MODES)
 ROUNDING_MODE_DTYPES = dict(ROUNDING_MODES)
+SPEC_DEFINED_ROUNDING_MODE_NAMES = tuple(mode for mode, _dtype in SPEC_DEFINED_ROUNDING_MODES)
 
 
 # Elementwise instructions that expose destination-dtype rounding behavior.
@@ -376,6 +388,10 @@ def signed(value: int, element_bits: int, negative: bool) -> int:
 
 
 def overflow_result(dtype_name: str, element_bits: int, mode: str, negative: bool) -> int:
+    """The value the destination saturates to when the exact result overflows."""
+
+    if mode not in SPEC_DEFINED_ROUNDING_MODE_NAMES:
+        raise ValueError(f"{mode}: no spec-defined rounding algorithm to derive a value from")
     values = FLOAT_BOUNDARIES[dtype_name]
     to_infinity = mode in {"RNE", "RMM"} or (mode == "RUP" and not negative) or (
         mode == "RDN" and negative
@@ -384,10 +400,14 @@ def overflow_result(dtype_name: str, element_bits: int, mode: str, negative: boo
 
 
 def underflow_result(dtype_name: str, element_bits: int, mode: str, negative: bool) -> int:
+    """The value the destination takes when the exact result underflows."""
+
+    if mode not in SPEC_DEFINED_ROUNDING_MODE_NAMES:
+        raise ValueError(f"{mode}: no spec-defined rounding algorithm to derive a value from")
     # Every supported format, including OCP FP8, preserves subnormals.  The
-    # test operand is exactly half the minimum subnormal, so directed, ties-
-    # away, and round-to-odd modes can select the minimum subnormal.
-    rounds_to_min_subnormal = mode in {"RMM", "RNO"} or (mode == "RUP" and not negative) or (
+    # test operand is exactly half the minimum subnormal, so directed and
+    # ties-away modes can select the minimum subnormal.
+    rounds_to_min_subnormal = mode == "RMM" or (mode == "RUP" and not negative) or (
         mode == "RDN" and negative
     )
     value = FLOAT_BOUNDARIES[dtype_name]["min_subnormal"] if rounds_to_min_subnormal else 0
@@ -406,14 +426,14 @@ def pole_result(dtype_name: str, element_bits: int, negative: bool) -> tuple[int
 def tie_result(lower: int, mode: str) -> int:
     """Return the correctly rounded result for an exact positive halfway value."""
 
+    if mode not in SPEC_DEFINED_ROUNDING_MODE_NAMES:
+        raise ValueError(f"{mode}: no spec-defined rounding algorithm to derive a value from")
     upper = lower + 1
     odd_lower = lower & 1 == 1
     if mode in {"RTZ", "RDN"}:
         return lower
     if mode in {"RUP", "RMM"}:
         return upper
-    if mode == "RNO":
-        return lower if odd_lower else upper
     return upper if odd_lower else lower
 
 
@@ -424,7 +444,6 @@ SQRT_TWO_RESULTS = {
         "RDN": 0x3B,
         "RUP": 0x3C,
         "RMM": 0x3B,
-        "RNO": 0x3B,
     },
     "AME_OCP_E5M2_DTYPE": {
         "RNE": 0x3E,
@@ -432,7 +451,6 @@ SQRT_TWO_RESULTS = {
         "RDN": 0x3D,
         "RUP": 0x3E,
         "RMM": 0x3E,
-        "RNO": 0x3D,
     },
     "AME_FP16_DTYPE": {
         "RNE": 0x3DA8,
@@ -440,7 +458,6 @@ SQRT_TWO_RESULTS = {
         "RDN": 0x3DA8,
         "RUP": 0x3DA9,
         "RMM": 0x3DA8,
-        "RNO": 0x3DA9,
     },
     "AME_BF16_DTYPE": {
         "RNE": 0x3FB5,
@@ -448,7 +465,6 @@ SQRT_TWO_RESULTS = {
         "RDN": 0x3FB5,
         "RUP": 0x3FB6,
         "RMM": 0x3FB5,
-        "RNO": 0x3FB5,
     },
     "AME_FP32_DTYPE": {
         "RNE": 0x3FB504F3,
@@ -456,7 +472,6 @@ SQRT_TWO_RESULTS = {
         "RDN": 0x3FB504F3,
         "RUP": 0x3FB504F4,
         "RMM": 0x3FB504F3,
-        "RNO": 0x3FB504F3,
     },
     "AME_FP64_DTYPE": {
         "RNE": 0x3FF6A09E667F3BCD,
@@ -464,6 +479,5 @@ SQRT_TWO_RESULTS = {
         "RDN": 0x3FF6A09E667F3BCC,
         "RUP": 0x3FF6A09E667F3BCD,
         "RMM": 0x3FF6A09E667F3BCD,
-        "RNO": 0x3FF6A09E667F3BCD,
     },
 }
