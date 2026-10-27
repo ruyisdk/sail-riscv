@@ -5,6 +5,13 @@
 #
 """The indexed unpack template: a packed storage slot widened into a square.
 
+Spec:    instructions.adoc:5606-5607 (§6.136)
+Quote:   Md[ms2] must be a packed datatype and Md[md] a non-packed datatype;
+         otherwise amestatus.UN is set and no register is written.
+Checks:  Widens the selected slot of a packed storage square into a compute
+         square, sign-extends a signed storage descriptor, and checks the low,
+         middle and high destination elements.
+
 Each case reads the selected slot of a packed storage square, widens it into
 the compute descriptor, and verifies the converted elements; a signed storage
 descriptor is sign-extended before it is masked into the wider element.

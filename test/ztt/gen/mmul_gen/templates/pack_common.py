@@ -5,6 +5,12 @@
 #
 """Shared shape and byte layout of the indexed packed-slot templates.
 
+Spec:    programming_model.adoc:101-101 (§2.3)
+Quote:   A packed M register holds pack_factor logical squares.
+Checks:  Pins the shared input patterns, the storage/compute pair relation and
+         the byte-image helpers both slot renderers check with, including the
+         0xA5 fill that marks an unwritten byte.
+
 ``mpack.ew.x`` and ``munpack.ew.x`` are the two directions of one conversion
 between a descriptor stored at half the active UDS and its same-signedness twin
 at the full UDS.  Both run the same three input patterns over the same packed

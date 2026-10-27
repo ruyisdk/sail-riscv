@@ -5,6 +5,11 @@
 #
 """The indexed pack template: a compute square narrowed into a storage slot.
 
+Spec:    instructions.adoc:3698-3699 (§6.90)
+Quote:   The other sub-square slots of md are preserved (read-modify-write).
+Checks:  Converts one compute square into the selected slot of a packed storage
+         square and checks both the written slot and the preserved slot bytes.
+
 Each case converts one compute square into the selected slot of a packed
 storage square while the other slot keeps the value it was loaded with, and
 verifies both the converted slot and the preserved one.
