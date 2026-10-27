@@ -5,6 +5,13 @@
 #
 """Saturating integer descriptors broadcast through the scalar ingress.
 
+Spec:    instructions.adoc:1373-1375 (§6.29)
+Quote:   The source and destination datatype encodings must be supported, and the
+         source-to-destination conversion must be supported.
+Checks:  Broadcasts 42 into every element of each saturating whole-register
+         integer descriptor and compares the first and last stored element of
+         the destination square.
+
 The body is inherited from the shared scalar-ingress template; only the
 datatype domain and the case numbering restart per group.
 """

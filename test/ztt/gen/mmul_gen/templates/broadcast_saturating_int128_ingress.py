@@ -5,6 +5,13 @@
 #
 """128-bit saturating integers broadcast through the scalar ingress.
 
+Spec:    datatypes.adoc:57-58 (§2.4.2)
+Quote:   Integer types are distinguished by size/precision, signedness,
+         saturation behavior, and rounding mode.
+Checks:  Broadcasts 42 into every element of each 128-bit saturating integer
+         descriptor and compares the first and last stored element of the
+         destination square.
+
 The body is inherited from the shared scalar-ingress template; only the
 datatype domain and the case numbering restart per group.
 """

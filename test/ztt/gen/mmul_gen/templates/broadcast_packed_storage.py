@@ -5,6 +5,12 @@
 #
 """Broadcast one scalar into every storage slot of a narrower descriptor.
 
+Spec:    instructions.adoc:1370-1371 (§6.29)
+Quote:   Packed destinations receive the value in every logical packed element.
+Checks:  Broadcasts one value into every storage slot of each sub-UDS descriptor
+         and compares the first and last byte of the square with the repeated
+         slot image.
+
 The descriptor is physically stored at half the active UDS, so a broadcast
 still fills whole slots: the check reads the first and last byte of the square
 and compares them with the repeated slot image, which catches both a short

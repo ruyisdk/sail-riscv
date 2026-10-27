@@ -5,6 +5,13 @@
 #
 """The unsupported-datatype ingress probe.
 
+Spec:    instruction_semantics.adoc:61-62 (§6.1.3)
+Quote:   An unsupported tuple sets amestatus.UN and leaves every destination
+         register unchanged; it does not raise a synchronous exception.
+Checks:  Seeds a byte-pattern square through an 8-bit descriptor, broadcasts a
+         scalar with a custom-coded descriptor, and asserts UN is set while the
+         sampled bytes keep the seed image.
+
 Ingress is descriptor-checked before it writes: a scalar descriptor outside the
 defined encoding must set the UN status bit and leave the destination exactly as
 the seed left it.  The seeded square is compared byte by byte at the

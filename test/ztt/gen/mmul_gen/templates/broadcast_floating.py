@@ -5,6 +5,13 @@
 #
 """Broadcast one floating-point scalar into every element.
 
+Spec:    instruction_semantics.adoc:213-217 (§6.2.3)
+Quote:   AME floating-point rounding is selected by the destination datatype; AME
+         has no global dynamic rounding mode analogous to fcsr.FRM.
+Checks:  Broadcasts the raw bit pattern of a standard float value into every
+         element of each floating-point descriptor and compares the first and
+         last element with that exact pattern.
+
 The scalar is a raw bit pattern, not a numeric literal, so no host floating
 library decides the encoding: each width uses the pattern of a well-known
 value (1.0 for 32/64-bit, 1.0 for the 16-bit pair).

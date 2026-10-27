@@ -5,6 +5,14 @@
 #
 """Whole-register integer descriptors broadcast through the scalar ingress.
 
+Spec:    instructions.adoc:1363-1365 (§6.29)
+Quote:   Interprets the low 32 bits of X[rs2] as an AME datatype encoding and the
+         X-register bit pattern as one scalar of that datatype, where
+         src_dtype = X[rs2][31:0].
+Checks:  Broadcasts 42 into every element of each plain whole-register integer
+         descriptor and compares the first and last stored element of the
+         destination square.
+
 The body is inherited from the shared scalar-ingress template; only the
 datatype domain and the case numbering restart per group.
 """

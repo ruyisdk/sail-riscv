@@ -5,6 +5,14 @@
 #
 """Shared shape of the scalar-ingress broadcast templates.
 
+Spec:    instructions.adoc:1368-1370 (§6.29)
+Quote:   The scalar is converted once to the destination datatype Md[md] as
+         defined by the accepted exact operation/datatype tuple, then written to
+         every logical element of M[md].
+Checks:  Each scalar-ingress group emits one case per datatype with # case
+         numbering restarted per group and broadcasts one integer into every
+         destination element.
+
 ``mbcast.m.x`` is one instruction whose single output file walks through seven
 groups of datatypes: plain integers, 128-bit integers, saturating integers,
 saturating 128-bit integers, packed storage, floating point, and one
