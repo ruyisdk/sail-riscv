@@ -5,6 +5,10 @@
 #
 """Strided transfer of a packed image whose squares are converted and widened.
 
+Spec:    instructions.adoc:1328-1329 (mconv.ew)
+Quote:   "A packed source with a non-packed destination therefore expands the source squares; a non-packed source with a packed destination compresses them"
+Checks:  one half-UDS packed image widened by mconv.ew on the way in and narrowed on the way out must give the converted byte image, not the raw bits
+
 The third strided-memory recipe: the storage descriptor is half the active UDS
 and has a same-signedness twin at the full UDS, so the transfer is checked
 through a real conversion -- widen on the way in, narrow on the way out -- rather

@@ -5,6 +5,10 @@
 #
 """Bit-preserving strided transfer of a sub-UDS packed image.
 
+Spec:    programming_model.adoc:387-388 (§2.6.2)
+Quote:   "Both support non-packed and packed datatypes; for a packed datatype the .st forms place the sub-squares side by side within each row, while the .tst forms stack them vertically."
+Checks:  a sub-UDS packed image moves slot by slot without conversion, so every packed square keeps its bit position at the storage width
+
 The second strided-memory recipe: every descriptor stored narrower than the UDS
 forms ``UDS / element_bits`` logical squares in one physical M register, and the
 transfer moves the packed slots without converting anything.  It runs on the

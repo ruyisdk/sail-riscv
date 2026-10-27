@@ -5,6 +5,10 @@
 #
 """Whole-square strided transfer, one element per segment.
 
+Spec:    programming_model.adoc:383-384 (§2.6.2)
+Quote:   "The strided variants access memory as a sequence of equally spaced segments, one segment per row of the square, with consecutive segments separated by a programmable byte stride."
+Checks:  a whole square moved one element per segment and read back linearly must place each element in its row's segment, and a stride-zero store keeps the last segment
+
 The first of the three strided-memory recipes, and the one every descriptor at
 or above the UDS takes: a strided load reads one element per segment, a strided
 store writes one element per segment, and a stride of zero overlaps every
