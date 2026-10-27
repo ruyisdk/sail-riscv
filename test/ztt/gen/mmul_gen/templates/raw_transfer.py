@@ -5,6 +5,10 @@
 #
 """Raw physical-register transfer: one M register moves as an opaque byte image.
 
+Spec:    programming_model.adoc:371-372 (§2.6.1)
+Quote:   They therefore neither read nor require a supported datatype, including when the programmed datatype is uninitialized or unsupported.
+Checks:  mls.1r and mss.1r must reproduce one physical register's byte image for every descriptor and leave the byte past that register untouched
+
 ``mls.1r``/``mss.1r`` move exactly one physical M register -- ``nelem * uds / 8``
 bytes -- and never consult the descriptor.  So the descriptor only decides which
 encoding the assembler accepts: the byte image, the register edge, and the
