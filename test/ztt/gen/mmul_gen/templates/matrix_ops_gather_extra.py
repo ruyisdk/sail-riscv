@@ -5,6 +5,10 @@
 #
 """The extra-permute case of a column gather.
 
+Spec:    instructions.adoc:1091-1093 (§6.25 mcolgather.ew)
+Quote:   `md`, `ms1`, and `ms2` each contain exactly one logical square.  Packed datatypes are unsupported.  `Md[ms1]` and `Md[md]` shall be identical, and `Md[ms2]` shall be an integer datatype.
+Checks:  a byte-wide index table read through its own integer descriptor must select the documented column of the full-width source
+
 The index table is read through its own integer descriptor rather than the
 element descriptor, so the index width and the element width are independent:
 a gather that quietly typed the table as the element descriptor would read the

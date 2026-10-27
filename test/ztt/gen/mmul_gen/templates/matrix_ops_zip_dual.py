@@ -5,6 +5,10 @@
 #
 """The dual-source case of a zip or unzip operation.
 
+Spec:    instructions.adoc:4547-4549 (§6.111 mrowzip.ew)
+Quote:   Interleaves rows from the logical source square at `ms1` and the logical source square at `ms2`, and writes the two result squares back into `ms1` and `ms2`.  Each operand is both a source and a destination.
+Checks:  both halves of the merge or split must be the documented interleave of the two ramps, written back through ms1 and ms2
+
 Two ramps are loaded, the operation merges or splits them, and both halves of the
 result are stored and checked.  The two ramps start far enough apart that the
 value of an element says which source square it came from, which is what makes a

@@ -5,6 +5,10 @@
 #
 """The indexed case of a gather or scatter operation.
 
+Spec:    instructions.adoc:1097-1099 (§6.25 mcolgather.ew)
+Quote:   The low 32 raw bits of each `ms2` index element form an unsigned U32 value; higher element bits are ignored, and an element narrower than 32 bits is zero-extended.
+Checks:  the sampled destination elements must equal the gather, or the seeded accumulate, taken through the index table reduced modulo the active length
+
 The index table is element-sized and carries the axis selector in its top bit,
 so the same table drives both axes and both accumulate modes.  A scatter seeds
 its destination first -- with ones for the add form, with a value above the ramp

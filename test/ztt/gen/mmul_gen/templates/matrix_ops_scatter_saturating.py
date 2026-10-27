@@ -5,6 +5,10 @@
 #
 """The saturating case of an indexed add.
 
+Spec:    state.adoc:316-319 (§3.2.6 amexsat)
+Quote:   `SAT` is set only when an integer operation whose destination datatype has `Saturation=1` clamps (saturates) an out-of-range result to the destination range
+Checks:  an all-zero index table adding ones into an all-maximum destination must clamp to the maximum and set amexsat.SAT
+
 Every index aims at the first row and the destination is seeded with the largest
 representable value, so each addition saturates.  The case asserts the status bit
 and the clamped destination together.  The all-zero index table is read through

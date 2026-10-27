@@ -5,6 +5,10 @@
 #
 """The row-ramp case of a reduce or prefix operation.
 
+Spec:    programming_model.adoc:233-235 (§2.3.2)
+Quote:   Prefix and reduction instructions apply their documented `N x N` transformation independently to each of the `N_sq` logical squares.
+Checks:  every reduce and prefix result over the 1..nelem ramp must equal the closed-form value of its own logical square
+
 The source is the linear ramp ``1..nelem``, which makes every result a closed
 form over the active length: each row of the source holds its own row index plus
 one, so a whole-row reduce, a column reduce and both prefix shapes all have an

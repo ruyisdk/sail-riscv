@@ -5,6 +5,10 @@
 #
 """The saturating case of a reduce or prefix operation.
 
+Spec:    instruction_semantics.adoc:194-196 (§6.1.4)
+Quote:   A saturating destination clamps an out-of-range result and sets `amexsat.SAT`; a non-saturating destination retains the low destination-width bits.
+Checks:  reducing the all-maximum square must clamp to the maximum and leave amexsat.SAT set
+
 Reducing a square that already holds the largest representable value cannot
 produce a representable result, so the operation must clamp *and* report the
 saturation.  Both are asserted: a wrong result and a missing status bit cannot

@@ -5,6 +5,10 @@
 #
 """The per-step saturated fold order of a reduce or prefix sum.
 
+Spec:    instructions.adoc:4110-4112 (§6.101 mreduceadd.row)
+Quote:   Each destination-domain addition applies the destination rounding, saturation, and accrued status-flag behavior before its result is used by the next step.
+Checks:  each fold step must saturate in the destination domain, so the reduced line ends at -1, the prefix reads 127, 127, -1, and amexsat is set
+
 The manual requires each step of a reduction or prefix to round and saturate in
 the destination domain *before* it feeds the next step.  A source whose first
 three elements are ``127, 1, -128`` separates that rule from an exact

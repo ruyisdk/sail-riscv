@@ -5,6 +5,10 @@
 #
 """Stimulus and expectations of the matrix permute/reduce family.
 
+Spec:    instruction_semantics.adoc:37-39 (§6.1.2)
+Quote:   All source register values, source datatype values, scalar operands, and index operands are read from the architectural state that exists immediately before the instruction begins.
+Checks:  every reduce, gather, and scatter expectation is folded from the pre-instruction ramp, index table, and seeded destination
+
 Three operation shapes share this module because they share their stimulus: a
 linear ramp ``1..nelem`` in the first source, a second ramp starting clear of it
 in the second source, and -- for the indexed operations -- a table whose entries
