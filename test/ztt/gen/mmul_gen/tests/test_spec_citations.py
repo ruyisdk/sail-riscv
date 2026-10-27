@@ -14,7 +14,9 @@ quotes::
 
 Five cases, one per promise the gate makes:
 
-* every non-structural template is compliant (R1 .. R3);
+* every non-structural template is compliant (R1 .. R3), checked against the
+  specification checkout when there is one and against the frozen manifest
+  otherwise, so the same case guards a laptop and a CI runner;
 * the frozen manifest covers every template's quote -- this is the CI gate, and
   it needs no specification checkout;
 * with a checkout present the frozen excerpts are still verbatim; without one the
@@ -45,7 +47,6 @@ from mmul_gen.spec_citations import (
     load_manifest,
     main,
     manifest_excerpt_texts,
-    resolve_spec_root,
     resolve_spec_root_optional,
     resolve_templates,
     run_validation,
@@ -63,11 +64,11 @@ class SpecCitationTest(unittest.TestCase):
     patterns: Sequence[str] = ()
 
     def _report(self) -> Report:
-        """Validate the configured tree, failing the case on an R4 error."""
+        """Validate the tree against the checkout, or the frozen manifest without one."""
         try:
             return run_validation(
                 resolve_templates(self.templates),
-                resolve_spec_root(self.spec_root),
+                resolve_spec_root_optional(self.spec_root),
                 self.patterns,
             )
         except SpecEnvironmentError as error:
