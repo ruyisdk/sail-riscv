@@ -38,6 +38,13 @@ function ame_is_ocp_e5m2_dtype(dtype : bits(32)) -> bool =
 function ame_is_ocp_fp8_dtype(dtype : bits(32)) -> bool =
   ame_is_ocp_e4m3_dtype(dtype) | ame_is_ocp_e5m2_dtype(dtype)
 
+// §6.2.3: "Any NaN input or invalid operation produces the destination
+// datatype's canonical quiet NaN."  E4M3 has a single NaN encoding (0x7F).
+// E5M2 follows the IEEE 754 quiet-bit convention: frac[1] is the quiet bit, so
+// its payload-free quiet NaN is 0x7E (0x7F carries a payload).
+function ame_ocp_fp8_canonical_nan(dtype : bits(32)) -> bits(8) =
+  if ame_is_ocp_e4m3_dtype(dtype) then 0x7F else 0x7E
+
 function ame_valid_softfloat_ew_dtype(dtype : bits(32)) -> bool = {
   match ame_dtype_without_rounding(dtype) {
     0x10100108 => true, // OCP_E4M3
@@ -664,7 +671,8 @@ function ame_f32_to_e5m2(rm : bits_rm, value : bits_S) -> (bits_fflags, bits(8))
   if exp == 0 & frac == 0 then (zeros(), sign @ 0b00000 @ 0b00)
   else if exp == 255 then {
     if frac == 0 then (zeros(), sign @ 0b11111 @ 0b00)
-    else (zeros(), 0x7F)
+    // E5M2 canonical quiet NaN: frac = 0b10 (see ame_ocp_fp8_canonical_nan).
+    else (zeros(), sign @ 0b11111 @ 0b10)
   } else {
     let target_exp = exp - 127 + 15;
     if target_exp <= 0 then {
@@ -731,7 +739,7 @@ function ame_ocp_fp8_binary_result(dtype : bits(32), op : ame_int_binary_op,
     },
     AME_INT_MAX => {
       if lhs_fflags != zeros() | rhs_fflags != zeros() then
-        (input_fflags, ame_ocp_fp8_result(0x7F))
+        (input_fflags, ame_ocp_fp8_result(ame_ocp_fp8_canonical_nan(dtype)))
       else {
         let (op_fflags, result32) = ame_fp32_fmax(lhs32, rhs32);
         ame_ocp_fp8_round_result(dtype, rm, op_fflags, result32)
@@ -739,7 +747,7 @@ function ame_ocp_fp8_binary_result(dtype : bits(32), op : ame_int_binary_op,
     },
     AME_INT_MIN => {
       if lhs_fflags != zeros() | rhs_fflags != zeros() then
-        (input_fflags, ame_ocp_fp8_result(0x7F))
+        (input_fflags, ame_ocp_fp8_result(ame_ocp_fp8_canonical_nan(dtype)))
       else {
         let (op_fflags, result32) = ame_fp32_fmin(lhs32, rhs32);
         ame_ocp_fp8_round_result(dtype, rm, op_fflags, result32)

@@ -101,12 +101,13 @@ function test_ztt_fp_minmax_special_values() -> unit = {
     ame_float_binary_result(e5m2, AME_INT_MAX, rm,
       zero_extend(ame_max_dtype_size, 0x7f), zero_extend(ame_max_dtype_size, 0x3c));
   assert(e5m2_qnan_flags == 0b00000);
-  assert(e5m2_qnan_result[7 .. 0] == 0x7f);
+  // E5M2 canonical quiet NaN: frac[1] is the quiet bit, so 0x7E (v0.6 §6.2.3).
+  assert(e5m2_qnan_result[7 .. 0] == 0x7e);
   let (e5m2_snan_flags, e5m2_snan_result) =
     ame_float_binary_result(e5m2, AME_INT_MIN, rm,
       zero_extend(ame_max_dtype_size, 0x7d), zero_extend(ame_max_dtype_size, 0x3c));
   assert(e5m2_snan_flags == 0b10000);
-  assert(e5m2_snan_result[7 .. 0] == 0x7f);
+  assert(e5m2_snan_result[7 .. 0] == 0x7e);
   let (_, e5m2_min_zero) = ame_float_binary_result(e5m2, AME_INT_MIN, rm,
     zero_extend(ame_max_dtype_size, 0x00), zero_extend(ame_max_dtype_size, 0x80));
   let (_, e5m2_max_zero) = ame_float_binary_result(e5m2, AME_INT_MAX, rm,

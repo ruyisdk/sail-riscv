@@ -261,7 +261,12 @@ FLOAT_BOUNDARIES = {
         "neg_two": 0xC0,
         "half_ulp": 0x30,
         "min_subnormal": 0x01,
-        "qnan": 0x7F,
+        # OCP E5M2 follows the IEEE 754 quiet-bit convention: frac[1] is the
+        # quiet bit, so the canonical (payload-free) quiet NaN is 0x7E.  0x7F
+        # carries a payload and is not the canonical NaN.  §6.2.3: "Any NaN
+        # input or invalid operation produces the destination datatype's
+        # canonical quiet NaN".
+        "qnan": 0x7E,
         "snan": 0x7D,
     },
     "AME_FP16_DTYPE": {

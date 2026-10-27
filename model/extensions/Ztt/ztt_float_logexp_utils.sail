@@ -149,7 +149,8 @@ function ame_fp_encode(dtype : bits(32), sign : bits(1), ef : int, frac : int)
 function ame_fp_nan(dtype : bits(32)) -> bits(ame_max_dtype_size) =
   match ame_dtype_without_rounding(dtype) {
     0x10100108 => zero_extend(ame_max_dtype_size, 0x7F),
-    0x14300108 => zero_extend(ame_max_dtype_size, 0x7F),
+    // E5M2 canonical quiet NaN: frac[1] is the quiet bit, so 0x7E.
+    0x14300108 => zero_extend(ame_max_dtype_size, 0x7E),
     0x14300110 => zero_extend(ame_max_dtype_size, 0x7E00),
     0x20300110 => zero_extend(ame_max_dtype_size, 0x7FC0),
     0x20300120 => zero_extend(ame_max_dtype_size, 0x7FC00000),
