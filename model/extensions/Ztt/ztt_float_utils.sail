@@ -96,6 +96,17 @@ function ame_fp32_is_snan(value : bits_S) -> bool =
 function ame_fp32_is_neg_zero(value : bits_S) -> bool =
   value[31] == 0b1 & value[30 .. 23] == zeros() & value[22 .. 0] == zeros()
 
+function ame_fp64_is_zero(value : bits_D) -> bool =
+  value[62 .. 52] == zeros() & value[51 .. 0] == zeros()
+
+// §6.2.3: "NX is set whenever the delivered finite result differs from the
+// exact mathematical result because of rounding, including an
+// implementation-defined approximation that is not exact."  cos/sin/tanh are
+// exact only at +-0 (and tanh at +-inf), so every other finite input is an
+// inexact approximation and accrues NX.
+function ame_transcendental_inexact_flags(exact_input : bool) -> bits_fflags =
+  if exact_input then zeros() else 0b00001
+
 function ame_fp32_is_pos_zero(value : bits_S) -> bool =
   value[31] == 0b0 & value[30 .. 23] == zeros() & value[22 .. 0] == zeros()
 

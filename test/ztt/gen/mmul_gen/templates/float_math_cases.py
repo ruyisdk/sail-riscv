@@ -28,7 +28,6 @@ from mmul_gen.machine import FORMED_SOFTFLOAT, MachineConfig, dtype_stem
 from mmul_gen.registers import choose_m_group_base
 from mmul_gen.templates.base import Case, CaseOutput, Template, domain_index
 from mmul_gen.templates.float_math_common import (
-    ROUNDING_FLAGS,
     BoundaryCase,
     MathOperation,
     checked_indices,
@@ -166,7 +165,11 @@ class FloatMathCases(Template):
         prefix = f"case{index}_{dtype_stem(dtype.name)}_"
         source_label = f"{prefix}source"
         destination_label = f"{prefix}destination"
-        flags = ROUNDING_FLAGS if operation.rounds_to_integer else 0
+        # Every nominal case of the family is exact -- sqrt(4)=2, 1/2, and
+        # 1/sqrt(4) are representable, and the instruction's own rounding of
+        # +-1.5 to an integer is exact -- so the operation raises no flag
+        # (§6.2.3: "Exact operations ... set none of these flags").
+        flags = 0
         out.text.extend(
             [
                 f"    # {instruction.name} {dtype.name}",

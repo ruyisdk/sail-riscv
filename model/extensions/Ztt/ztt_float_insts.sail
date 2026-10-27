@@ -21,31 +21,39 @@ function ame_fp32_math_result(op : ame_float_math_op, rm : bits_rm, value : bits
       let (div_flags, result) = riscv_f32Div(rm, one, sqrt_value);
       (sqrt_flags | div_flags, result)
     },
-    AME_FLOAT_ROUND_DOWN    => riscv_f32roundToInt(0b010, value, true),
-    AME_FLOAT_ROUND_NEAREST => riscv_f32roundToInt(0b000, value, true),
-    AME_FLOAT_ROUND_UP      => riscv_f32roundToInt(0b011, value, true),
-    AME_FLOAT_ROUND_ZERO    => riscv_f32roundToInt(0b001, value, true),
+    AME_FLOAT_ROUND_DOWN    => riscv_f32roundToInt(0b010, value, false),
+    AME_FLOAT_ROUND_NEAREST => riscv_f32roundToInt(0b000, value, false),
+    AME_FLOAT_ROUND_UP      => riscv_f32roundToInt(0b011, value, false),
+    AME_FLOAT_ROUND_ZERO    => riscv_f32roundToInt(0b001, value, false),
     AME_FLOAT_COS => {
       // Spec: cos(+-0) = +1; an infinite input is invalid.  A signaling NaN
       // input raises NV and returns the default NaN; a quiet NaN propagates
       // without NV.  Numeric core: host libm (glibc, documented <= 2 ulp
-      // budget).
+      // budget); every input other than the exact +-0 accrues NX because the
+      // approximation is not the exact mathematical result (§6.2.3).
       if (value[30 .. 23] == 0xff) & (value[22 .. 0] != zeros()) then
         (if value[22] == 0b0 then 0b10000 else zeros(), defaultNaN32)
       else if value[30 .. 23] == 0xff then (0b10000, defaultNaN32)
-      else (zeros(), ame_ztt_f32cos(value))
+      else (ame_transcendental_inexact_flags(
+              ame_fp32_is_pos_zero(value) | ame_fp32_is_neg_zero(value)),
+            ame_ztt_f32cos(value))
     },
     AME_FLOAT_SIN => {
       if (value[30 .. 23] == 0xff) & (value[22 .. 0] != zeros()) then
         (if value[22] == 0b0 then 0b10000 else zeros(), defaultNaN32)
       else if value[30 .. 23] == 0xff then (0b10000, defaultNaN32)
-      else (zeros(), ame_ztt_f32sin(value))
+      else (ame_transcendental_inexact_flags(
+              ame_fp32_is_pos_zero(value) | ame_fp32_is_neg_zero(value)),
+            ame_ztt_f32sin(value))
     },
     AME_FLOAT_TANH => {
-      // tanh(+-inf) = +-1; the finite/NaN handling matches cos above.
+      // tanh(+-inf) = +-1 exactly; the finite/NaN handling matches cos above.
       if (value[30 .. 23] == 0xff) & (value[22 .. 0] != zeros()) then
         (if value[22] == 0b0 then 0b10000 else zeros(), defaultNaN32)
-      else (zeros(), ame_ztt_f32tanh(value))
+      else if value[30 .. 23] == 0xff then (zeros(), ame_ztt_f32tanh(value))
+      else (ame_transcendental_inexact_flags(
+              ame_fp32_is_pos_zero(value) | ame_fp32_is_neg_zero(value)),
+            ame_ztt_f32tanh(value))
     }
   }
 }
@@ -92,10 +100,10 @@ function ame_float_math_result(dtype : bits(32), op : ame_float_math_op,
             let (div_flags, quotient) = riscv_f16Div(rm, one, sqrt_value);
             (sqrt_flags | div_flags, quotient)
           },
-          AME_FLOAT_ROUND_DOWN    => riscv_f16roundToInt(0b010, input, true),
-          AME_FLOAT_ROUND_NEAREST => riscv_f16roundToInt(0b000, input, true),
-          AME_FLOAT_ROUND_UP      => riscv_f16roundToInt(0b011, input, true),
-          AME_FLOAT_ROUND_ZERO    => riscv_f16roundToInt(0b001, input, true)
+          AME_FLOAT_ROUND_DOWN    => riscv_f16roundToInt(0b010, input, false),
+          AME_FLOAT_ROUND_NEAREST => riscv_f16roundToInt(0b000, input, false),
+          AME_FLOAT_ROUND_UP      => riscv_f16roundToInt(0b011, input, false),
+          AME_FLOAT_ROUND_ZERO    => riscv_f16roundToInt(0b001, input, false)
         };
         (flags, zero_extend(ame_max_dtype_size, result))
       }
@@ -115,26 +123,30 @@ function ame_float_math_result(dtype : bits(32), op : ame_float_math_op,
           let (div_flags, quotient) = riscv_f64Div(rm, one, sqrt_value);
           (sqrt_flags | div_flags, quotient)
         },
-        AME_FLOAT_ROUND_DOWN    => riscv_f64roundToInt(0b010, input, true),
-        AME_FLOAT_ROUND_NEAREST => riscv_f64roundToInt(0b000, input, true),
-        AME_FLOAT_ROUND_UP      => riscv_f64roundToInt(0b011, input, true),
-        AME_FLOAT_ROUND_ZERO    => riscv_f64roundToInt(0b001, input, true),
+        AME_FLOAT_ROUND_DOWN    => riscv_f64roundToInt(0b010, input, false),
+        AME_FLOAT_ROUND_NEAREST => riscv_f64roundToInt(0b000, input, false),
+        AME_FLOAT_ROUND_UP      => riscv_f64roundToInt(0b011, input, false),
+        AME_FLOAT_ROUND_ZERO    => riscv_f64roundToInt(0b001, input, false),
         AME_FLOAT_COS => {
           if ((value[63 .. 52] & 0x7ff) == 0x7ff) & (value[51 .. 0] != zeros()) then
             (if value[51] == 0b0 then 0b10000 else zeros(), 0x7ff8000000000000)
           else if (value[63 .. 52] & 0x7ff) == 0x7ff then (0b10000, 0x7ff8000000000000)
-          else (zeros(), ame_ztt_f64cos(input))
+          else (ame_transcendental_inexact_flags(ame_fp64_is_zero(input)),
+                ame_ztt_f64cos(input))
         },
         AME_FLOAT_SIN => {
           if ((value[63 .. 52] & 0x7ff) == 0x7ff) & (value[51 .. 0] != zeros()) then
             (if value[51] == 0b0 then 0b10000 else zeros(), 0x7ff8000000000000)
           else if (value[63 .. 52] & 0x7ff) == 0x7ff then (0b10000, 0x7ff8000000000000)
-          else (zeros(), ame_ztt_f64sin(input))
+          else (ame_transcendental_inexact_flags(ame_fp64_is_zero(input)),
+                ame_ztt_f64sin(input))
         },
         AME_FLOAT_TANH => {
           if ((value[63 .. 52] & 0x7ff) == 0x7ff) & (value[51 .. 0] != zeros()) then
             (if value[51] == 0b0 then 0b10000 else zeros(), 0x7ff8000000000000)
-          else (zeros(), ame_ztt_f64tanh(input))
+          else if (value[63 .. 52] & 0x7ff) == 0x7ff then (zeros(), ame_ztt_f64tanh(input))
+          else (ame_transcendental_inexact_flags(ame_fp64_is_zero(input)),
+                ame_ztt_f64tanh(input))
         }
       };
       (flags, zero_extend(ame_max_dtype_size, result))

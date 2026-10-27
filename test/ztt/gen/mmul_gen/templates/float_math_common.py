@@ -38,7 +38,6 @@ from fp_semantics import (
     FFLAGS_NV,
     FFLAGS_OF_NX,
     FLOAT_BOUNDARIES,
-    ROUNDING_MODE_NAMES,
     SPEC_DEFINED_ROUNDING_MODE_NAMES,
     SQRT_TWO_RESULTS,
     overflow_result,
@@ -47,8 +46,6 @@ from fp_semantics import (
 )
 
 
-#: Flags raised by an integer-valued rounding result on an inexact input.
-ROUNDING_FLAGS = FFLAGS_NX
 #: Flags raised by an infinite input to cos/sin (invalid operation).
 INVALID_FLAGS = FFLAGS_NV
 #: Flag budget the host libm stage is allowed to differ from the reference by.
@@ -226,15 +223,19 @@ class MathOperation(StrEnum):
                 MathOperation.CEIL: boundaries["two"],
                 MathOperation.TRUNC: boundaries["one"],
             }[self]
+            # The instruction's own rounding direction replaces the
+            # destination rounding mode, and the integral result is always
+            # representable: the operation is exact, so it raises no flag
+            # (§6.2.3: "Exact operations ... set none of these flags").
             return [
                 BoundaryCase(
-                    scenario=f"fixed_rounding_inexact_{mode}",
+                    scenario=f"fixed_rounding_{mode}",
                     source=boundaries["one_half"],
                     expected=fixed,
-                    flags=FFLAGS_NX,
+                    flags=0,
                     rounding_mode=mode,
                 )
-                for mode in ROUNDING_MODE_NAMES
+                for mode in SPEC_DEFINED_ROUNDING_MODE_NAMES
             ]
         raise ValueError(f"{self} has no boundary scenarios")
 
@@ -389,7 +390,6 @@ __all__ = [
     "LIBRARY_ULP_BUDGET",
     "NUMERIC_DTYPES",
     "REFERENCE_DECIMAL_PRECISION",
-    "ROUNDING_FLAGS",
     "BoundaryCase",
     "MathOperation",
     "checked_indices",
