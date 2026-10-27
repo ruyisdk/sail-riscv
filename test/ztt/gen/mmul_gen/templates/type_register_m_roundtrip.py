@@ -5,6 +5,12 @@
 #
 """M-register descriptor roundtrip: write the type code, read it back.
 
+Spec:    instructions.adoc:1617-1618 (§6.38)
+Quote:   "Gets the 32-bit datatype descriptor of an `M` register by reading from `Md` and zero-extending it to XLEN in
+         `X[rd]`."
+Checks:  every declared descriptor written with msettyp must read back unchanged with mgettyp at every legal
+         M-register placement.
+
 Every descriptor the macro file declares is written into an M register and read
 back at each legal placement of that register in the M-register file, so one
 case covers both the encoding of the descriptor and where the register sits.

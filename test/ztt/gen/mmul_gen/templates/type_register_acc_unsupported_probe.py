@@ -5,6 +5,12 @@
 #
 """Accumulator descriptor error probe: an unusable code must change nothing.
 
+Spec:    instruction_semantics.adoc:61-62 (§6.1.3)
+Quote:   "An unsupported tuple sets `amestatus.UN` and leaves every destination register unchanged; it does not raise
+         a synchronous exception."
+Checks:  an out-of-encoding descriptor written with asettyp must set amestatus.UN and leave the seeded descriptor
+         readable.
+
 Every accumulator is seeded with a descriptor the assembler does define, then
 presented with a code outside the encoding.  The status flag must report the
 rejected write and each accumulator must still read back as its seed.

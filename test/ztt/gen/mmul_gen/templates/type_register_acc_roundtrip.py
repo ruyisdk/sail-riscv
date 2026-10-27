@@ -5,6 +5,11 @@
 #
 """Accumulator descriptor roundtrip: write the type code, read it back.
 
+Spec:    instructions.adoc:458-459 (§6.7)
+Quote:   "Gets the 32-bit datatype descriptor of an `Acc` register by reading from `Ad` and zero-extending it to XLEN
+         in `X[rd]`."
+Checks:  every declared descriptor written with asettyp must read back unchanged with agettyp on every accumulator.
+
 Every descriptor the macro file declares is written into every accumulator the
 configuration provides and read back, so the roundtrip covers the whole
 accumulator file rather than a sample of it.

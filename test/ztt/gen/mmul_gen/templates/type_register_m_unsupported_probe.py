@@ -5,6 +5,12 @@
 #
 """M-register descriptor error probe: an unusable code must change nothing.
 
+Spec:    instruction_semantics.adoc:56-58 (§6.1.3)
+Quote:   "An instruction datatype tuple is unsupported when a required datatype is zero or unknown, the operation is
+         not implemented, the exact operation/datatype combination is not supported"
+Checks:  an out-of-encoding descriptor written with msettyp must set amestatus.UN and leave the seeded descriptor
+         readable at both M-register edges.
+
 The register is first seeded with a descriptor the assembler does define, then
 presented with a code outside the encoding.  The status flag must report the
 rejected write and the descriptor must still read back as the seed.
