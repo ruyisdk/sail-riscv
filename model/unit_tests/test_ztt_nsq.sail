@@ -146,18 +146,28 @@ function test_ztt_nsq_logexp_paths() -> unit = {
   MD(Mdregidx(0b00001)) = int4;
   MD(Mdregidx(0b00010)) = int4;
 
-  // Packed Int4 has two logical squares in one physical register.  Unary
-  // log/exp must transform both squares, not just the first one.
+  // Packed Int4 has two logical squares in one physical register.  A standard
+  // integer tuple of mexp2/mlog2 is unsupported (v0.6 §6.2.2), so the
+  // instruction must leave *both* packed destination squares untouched and set
+  // amestatus.UN.
   foreach (e from 0 to (ame_nelem - 1)) {
+    write_m_elem(int4, Ameregidx(0b00000), e,
+      zero_extend(ame_max_dtype_size, 0x01));
+    write_m_elem(int4, Ameregidx(0b00000), ame_nelem + e,
+      zero_extend(ame_max_dtype_size, 0x02));
     write_m_elem(int4, Ameregidx(0b00001), e,
       zero_extend(ame_max_dtype_size, 0x01));
     write_m_elem(int4, Ameregidx(0b00001), ame_nelem + e,
       zero_extend(ame_max_dtype_size, 0x02));
   };
+  amestatus = 0b0;
   assert(execute(TEST_AME_MEXP2_EW(0b00000, 0b00001)) == RETIRE_SUCCESS);
-  assert(read_m_elem(int4, 0, Ameregidx(0b00000))[7 .. 0] == 0x02);
-  assert(read_m_elem(int4, ame_nelem, Ameregidx(0b00000))[7 .. 0] == 0x04);
-  assert(execute(TEST_AME_MLOG2_EW(0b00000, 0b00000)) == RETIRE_SUCCESS);
+  assert(amestatus == 0b1);
+  assert(read_m_elem(int4, 0, Ameregidx(0b00000))[7 .. 0] == 0x01);
+  assert(read_m_elem(int4, ame_nelem, Ameregidx(0b00000))[7 .. 0] == 0x02);
+  amestatus = 0b0;
+  assert(execute(TEST_AME_MLOG2_EW(0b00000, 0b00001)) == RETIRE_SUCCESS);
+  assert(amestatus == 0b1);
   assert(read_m_elem(int4, 0, Ameregidx(0b00000))[7 .. 0] == 0x01);
   assert(read_m_elem(int4, ame_nelem, Ameregidx(0b00000))[7 .. 0] == 0x02);
 
@@ -173,7 +183,9 @@ function test_ztt_nsq_logexp_paths() -> unit = {
     write_m_elem(int4, Ameregidx(0b00010), ame_nelem + e,
       zero_extend(ame_max_dtype_size, 0x02));
   };
+  amestatus = 0b0;
   assert(execute(TEST_AME_MLDEXP_EW(0b00000, 0b00001, 0b00010)) == RETIRE_SUCCESS);
+  assert(amestatus == 0b0);
   assert(read_m_elem(int4, 0, Ameregidx(0b00000))[7 .. 0] == 0x02);
   assert(read_m_elem(int4, ame_nelem, Ameregidx(0b00000))[7 .. 0] == 0x0c);
 }

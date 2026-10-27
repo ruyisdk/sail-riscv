@@ -16,8 +16,9 @@ from mmul_gen.instructions.logexp.base import (
     LogExpForm,
     LogExpInstruction,
 )
-from mmul_gen.templates.logexp_nominal import (
-    LogExpNominal,
+from mmul_gen.machine import INTEGER
+from mmul_gen.templates.logexp_unsupported_source import (
+    LogExpUnsupportedSource,
 )
 
 class Msublog2EwX(LogExpInstruction):
@@ -28,7 +29,13 @@ class Msublog2EwX(LogExpInstruction):
     subject = "integer log/exp test cases."
     operands = (DESTINATION_OPERAND, SCALAR_SOURCE_OPERAND, FIRST_SOURCE_OPERAND)
     templates = (
-        LogExpNominal( src1_label="pow2_square", expected=7, form=LogExpForm.BINARY_X, scalar=10, scalar_dtype_csr=True, ),
+        LogExpUnsupportedSource(
+            src1_label="pow2_square",
+            form=LogExpForm.BINARY_X,
+            domain=INTEGER,
+            scalar=10,
+            scalar_dtype_csr=True,
+        ),
     )
 
 __all__ = ["Msublog2EwX"]

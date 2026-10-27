@@ -162,6 +162,19 @@ function ame_int_logexp_exact_result(op : ame_int_logexp_op, dtype : bits(32),
   result
 }
 
+/* v0.6 §6.2.2: "Among standard datatypes, mexp2.ew, mlog2.ew, mcos.ew,
+   msin.ew, mtanh.ew, mrec.ew, mrsqrt.ew, msqrt.ew, and the mfrint*.ew family
+   require floating-point source and destination datatypes.  For the
+   mlog2sub.ew and msublog2.ew families, including their .ew.x forms, the
+   operand of log2, and the destination, are standard floating-point
+   datatypes".  A standard integer tuple is therefore unsupported, which
+   §6.1.3 makes observable: amestatus.UN is set and no destination register is
+   written.  The scaled family (mldexp/mldexpacc/mrdexp/mrdexpacc) is not in
+   that list and keeps its integer semantics. */
+function ame_logexp_requires_float_source(op : ame_int_logexp_op) -> bool =
+  op == AME_INT_EXP2 | op == AME_INT_LOG2 |
+  op == AME_INT_LOG2SUB | op == AME_INT_SUBLOG2
+
 function ame_int_logexp_result(op : ame_int_logexp_op, dtype : bits(32),
                                md_val : bits(ame_max_dtype_size),
                                ms1_val : bits(ame_max_dtype_size),
@@ -589,8 +602,6 @@ function ame_ew_unary_m(md_dtype : bits(32), ms1_dtype : bits(32),
 function ame_logexp_unary_m(md_dtype : bits(32), ms1_dtype : bits(32),
                             md : ameregidx, ms1 : ameregidx,
                             op : ame_int_logexp_op) -> bool = {
-  let dest_size = ame_dtype_size(md_dtype);
-  let src_size = ame_dtype_size(ms1_dtype);
   let nsq = ame_nsq2(md_dtype, ms1_dtype);
 
   if ame_valid_softfloat_ew_dtype(md_dtype) & ame_valid_softfloat_ew_dtype(ms1_dtype) &
@@ -620,27 +631,10 @@ function ame_logexp_unary_m(md_dtype : bits(32), ms1_dtype : bits(32),
       }
     }
   }
-  else if not(ame_valid_int_elementwise_dtype(md_dtype) & ame_valid_int_elementwise_dtype(ms1_dtype)) then
+  else
+    // mexp2/mlog2 on anything other than a same-format floating-point tuple:
+    // unsupported, so UN is set and the destination keeps its old contents.
     ame_unsupported_result()
-  else if dest_size != src_size | ame_is_signed(md_dtype) != ame_is_signed(ms1_dtype) then
-    ame_unsupported_result()
-  else if not(ame_check_formed_operand(md, md_dtype, nsq)) then false
-  else if not(ame_check_formed_operand(ms1, ms1_dtype, nsq)) then false
-  else {
-    let snapshot = ame_snapshot_mregs();
-    var saturated : bits(1) = 0b0;
-
-    foreach (e from 0 to (nsq * ame_nelem - 1)) {
-      let value = ame_read_snapshot_elem(snapshot, ms1_dtype, ms1, e);
-      let (element_saturated, result) =
-        ame_int_logexp_result(op, md_dtype, zeros(), value, value);
-      saturated = saturated | bool_to_bit(element_saturated);
-      write_m_elem(md_dtype, md, e, result)
-    };
-
-    if saturated == 0b1 then ame_set_saturated();
-    true
-  }
 }
 
 function ame_logexp_binary_m(md_dtype : bits(32), ms1_dtype : bits(32),
@@ -719,6 +713,8 @@ function ame_logexp_binary_m(md_dtype : bits(32), ms1_dtype : bits(32),
       }
     }
   }
+  else if ame_logexp_requires_float_source(op) then
+    ame_unsupported_result()
   else if not(ame_valid_int_elementwise_dtype(md_dtype) & ame_valid_int_elementwise_dtype(ms1_dtype) & ame_valid_int_elementwise_dtype(ms2_dtype)) then
     ame_unsupported_result()
   else if dest_size != src1_size | dest_size != src2_size |
@@ -803,6 +799,8 @@ function ame_logexp_binary_x(md_dtype : bits(32), ms2_dtype : bits(32),
         }
     }
   }
+  else if ame_logexp_requires_float_source(op) then
+    ame_unsupported_result()
   else if not(ame_valid_int_elementwise_dtype(md_dtype) & ame_valid_int_elementwise_dtype(ms2_dtype)) then
     ame_unsupported_result()
   else if dest_size != src2_size | ame_is_signed(md_dtype) != ame_is_signed(ms2_dtype) then

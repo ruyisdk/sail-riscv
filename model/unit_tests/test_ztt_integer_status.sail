@@ -161,18 +161,34 @@ function test_ztt_amexsat_integer_commit() -> unit = {
 $[test]
 function test_ztt_amexsat_logexp_commit() -> unit = {
   let int8_sat = ztt_int_status_dtype(0b00, 0b1);
+  let zero : xlenbits = zeros();
   let one : xlenbits = zero_extend(0b1);
 
   ame_test_enable_context();
   amexsat = 0b0;
+  amestatus = 0b0;
   MD(Mdregidx(0b00000)) = int8_sat;
   MD(Mdregidx(0b00001)) = int8_sat;
-  write_m_square_rm(int8_sat, Ameregidx(0b00001), ztt_int_status_fill(0x07));
+  MD(Mdregidx(0b00010)) = int8_sat;
+  write_m_square_rm(int8_sat, Ameregidx(0b00001), ztt_int_status_fill(0x01));
+  write_m_square_rm(int8_sat, Ameregidx(0b00010), ztt_int_status_fill(0x07));
 
-  // 2^7 is one above the signed INT8 maximum, so this saturates at 127.
-  let _ = execute(TEST_AME_MEXP2_EW(0b00000, 0b00001));
+  // The scaled family keeps its integer semantics: 1 * 2^7 is one above the
+  // signed INT8 maximum, so it saturates at 127 and commits the sticky bit.
+  assert(execute(TEST_AME_MLDEXP_EW(0b00000, 0b00001, 0b00010)) == RETIRE_SUCCESS);
   assert(ztt_int_status_first(Ameregidx(0b00000)) == 0x7f);
   assert(read_CSR(0x812) == one);
+
+  // An integer mexp2 tuple is unsupported (v0.6 §6.2.2): UN is set, the
+  // destination square keeps its previous contents, and amexsat stays clear.
+  amexsat = 0b0;
+  amestatus = 0b0;
+  write_m_square_rm(int8_sat, Ameregidx(0b00000), ztt_int_status_fill(0x21));
+  write_m_square_rm(int8_sat, Ameregidx(0b00001), ztt_int_status_fill(0x07));
+  let _ = execute(TEST_AME_MEXP2_EW(0b00000, 0b00001));
+  assert(amestatus == 0b1);
+  assert(read_CSR(0x812) == zero);
+  assert(ztt_int_status_first(Ameregidx(0b00000)) == 0x21);
 }
 
 $[test]

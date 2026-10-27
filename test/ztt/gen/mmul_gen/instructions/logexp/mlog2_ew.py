@@ -15,8 +15,9 @@ from mmul_gen.instructions.logexp.base import (
     LogExpForm,
     LogExpInstruction,
 )
-from mmul_gen.templates.logexp_nominal import (
-    LogExpNominal,
+from mmul_gen.machine import INTEGER
+from mmul_gen.templates.logexp_unsupported_source import (
+    LogExpUnsupportedSource,
 )
 
 class Mlog2Ew(LogExpInstruction):
@@ -27,7 +28,9 @@ class Mlog2Ew(LogExpInstruction):
     subject = "integer log/exp test cases."
     operands = (DESTINATION_OPERAND, FIRST_SOURCE_OPERAND)
     templates = (
-        LogExpNominal(src1_label="pow2_square", expected=3, form=LogExpForm.UNARY),
+        LogExpUnsupportedSource(
+            src1_label="pow2_square", form=LogExpForm.UNARY, domain=INTEGER
+        ),
     )
 
 __all__ = ["Mlog2Ew"]

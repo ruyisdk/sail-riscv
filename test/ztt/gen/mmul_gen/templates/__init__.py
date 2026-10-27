@@ -112,14 +112,11 @@ from mmul_gen.templates.integer_shift_scalar import (
 from mmul_gen.templates.logexp_nominal import (
     LogExpNominal,
 )
-from mmul_gen.templates.logexp_saturating_exp2 import (
-    Exp2SaturatingBoundary,
-)
-from mmul_gen.templates.logexp_saturating_exp2_wide import (
-    Exp2Saturating128,
-)
 from mmul_gen.templates.logexp_saturating_ldexpacc import (
     LdexpaccSaturatingBoundary,
+)
+from mmul_gen.templates.logexp_unsupported_source import (
+    LogExpUnsupportedSource,
 )
 from mmul_gen.templates.matrix_ops_gather_extra import (
     GATHER_EXTRA_INDEX,
@@ -273,13 +270,12 @@ TEMPLATE_CLASSES = (
     AccTypeRoundtrip,
     AccumulatorSpanExceptions,
     AccumulatorSpanRouting,
-    Exp2Saturating128,
-    Exp2SaturatingBoundary,
     FloatMathCases,
     FloatPairSweep,
     GatherScatterIndexed,
     LdexpaccSaturatingBoundary,
     LogExpNominal,
+    LogExpUnsupportedSource,
     MTypeRoundtrip,
     MatrixSmall,
     MconvDomainPairs,
@@ -321,8 +317,6 @@ __all__ = [
     "DEBUG_MOVE64",
     "DEBUG_MOVE8",
     "ELEMENTWISE_TEMPLATE_CLASSES",
-    "Exp2Saturating128",
-    "Exp2SaturatingBoundary",
     "FLOATING_INGRESS",
     "FloatMathCases",
     "FloatPairSweep",
@@ -331,6 +325,7 @@ __all__ = [
     "INTEGER128_INGRESS",
     "LdexpaccSaturatingBoundary",
     "LogExpNominal",
+    "LogExpUnsupportedSource",
     "MCONV_ROUNDTRIP",
     "MEMORY_ORDER_COL_TO_ROW",
     "MEMORY_ORDER_ROW_TO_COL",

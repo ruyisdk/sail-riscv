@@ -15,14 +15,9 @@ from mmul_gen.instructions.logexp.base import (
     LogExpForm,
     LogExpInstruction,
 )
-from mmul_gen.templates.logexp_nominal import (
-    LogExpNominal,
-)
-from mmul_gen.templates.logexp_saturating_exp2 import (
-    Exp2SaturatingBoundary,
-)
-from mmul_gen.templates.logexp_saturating_exp2_wide import (
-    Exp2Saturating128,
+from mmul_gen.machine import INTEGER, SATURATING_INTEGER, SATURATING_INTEGER128
+from mmul_gen.templates.logexp_unsupported_source import (
+    LogExpUnsupportedSource,
 )
 
 class Mexp2Ew(LogExpInstruction):
@@ -32,10 +27,21 @@ class Mexp2Ew(LogExpInstruction):
     summary = "raise two to each element's exponent"
     subject = "integer log/exp test cases."
     operands = (DESTINATION_OPERAND, FIRST_SOURCE_OPERAND)
+    # v0.6 §6.2.2 requires a floating-point source and destination for mexp2.ew,
+    # so every standard integer domain below is an unsupported tuple.  The three
+    # domains are the ones the instruction used to cover with integer semantics,
+    # kept so the rejection is probed at the plain, saturating, and 128-bit
+    # descriptor widths.
     templates = (
-        LogExpNominal(src1_label="exp_square", expected=8, form=LogExpForm.UNARY),
-        Exp2SaturatingBoundary(form=LogExpForm.UNARY),
-        Exp2Saturating128(form=LogExpForm.UNARY),
+        LogExpUnsupportedSource(
+            src1_label="exp_square", form=LogExpForm.UNARY, domain=INTEGER
+        ),
+        LogExpUnsupportedSource(
+            src1_label="exp_square", form=LogExpForm.UNARY, domain=SATURATING_INTEGER
+        ),
+        LogExpUnsupportedSource(
+            src1_label="exp_square", form=LogExpForm.UNARY, domain=SATURATING_INTEGER128
+        ),
     )
 
 __all__ = ["Mexp2Ew"]
