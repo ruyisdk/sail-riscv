@@ -145,9 +145,19 @@ def float_special_cases(
         true_value = (1 << element_bits) - 1
         ordered = true_value if comparison_is_true else 0
         add("signed_zero", values["neg_zero"], values["zero"], ordered)
-        add("quiet_nan", values["qnan"], values["one"], 0, FFLAGS_NV)
+        # §6.2.3: "Propagating a quiet NaN alone does not set NV"; the ordered
+        # comparison is simply false.  A signaling NaN still raises NV, except
+        # in E5M2 under the QEMU-aligned reading, where none of its NaN
+        # encodings is signaling (see :func:`signaling_nan_flags`).
+        add("quiet_nan", values["qnan"], values["one"], 0, 0)
         if values["snan"] is not None:
-            add("signaling_nan", values["snan"], values["one"], 0, FFLAGS_NV)
+            add(
+                "signaling_nan",
+                values["snan"],
+                values["one"],
+                0,
+                FFLAGS_NV,
+            )
         if has_infinity:
             add("positive_infinity", values["inf"], values["one"], ordered)
             add(

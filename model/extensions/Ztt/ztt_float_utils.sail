@@ -225,11 +225,11 @@ function ame_fp32_binary_result(op : ame_int_binary_op, rm : bits_rm,
     AME_INT_MUL         => riscv_f32Mul(rm, lhs32, rhs32),
     AME_INT_MULNEG      => riscv_f32Mul(rm, ame_fp32_negate(lhs32), rhs32),
     AME_INT_CMPGE       => {
-      let (cmp_fflags, cmp_result) = riscv_f32Le(rhs32, lhs32);
+      let (cmp_fflags, cmp_result) = riscv_f32Le_quiet(rhs32, lhs32);
       (cmp_fflags, if cmp_result then (ones() : bits(32)) else (zeros() : bits(32)))
     },
     AME_INT_CMPLT       => {
-      let (cmp_fflags, cmp_result) = riscv_f32Lt(lhs32, rhs32);
+      let (cmp_fflags, cmp_result) = riscv_f32Lt_quiet(lhs32, rhs32);
       (cmp_fflags, if cmp_result then (ones() : bits(32)) else (zeros() : bits(32)))
     },
     _ => internal_error(__FILE__, __LINE__, "unsupported FP32 AME binary op")
@@ -498,11 +498,11 @@ function ame_bf16_binary_result(op : ame_int_binary_op, rm : bits_rm,
       ame_bf16_round_result(rm, input_fflags | op_fflags, result32)
     },
     AME_INT_CMPGE => {
-      let (op_fflags, result) = riscv_f32Le(rhs32, lhs32);
+      let (op_fflags, result) = riscv_f32Le_quiet(rhs32, lhs32);
       (input_fflags | op_fflags, if result then ones() else zeros())
     },
     AME_INT_CMPLT => {
-      let (op_fflags, result) = riscv_f32Lt(lhs32, rhs32);
+      let (op_fflags, result) = riscv_f32Lt_quiet(lhs32, rhs32);
       (input_fflags | op_fflags, if result then ones() else zeros())
     },
     _ => internal_error(__FILE__, __LINE__, "unsupported BF16 AME binary op")
@@ -766,11 +766,11 @@ function ame_ocp_fp8_binary_result(dtype : bits(32), op : ame_int_binary_op,
       ame_ocp_fp8_round_result(dtype, rm, input_fflags | op_fflags, result32)
     },
     AME_INT_CMPGE => {
-      let (op_fflags, result) = riscv_f32Le(rhs32, lhs32);
+      let (op_fflags, result) = riscv_f32Le_quiet(rhs32, lhs32);
       (input_fflags | op_fflags, if result then ones() else zeros())
     },
     AME_INT_CMPLT => {
-      let (op_fflags, result) = riscv_f32Lt(lhs32, rhs32);
+      let (op_fflags, result) = riscv_f32Lt_quiet(lhs32, rhs32);
       (input_fflags | op_fflags, if result then ones() else zeros())
     },
     _ => internal_error(__FILE__, __LINE__, "unsupported OCP FP8 AME binary op")
@@ -857,8 +857,8 @@ function ame_float_binary_result(dtype : bits(32), op : ame_int_binary_op,
         AME_INT_ABSDIFF     => { let (f, r) = riscv_f16Sub(rm, lhs16, rhs16); (f, ame_float_abs_result(dtype, zero_extend(ame_max_dtype_size, r))) },
         AME_INT_MUL         => { let (f, r) = riscv_f16Mul(rm, lhs16, rhs16); (f, zero_extend(ame_max_dtype_size, r)) },
         AME_INT_MULNEG      => { let neg_lhs = ame_float_negate_result(dtype, ms1_val); let (f, r) = riscv_f16Mul(rm, neg_lhs[15 .. 0], rhs16); (f, zero_extend(ame_max_dtype_size, r)) },
-        AME_INT_CMPGE       => { let (f, r) = riscv_f16Le(rhs16, lhs16); (f, if r then ones() else zeros()) },
-        AME_INT_CMPLT       => { let (f, r) = riscv_f16Lt(lhs16, rhs16); (f, if r then ones() else zeros()) },
+        AME_INT_CMPGE       => { let (f, r) = riscv_f16Le_quiet(rhs16, lhs16); (f, if r then ones() else zeros()) },
+        AME_INT_CMPLT       => { let (f, r) = riscv_f16Lt_quiet(lhs16, rhs16); (f, if r then ones() else zeros()) },
         _ => internal_error(__FILE__, __LINE__, "unsupported AME float binary op")
       }
     },
@@ -875,8 +875,8 @@ function ame_float_binary_result(dtype : bits(32), op : ame_int_binary_op,
         AME_INT_ABSDIFF     => { let (f, r) = riscv_f64Sub(rm, lhs64, rhs64); (f, ame_float_abs_result(dtype, zero_extend(ame_max_dtype_size, r))) },
         AME_INT_MUL         => { let (f, r) = riscv_f64Mul(rm, lhs64, rhs64); (f, zero_extend(ame_max_dtype_size, r)) },
         AME_INT_MULNEG      => { let neg_lhs = ame_float_negate_result(dtype, ms1_val); let (f, r) = riscv_f64Mul(rm, neg_lhs[63 .. 0], rhs64); (f, zero_extend(ame_max_dtype_size, r)) },
-        AME_INT_CMPGE       => { let (f, r) = riscv_f64Le(rhs64, lhs64); (f, if r then ones() else zeros()) },
-        AME_INT_CMPLT       => { let (f, r) = riscv_f64Lt(lhs64, rhs64); (f, if r then ones() else zeros()) },
+        AME_INT_CMPGE       => { let (f, r) = riscv_f64Le_quiet(rhs64, lhs64); (f, if r then ones() else zeros()) },
+        AME_INT_CMPLT       => { let (f, r) = riscv_f64Lt_quiet(lhs64, rhs64); (f, if r then ones() else zeros()) },
         _ => internal_error(__FILE__, __LINE__, "unsupported AME float binary op")
       }
     },
