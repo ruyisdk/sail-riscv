@@ -5,6 +5,12 @@
 #
 """Replicate one source column across every column of each row.
 
+Spec:    instructions.adoc:1046-1047 (§6.24)
+Quote:   "Broadcasts column `c` (from integer register `rs1`) of `ms2` to every
+         column of `md`, independently for every row."
+Checks:  mcolbcast.ew.x must replicate source column 0 and column n-1 of the ramp square across
+         every row, checked at five sampled destination positions.
+
 Broadcasting the first column proves the operand is read by row, broadcasting
 the last one also proves the row stride is the active length rather than a
 compile-time constant.

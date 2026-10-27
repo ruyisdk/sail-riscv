@@ -5,6 +5,11 @@
 #
 """Shift every row by one column, dropping what leaves the active square.
 
+Spec:    instructions.adoc:1172-1172 (§6.27)
+Quote:   "Elements shifted beyond the column boundary are filled with zero (no wrap-around)."
+Checks:  mcolshift.ew.x with offsets +1 and -1 must shift every row of the ramp square and
+         zero-fill the column that leaves the active square.
+
 Shifting forward and in reverse proves both edges: the column that leaves the
 active square must read as zero, which is what the in-range test in the
 expected-value walk encodes.

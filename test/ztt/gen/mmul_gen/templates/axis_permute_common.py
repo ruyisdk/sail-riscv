@@ -5,6 +5,12 @@
 #
 """Shared shape of the row/column control templates.
 
+Spec:    instruction_semantics.adoc:177-179 (§6.2.2)
+Quote:   "Each instruction applies the `Operation` defined on its detailed instruction page
+         independently to every logical element of every square selected by operand formation"
+Checks:  the shared plumbing loads a 1..nelem ramp into m0, runs one row/column operation and
+         stores the destination square of every integer datatype, sampling the same five positions.
+
 Every instruction of this family loads a linear ramp ``1..nelem`` into ``m0``,
 applies one row/column operation, stores the destination square, and samples the
 same five element positions.  Only two things change between the instructions:

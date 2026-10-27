@@ -5,6 +5,12 @@
 #
 """Fill every element with its own row coordinate.
 
+Spec:    instructions.adoc:4414-4415 (§6.108)
+Quote:   "Writes to each element of the M register group `md` the zero-based index of the row
+         containing that element."
+Checks:  mrowid.ew must write each element's own row coordinate into the destination square, so a
+         mis-formed active length shows up as a wrong coordinate, not as a missing element.
+
 The source ramp is loaded but not read: the expected square is the row index
 itself, so a wrong active length shows up as a wrong coordinate, not as a
 missing element.
