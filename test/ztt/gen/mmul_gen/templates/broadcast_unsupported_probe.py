@@ -5,11 +5,10 @@
 #
 """The unsupported-datatype ingress probe.
 
-Ingress is descriptor-checked before it writes: broadcasting a UINT16 scalar
-through a UINT8 descriptor must set the UN status bit and leave the
-destination exactly as the seed left it.  The seeded square is compared byte
-by byte at the boundaries, so a partial write is caught where a status-only
-check would pass.
+Ingress is descriptor-checked before it writes: a scalar descriptor outside the
+defined encoding must set the UN status bit and leave the destination exactly as
+the seed left it.  The seeded square is compared byte by byte at the
+boundaries, so a partial write is caught where a status-only check would pass.
 """
 
 from __future__ import annotations
@@ -36,8 +35,10 @@ if TYPE_CHECKING:
 CHECKED_POSITIONS = (0, 1, 7)
 #: The narrow descriptor the probe seeds the destination through.
 SEED_DTYPE = "AME_UINT8_DTYPE"
-#: The wide descriptor and scalar that must be rejected.
-REJECTED_DTYPE = "AME_UINT16_DTYPE"
+#: The scalar descriptor that must be rejected: a code outside the encoding the
+#: assembler defines (bit 31 marks a custom datatype, which ame_is_standard_*
+#: rejects), the same code the M/ACC descriptor probes use.
+REJECTED_DTYPE = "0x80000008"
 REJECTED_SCALAR = "0x1234"
 
 
@@ -62,7 +63,7 @@ class UnsupportedDtypeProbe(Template):
         values = unsupported_probe_values(machine.nelem)
         out.text.extend(
             [
-                "    # Unsupported UINT16 -> UINT8 ingress sets UN and preserves md",
+                "    # An out-of-encoding source descriptor sets UN and preserves md",
                 f"    li      t0, {SEED_DTYPE}",
                 "    msettyp m0, t0",
                 f"    la      t2, {UNSUPPORTED_SOURCE_LABEL}",
