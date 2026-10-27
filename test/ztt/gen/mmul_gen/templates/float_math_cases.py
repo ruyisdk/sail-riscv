@@ -5,6 +5,10 @@
 #
 """The cases of one floating-point unary math instruction.
 
+Spec:    instruction_semantics.adoc:213-214 (§6.2.3)
+Quote:   AME floating-point rounding is selected by the destination datatype; AME has no global dynamic rounding mode analogous to `fcsr.FRM`.
+Checks:  each datatype of the family emits its nominal or transcendental case plus one boundary case per rounding mode, and every case must match its exact result and amefflags value
+
 One template carries the whole family because the generated file interleaves the
 cases *per datatype*: a datatype contributes its nominal case and then its
 boundary scenarios before the next datatype starts.  A template per body shape

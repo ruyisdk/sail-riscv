@@ -5,6 +5,10 @@
 #
 """Semantics of one floating-point unary math instruction.
 
+Spec:    instruction_semantics.adoc:248-250 (§6.2.3)
+Quote:   `NX` is set whenever the delivered finite result differs from the exact mathematical result because of rounding, including an implementation-defined approximation that is not exact.
+Checks:  the baked transcendental expectation must stay within 2 ulp of a 30-digit mpmath reference and raise NX, while each boundary scenario must produce its exact result and flag set
+
 Every instruction of the family is *one* member of :class:`MathOperation`, and
 the members carry the operation's own behaviour: which stimulus is nominal, which
 boundary scenarios have an architecturally precise result and flag set, and -- for
