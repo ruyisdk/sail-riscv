@@ -5,6 +5,13 @@
 #
 """Shared shape of the row/column-major memory-order templates.
 
+Spec:    programming_model.adoc:296-300 (§2.6.1)
+Quote:   "Packed squares occur in ascending slot order; within each square, elements
+         occur in the instruction's stated row-major or column-major order."
+Checks:  a load in one order and a store in the other must place element (r, c) at
+         offset c * N + r, checked at the second element and the first element of
+         the next storage row
+
 The case loads the table in one addressing mode (``mls.rm`` or ``mls.cm``) and
 stores the same M register back in the other (``mss.cm`` or ``mss.rm``).  The
 stored square therefore re-encodes the linear element index through the
