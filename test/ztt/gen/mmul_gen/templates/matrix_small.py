@@ -3,7 +3,15 @@
 # Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
 # SPDX-License-Identifier: BSD-3-Clause-Clear
 #
-"""The position-dependent small-matrix product template."""
+"""The position-dependent small-matrix product template.
+
+Spec:    instruction_semantics.adoc:151-153 (§6.2.1)
+Quote:   "Every logical source square is `N x N`.  Square `s` of the two formed source operands is
+         paired as `A[s]` and `B[s]`; the accumulator is one `N x N` square, so each output element
+         folds `N_sq * N` scalar products."
+Checks:  an integer stimulus is multiplied position by position and five destination elements are
+         compared against the row-major reference for the ordinary, transposed and negated products.
+"""
 
 from __future__ import annotations
 

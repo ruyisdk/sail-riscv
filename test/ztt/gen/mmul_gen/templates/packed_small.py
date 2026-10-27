@@ -3,7 +3,14 @@
 # Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
 # SPDX-License-Identifier: BSD-3-Clause-Clear
 #
-"""The sub-UDS packed source template."""
+"""The sub-UDS packed source template.
+
+Spec:    programming_model.adoc:205-206 (§2.3.2)
+Quote:   "For 2D matrix multiply instructions, the inner product dimension extends to `N_sq * N`
+         elements; see <<ame-common-matmul>>."
+Checks:  a sub-UDS packed integer source folds every storage slot of a row into one wider
+         destination element, checked over the whole widened destination square.
+"""
 
 from __future__ import annotations
 

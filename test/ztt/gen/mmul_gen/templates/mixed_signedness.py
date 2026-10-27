@@ -3,7 +3,14 @@
 # Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
 # SPDX-License-Identifier: BSD-3-Clause-Clear
 #
-"""The mixed-signedness double-square template."""
+"""The mixed-signedness double-square template.
+
+Spec:    programming_model.adoc:116-117 (§2.3)
+Quote:   "A single operation may reference squares with different datatypes (for example, 8-bit
+         integer inputs widening to a 16-bit integer output)."
+Checks:  two packed source squares of opposite signedness and different value must fold into the
+         full-width typed product, checked over the entire destination square.
+"""
 
 from __future__ import annotations
 

@@ -3,7 +3,14 @@
 # Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
 # SPDX-License-Identifier: BSD-3-Clause-Clear
 #
-"""The saturating one-times-max template."""
+"""The saturating one-times-max template.
+
+Spec:    state.adoc:316-318 (§3.2.6)
+Quote:   "`SAT` is set only when an integer operation whose destination datatype has `Saturation=1`
+         clamps (saturates) an out-of-range result to the destination range"
+Checks:  a one-times-largest-value product that overflows must clamp to the destination bound at
+         both sampled elements and leave amexsat.SAT set.
+"""
 
 from __future__ import annotations
 

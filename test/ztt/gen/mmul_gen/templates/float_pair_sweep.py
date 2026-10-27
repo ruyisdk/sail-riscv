@@ -3,7 +3,15 @@
 # Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
 # SPDX-License-Identifier: BSD-3-Clause-Clear
 #
-"""The exactly-representable float product and overflow sweep template."""
+"""The exactly-representable float product and overflow sweep template.
+
+Spec:    instruction_semantics.adoc:167-169 (§6.2.1)
+Quote:   "The implementation shall document its overflow, saturation, floating-point rounding, and
+         optional fused-product behavior, which shall be deterministic for that tuple."
+Checks:  the nominal all-ones product is compared exactly, while each sign and rounding-mode
+         overflow case asserts only the must-set OF|NX flags and no 2D destination value, because
+         that overflow value has no v0.6 mandate beyond the implementation's documented choice.
+"""
 
 from __future__ import annotations
 

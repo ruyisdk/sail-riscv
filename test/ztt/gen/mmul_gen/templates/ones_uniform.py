@@ -5,6 +5,12 @@
 #
 """The all-ones product templates.
 
+Spec:    programming_model.adoc:241-243 (§2.3.2)
+Quote:   "Every result sums `N_sq * N` products across corresponding square pairs, and each
+         accumulator result remains one `N x N` square."
+Checks:  with both sources all ones and a cleared accumulator, every destination element of the
+         unit-width and 128-bit variants must hold that same folded sum.
+
 ``OnesUniform128`` reuses ``OnesUniform``'s case builder and replaces only
 the renderer, the datatype domain, and the resource predicate."""
 

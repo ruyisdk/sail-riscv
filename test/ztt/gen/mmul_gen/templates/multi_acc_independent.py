@@ -3,7 +3,14 @@
 # Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
 # SPDX-License-Identifier: BSD-3-Clause-Clear
 #
-"""The independent multi-accumulator template."""
+"""The independent multi-accumulator template.
+
+Spec:    instruction_semantics.adoc:164-166 (§6.2.1)
+Quote:   "It seeds the fold with the pre-instruction accumulator element and adds or subtracts each
+         product in that order; it does not first reduce the products separately."
+Checks:  every legal accumulator is seeded with a distinct value, accumulated with all-ones
+         products and stored out independently, so a shared or swapped accumulator is visible.
+"""
 
 from __future__ import annotations
 
