@@ -18,7 +18,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
-from fp_semantics import FFLAGS_NV, FLOAT_BOUNDARIES
+from fp_semantics import FLOAT_BOUNDARIES, signaling_nan_flags
 
 from mmul_gen.asm import check_dst_lines, repeated_square_lines
 from mmul_gen.case_description import description
@@ -108,6 +108,7 @@ def float_special_cases(
     role: FloatSpecialRole,
     dtype_name: str,
     element_bits: int,
+    e5m2_nan_ieee: bool = False,
 ) -> tuple[FloatSpecialCase, ...]:
     """Build the special-value cases of one instruction and datatype.
 
@@ -156,7 +157,7 @@ def float_special_cases(
                 values["snan"],
                 values["one"],
                 0,
-                FFLAGS_NV,
+                signaling_nan_flags(dtype_name, e5m2_nan_ieee),
             )
         if has_infinity:
             add("positive_infinity", values["inf"], values["one"], ordered)
@@ -179,7 +180,13 @@ def float_special_cases(
     )
     add("quiet_nan", values["qnan"], values["one"], values["qnan"])
     if values["snan"] is not None:
-        add("signaling_nan", values["snan"], values["one"], values["qnan"], FFLAGS_NV)
+        add(
+            "signaling_nan",
+            values["snan"],
+            values["one"],
+            values["qnan"],
+            signaling_nan_flags(dtype_name, e5m2_nan_ieee),
+        )
     if has_infinity:
         add(
             "positive_infinity",

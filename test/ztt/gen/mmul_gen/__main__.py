@@ -93,6 +93,32 @@ def _is_our_output(path: Path) -> bool:
         return GENERATOR_MARKER in handle.read(1024)
 
 
+#: Spellings a boolean command-line value may take.  Unrecognized values are a
+#: hard error: a generation pass must never silently fall back to a default, or
+#: one configuration would emit expectations of the other.
+BOOLEAN_VALUES = {
+    "true": True,
+    "yes": True,
+    "on": True,
+    "1": True,
+    "false": False,
+    "no": False,
+    "off": False,
+    "0": False,
+}
+
+
+def boolean(text: str) -> bool:
+    """Parse an explicit boolean command-line value."""
+
+    try:
+        return BOOLEAN_VALUES[text.strip().lower()]
+    except KeyError:
+        raise argparse.ArgumentTypeError(
+            f"expected a boolean (true/false), got {text!r}"
+        ) from None
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate Ztt tests")
     parser.add_argument(
@@ -140,6 +166,21 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--e5m2-nan-ieee",
+        type=boolean,
+        nargs="?",
+        const=True,
+        default=False,
+        metavar="BOOL",
+        help=(
+            "which E5M2 NaN encodings the model under test treats as signaling "
+            "(OCP OFP8 Rev 1.0 §5.1 leaves it implementation-defined).  Bare flag or "
+            "'true' expects NV for an E5M2 NaN operand; the default 'false' is the "
+            "QEMU-aligned reading, where no E5M2 NaN is signaling.  The expected "
+            "result value is 0x7E either way, and no other datatype is affected"
+        ),
+    )
+    parser.add_argument(
         "--list",
         action="store_true",
         help="print the instruction inventory for this configuration and exit",
@@ -155,6 +196,7 @@ def main(argv: list[str] | None = None) -> int:
         uds=args.uds,
         num_m_regs=args.m,
         num_acc_regs=args.acc,
+        e5m2_nan_ieee=args.e5m2_nan_ieee,
     )
 
     instructions = select_instructions(args.family or ())

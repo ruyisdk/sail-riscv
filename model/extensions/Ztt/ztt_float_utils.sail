@@ -630,8 +630,12 @@ function ame_e5m2_to_f32(value : bits(ame_max_dtype_size)) -> (bits_fflags, bits
     else (zeros(), ame_e5m2_subnormal_to_f32(sign, frac))
   } else if exp == 0b11111 then {
     if frac == 0b00 then (zeros(), sign @ ones(8) @ zeros(23))
-    // OCP E5M2 follows the IEEE quiet-bit convention: frac[1] clear is sNaN.
-    else ((if frac[1] == 0b0 then 0b10000 else zeros()), 0x7FC00000)
+    // Signaling vs quiet is implementation-defined for E5M2 (OCP OFP8 Rev 1.0
+    // §5.1 refuses to interpret the three mantissa encodings); the
+    // ztt_e5m2_nan_ieee configuration selects the reading.  Either way the
+    // widened value is the canonical f32 quiet NaN, so only NV differs.
+    else ((if ame_e5m2_nan_ieee & (frac[1] == 0b0) then 0b10000 else zeros()),
+          0x7FC00000)
   } else {
     let exp32 = unsigned(exp) - 15 + 127;
     (zeros(), sign @ to_bits_unsafe(8, exp32) @ frac @ zeros(21))

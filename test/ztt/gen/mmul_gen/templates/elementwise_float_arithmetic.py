@@ -19,7 +19,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
-from fp_semantics import FFLAGS_NV, FLOAT_BOUNDARIES
+from fp_semantics import FFLAGS_NV, FLOAT_BOUNDARIES, signaling_nan_flags
 
 from mmul_gen.asm import check_dst_lines, repeated_square_lines
 from mmul_gen.case_description import description
@@ -172,6 +172,7 @@ def float_arithmetic_cases(
     form: ElementwiseForm,
     dtype_name: str,
     element_bits: int,
+    e5m2_nan_ieee: bool = False,
 ) -> tuple[FloatArithmeticCase, ...]:
     """Build the invalid-operation cases of one instruction and datatype."""
 
@@ -199,7 +200,12 @@ def float_arithmetic_cases(
 
     add("quiet_nan", nan_case_operands(role, form, nan, one), nan)
     if snan is not None:
-        add("signaling_nan", nan_case_operands(role, form, snan, one), nan, FFLAGS_NV)
+        add(
+            "signaling_nan",
+            nan_case_operands(role, form, snan, one),
+            nan,
+            signaling_nan_flags(dtype_name, e5m2_nan_ieee),
+        )
 
     if dtype_name in NO_INFINITY_DTYPES:
         return tuple(cases)

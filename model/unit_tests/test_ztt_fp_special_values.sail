@@ -85,7 +85,11 @@ function test_ztt_fp_minmax_special_values() -> unit = {
   assert(bf16_snan_result[15 .. 0] == 0x7fc0);
 
   // OCP E4M3 has no signalling/quiet distinction, so its sole positive NaN
-  // propagates without NV.  OCP E5M2 uses frac[1] as the quiet bit.
+  // propagates without NV.  OCP E5M2 uses frac[1] as the quiet bit, but whether
+  // a clear quiet bit means "signaling" is implementation-defined (§5.1), so
+  // the expected NV follows the ztt_e5m2_nan_ieee configuration.
+  let e5m2_snan_nv : bits_fflags =
+    if ame_e5m2_nan_ieee then 0b10000 else 0b00000;
   let (e4m3_nan_flags, e4m3_nan_result) =
     ame_float_binary_result(e4m3, AME_INT_MIN, rm,
       zero_extend(ame_max_dtype_size, 0x7f), zero_extend(ame_max_dtype_size, 0x38));
@@ -106,7 +110,7 @@ function test_ztt_fp_minmax_special_values() -> unit = {
   let (e5m2_snan_flags, e5m2_snan_result) =
     ame_float_binary_result(e5m2, AME_INT_MIN, rm,
       zero_extend(ame_max_dtype_size, 0x7d), zero_extend(ame_max_dtype_size, 0x3c));
-  assert(e5m2_snan_flags == 0b10000);
+  assert(e5m2_snan_flags == e5m2_snan_nv);
   assert(e5m2_snan_result[7 .. 0] == 0x7e);
   let (_, e5m2_min_zero) = ame_float_binary_result(e5m2, AME_INT_MIN, rm,
     zero_extend(ame_max_dtype_size, 0x00), zero_extend(ame_max_dtype_size, 0x80));

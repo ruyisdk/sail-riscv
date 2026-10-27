@@ -430,6 +430,12 @@ class MachineConfig:
     uds: int = 8
     num_m_regs: int = 32
     num_acc_regs: int = 4
+    #: Which E5M2 NaN encodings the model under test treats as signaling.
+    #: OCP OFP8 Rev 1.0 §5.1 leaves it implementation-defined, so the expected
+    #: NV of an E5M2 NaN case is a generation parameter: ``False`` (the default)
+    #: is the QEMU-aligned reading (no E5M2 NaN is signaling) and ``True`` is the
+    #: IEEE 754 quiet-bit reading.  No other datatype is affected.
+    e5m2_nan_ieee: bool = False
 
     def __post_init__(self) -> None:
         if self.n <= 0:
@@ -440,6 +446,10 @@ class MachineConfig:
             raise ValueError(f"invalid M-register file size: {self.num_m_regs}")
         if self.num_acc_regs <= 0:
             raise ValueError(f"invalid accumulator file size: {self.num_acc_regs}")
+        if not isinstance(self.e5m2_nan_ieee, bool):
+            raise ValueError(
+                f"e5m2_nan_ieee must be a bool, got {self.e5m2_nan_ieee!r}"
+            )
 
     @property
     def nelem(self) -> int:

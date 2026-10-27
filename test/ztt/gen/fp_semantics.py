@@ -378,6 +378,26 @@ FFLAGS_OF_NX = 0x05
 FFLAGS_DZ = 0x08
 FFLAGS_NV = 0x10
 
+#: The one format whose NaN encodings are not given a quiet/signaling meaning by
+#: their specification: OCP OFP8 Rev 1.0 §5.1 lists the three E5M2 NaN mantissas
+#: (01, 10, 11) and states that "Interpretation of the three mantissa values for
+#: NaNs is not defined."
+IMPLEMENTATION_DEFINED_SNAN_DTYPE = "AME_OCP_E5M2_DTYPE"
+
+
+def signaling_nan_flags(dtype_name: str, e5m2_nan_ieee: bool) -> int:
+    """The flags a signaling-NaN operand raises in ``dtype_name``.
+
+    Every format pins its quiet bit in a specification, so the case always
+    expects ``NV`` -- except E5M2, where the interpretation is an implementation
+    choice and ``e5m2_nan_ieee`` selects it.  The delivered result is the
+    canonical quiet NaN either way, so only the flag differs.
+    """
+
+    if dtype_name == IMPLEMENTATION_DEFINED_SNAN_DTYPE and not e5m2_nan_ieee:
+        return 0
+    return FFLAGS_NV
+
 
 def sign_mask(element_bits: int) -> int:
     return 1 << (element_bits - 1)

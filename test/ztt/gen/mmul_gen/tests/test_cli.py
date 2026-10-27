@@ -50,6 +50,19 @@ class CliTests(unittest.TestCase):
         self.assertEqual(args.n, 16)
         self.assertEqual(args.uds, 16)
 
+    def test_e5m2_nan_ieee_defaults_to_the_qemu_aligned_reading(self) -> None:
+        self.assertIs(parse_args([]).e5m2_nan_ieee, False)
+
+    def test_e5m2_nan_ieee_takes_a_bare_flag_or_an_explicit_boolean(self) -> None:
+        self.assertIs(parse_args(["--e5m2-nan-ieee"]).e5m2_nan_ieee, True)
+        self.assertIs(parse_args(["--e5m2-nan-ieee=true"]).e5m2_nan_ieee, True)
+        self.assertIs(parse_args(["--e5m2-nan-ieee=no"]).e5m2_nan_ieee, False)
+
+    def test_e5m2_nan_ieee_rejects_an_unrecognized_value(self) -> None:
+        with contextlib.redirect_stderr(io.StringIO()):
+            with self.assertRaises(SystemExit):
+                parse_args(["--e5m2-nan-ieee=maybe"])
+
     def test_list_prints_the_inventory_for_the_configuration(self) -> None:
         described = json.loads(self.run_cli(["--list", "--uds", "16"]))
         self.assertEqual(

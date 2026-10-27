@@ -423,12 +423,14 @@ class ElementwiseFloatSpecialValues(ElementwiseTemplate):
                 instruction.form,
                 dtype.name,
                 dtype.bits,
+                machine.e5m2_nan_ieee,
             )
         else:
             cases = float_special_cases(
                 self.special,
                 dtype.name,
                 dtype.bits,
+                machine.e5m2_nan_ieee,
             )
         return [
             Case(

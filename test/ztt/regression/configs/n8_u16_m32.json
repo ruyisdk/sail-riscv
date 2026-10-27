@@ -652,7 +652,14 @@
       // backend provider and is rejected during configuration validation.
       "ame_backend": "dedicated",
       "ame_unit_dtype_size_pow": 4,
-      "ame_max_dtype_size_pow": 7
+      "ame_max_dtype_size_pow": 7,
+      // Interpretation of the three E5M2 NaN mantissa encodings.  OCP OFP8
+      // Rev 1.0 §5.1 leaves it implementation-defined, so this is a model knob
+      // and it affects no other datatype.
+      // false: every E5M2 NaN is quiet, so no NV is raised (QEMU-aligned).
+      // true:  the IEEE 754 quiet bit applies -- frac[1] clear (0x7D, 0xFD) is
+      //        a signaling NaN and raises NV.
+      "ztt_e5m2_nan_ieee": false
     },
     "Zvabd": {
       "supported": true
