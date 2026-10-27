@@ -5,6 +5,10 @@
 #
 """Data and routing proof for a packed accumulator span.
 
+Spec:    instruction_semantics.adoc:32-35 (§6.1.2)
+Quote:   "Unless an instruction explicitly states an overlap restriction, any source M or Acc register group may overlap any destination register group, including complete overlap where the base register numbers are equal."
+Checks:  two overlapping accumulator spans written from two M images must read back square by square, so a square landing in the wrong accumulator is detected
+
 One M image is moved into a span of accumulators, a *second* overlapping image
 is moved into an adjacent span, and both spans are read back.  The overlapping
 write is what pins every accumulator of the span down: a transfer that landed in

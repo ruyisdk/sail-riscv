@@ -5,6 +5,10 @@
 #
 """The two boundary paths of the packed accumulator span.
 
+Spec:    instructions.adoc:2380-2382 (mmov.m.a)
+Quote:   "an index greater than or equal to AME_NUM_ACC_REGS raises an Illegal Instruction exception, and a failing check cannot cause a partial transfer."
+Checks:  an over-long pack factor must set amestatus.UN and a file-crossing span must trap, with every accumulator of the span still holding its poison image
+
 Both are "the transfer must not happen" tests, and each is checked with the same
 discipline as a positive test:
 

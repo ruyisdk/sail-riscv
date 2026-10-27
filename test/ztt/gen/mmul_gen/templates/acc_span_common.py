@@ -5,6 +5,10 @@
 #
 """Value recipes shared by the two packed accumulator-span recipes.
 
+Spec:    programming_model.adoc:88-91 (§2.3)
+Quote:   "The *pack_factor* of a datatype is the number of squares contained in a single M register:"
+Checks:  gives every square of a packed span its own value plus a poison/corrupt pair, so a misrouted or rejected transfer is visible in the read-back
+
 A packed (storage-only) datatype makes one M register hold
 ``pack_factor = UDS / element_bits`` squares, so a single transfer moves a whole
 *span* of accumulators.  The recipes here are what makes each square in that
