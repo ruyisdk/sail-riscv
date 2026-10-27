@@ -17,6 +17,9 @@ from mmul_gen.instructions.logexp.base import (
     LogExpInstruction,
 )
 from mmul_gen.machine import INTEGER
+from mmul_gen.templates.log2bias_tuple import (
+    Log2BiasTuple,
+)
 from mmul_gen.templates.logexp_unsupported_source import (
     LogExpUnsupportedSource,
 )
@@ -35,6 +38,7 @@ class Mlog2subEw(LogExpInstruction):
             domain=INTEGER,
             src2_label="exp_square2",
         ),
+        Log2BiasTuple(log_minus_bias=True, form=LogExpForm.BINARY_M),
     )
 
 __all__ = ["Mlog2subEw"]

@@ -420,6 +420,24 @@ function ame_fp32_log2bias_result(op : ame_int_logexp_op, rm : bits_rm,
   (log_flags | sub_flags, r)
 }
 
+/* v0.6 §6.2.2 (instruction_semantics.adoc:182-188): "the bias is governed by the
+   exact tuple's conversion and subtraction capabilities".  A standard integer
+   bias of up to 64 bits joins an FP32 destination through the standard
+   integer-to-FP32 conversion, rounded once with the tuple's rounding mode; an
+   inexact conversion accrues NX exactly as any other conversion of the tuple.
+   Narrow destinations are left out on purpose: a standard integer has no single
+   conversion to FP8/FP16/BF16, so those tuples stay unsupported rather than
+   double-rounding the bias through FP32. */
+function ame_int_bias_to_f32(bias_dtype : bits(32), rm : bits_rm,
+                             value : bits(ame_max_dtype_size))
+  -> (bits_fflags, bits(ame_max_dtype_size)) = {
+  let exact = ame_elem_int(bias_dtype, value);
+  let (flags, f32v) =
+    if ame_is_signed(bias_dtype) then riscv_i64ToF32(rm, to_bits_unsafe(64, exact))
+    else riscv_ui64ToF32(rm, to_bits_unsafe(64, exact));
+  (flags, zero_extend(ame_max_dtype_size, f32v))
+}
+
 // --- mexp2 / mlog2 (FP64 core) -------------------------------------------
 
 function ame_fp64_logexp_result(op : ame_int_logexp_op, value : bits_D)

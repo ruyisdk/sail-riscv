@@ -67,6 +67,9 @@ GCC_FLAGS = [
     "-mno-relax",
     "-mcmodel=medany",
 ]
+#: Child processes -- the generator and the macro generator -- must not drop
+#: bytecode next to the sources they are handed.
+CHILD_ENV = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1"}
 
 
 def default_jobs() -> int:
@@ -142,7 +145,7 @@ def generate_one(
             "--out-dir",
             str(out_dir),
         ]
-        subprocess.run(cmd, check=True, capture_output=True)
+        subprocess.run(cmd, check=True, capture_output=True, env=CHILD_ENV)
     return out_dir
 
 
@@ -159,7 +162,7 @@ def compile_one(source: Path, elf: Path) -> None:
         str(elf),
         str(source),
     ]
-    subprocess.run(cmd, check=True, capture_output=True)
+    subprocess.run(cmd, check=True, capture_output=True, env=CHILD_ENV)
 
 
 def run_one(
@@ -362,6 +365,7 @@ class MatrixRunner:
                 ["ruby", str(SCRIPT_DIR / "generators" / "gen_ztt_macros.rb")],
                 capture_output=True,
                 text=True,
+                env=CHILD_ENV,
             )
             if proc.returncode != 0:
                 raise SystemExit(f"macro generation failed: {proc.stderr}")

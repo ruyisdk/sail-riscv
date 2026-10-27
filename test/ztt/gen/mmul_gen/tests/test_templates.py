@@ -94,6 +94,7 @@ EXPECTED_TEMPLATE_CLASS_NAMES = (
     "float_pair_sweep",
     "gather_indexed_elements",
     "ldexpacc_saturating_boundary",
+    "log2bias_tuple",
     "nominal",
     "logexp_unsupported_source",
     "supported_dtype_roundtrip",

@@ -54,7 +54,21 @@ class FloatOverflowPayload:
 
 
 class FloatPairSweep(Template):
-    """Exactly representable float product plus a sign x rounding overflow sweep."""
+    """Exactly representable float product plus a sign x rounding overflow sweep.
+
+    The instruction's product and accumulation behavior is implementation
+    defined: v0.6 §6.2.1 requires the implementation to "document its overflow,
+    saturation, floating-point rounding, and optional fused-product behavior,
+    which shall be deterministic for that tuple", and §6.2.3 states that the
+    elementwise floating-point rules "do not override the implementation-defined
+    product and accumulation behavior".  The overflow sweep therefore still
+    executes the instruction and checks the OF|NX flags, but a 2D destination
+    value is not compared against a concrete expectation: for an E5M2
+    destination the delivered overflow value is the implementation's documented
+    choice (for example E5M2 may saturate to the largest finite value under a
+    directed rounding mode, or deliver infinity), so a specific value has no
+    v0.6 basis to assert.
+    """
 
     name = "float_pair_sweep"
     dtypes = SOFTFLOAT
@@ -187,8 +201,8 @@ class FloatPairSweep(Template):
                     repeated_square_lines(lhs_label, boundary.source_value, element_bits, machine)
                 )
                 out.data.extend(repeated_square_lines(rhs_label, payload.two, element_bits, machine))
-                out.text.extend(
-                    check_dst_lines(expected, element_bits, machine=machine, label=dst_label)
-                )
+                # The destination square is still written so the store path is
+                # exercised, but 2D overflow values are implementation defined
+                # (see the class docstring), so only the flags are asserted.
                 out.data.extend(repeated_square_lines(dst_label, expected, element_bits, machine))
                 out.data.append("")

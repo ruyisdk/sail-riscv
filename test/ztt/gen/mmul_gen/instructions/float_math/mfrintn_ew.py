@@ -12,10 +12,15 @@ from mmul_gen.instruction import (
     FIRST_SOURCE_OPERAND,
 )
 from mmul_gen.instructions.float_math.base import FloatMathInstruction
+from mmul_gen.machine import INTEGER
 from mmul_gen.templates.float_math_cases import (
     FloatMathCases,
 )
 from mmul_gen.templates.float_math_common import MathOperation
+from mmul_gen.templates.logexp_common import LogExpForm
+from mmul_gen.templates.logexp_unsupported_source import (
+    LogExpUnsupportedSource,
+)
 
 class MfrintnEw(FloatMathInstruction):
     """Round each element to nearest, ties to even."""
@@ -25,6 +30,9 @@ class MfrintnEw(FloatMathInstruction):
     operands = (DESTINATION_OPERAND, FIRST_SOURCE_OPERAND)
     templates = (
         FloatMathCases(MathOperation.NEAREST),
+        LogExpUnsupportedSource(
+            src1_label="mant_square", form=LogExpForm.UNARY, domain=INTEGER
+        ),
     )
 
 __all__ = ["MfrintnEw"]
