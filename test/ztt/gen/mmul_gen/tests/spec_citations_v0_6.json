@@ -1,0 +1,426 @@
+{
+  "spec_version": "v0.6",
+  "files": {
+    "backend_management.adoc": {
+      "length": 187,
+      "sha256": "9546ec72606fab854de2ad1af6ab7d47da9ba74a063bb019f94b34795c562b26"
+    },
+    "datatypes.adoc": {
+      "length": 211,
+      "sha256": "43e0aa1bb0c3b6342730313e7b603351f9bcaa2bb11869ac5490b8a675014a2c"
+    },
+    "instruction_semantics.adoc": {
+      "length": 277,
+      "sha256": "03b916b04606a6cc8d2fb818d31eef5dc90e3e4775c51294c82277c6cdf9b5b8"
+    },
+    "instructions.adoc": {
+      "length": 5752,
+      "sha256": "c921fc7aadd55a9efa1bfaefc16c8071146245401816bf3c12713470b95181e0"
+    },
+    "programming_model.adoc": {
+      "length": 464,
+      "sha256": "fc5f2040e9a862c8493a8341bf1d0434770b925c78d5432ddf3ae8f4669d12ef"
+    },
+    "state.adoc": {
+      "length": 359,
+      "sha256": "3c076e7416bc905faaa5c4f016e171674e8048fff11dcb78059b4292611dab60"
+    }
+  },
+  "excerpts": [
+    {
+      "file": "programming_model.adoc",
+      "line": 88,
+      "text": "The *pack_factor* of a datatype is the number of squares contained in a single M register:"
+    },
+    {
+      "file": "instructions.adoc",
+      "line": 2380,
+      "text": "an index greater than or equal to AME_NUM_ACC_REGS raises an Illegal Instruction exception, and a failing check cannot cause a partial transfer."
+    },
+    {
+      "file": "instruction_semantics.adoc",
+      "line": 32,
+      "text": "Unless an instruction explicitly states an overlap restriction, any source M or Acc register group may overlap any destination register group, including complete overlap where the base register numbers are equal."
+    },
+    {
+      "file": "instructions.adoc",
+      "line": 2369,
+      "text": "All AME_NELEM elements are copied to the M register group md; a wide datatype occupies a group of consecutive M registers."
+    },
+    {
+      "file": "instruction_semantics.adoc",
+      "line": 43,
+      "text": "all destination M, Md, Acc, and Ad writes, together with accrued amefflags and amexsat updates, become architecturally visible as one commit only after the instruction completes successfully."
+    },
+    {
+      "file": "instructions.adoc",
+      "line": 2428,
+      "text": "All AME_NELEM elements are copied to the single accumulator acc."
+    },
+    {
+      "file": "programming_model.adoc",
+      "line": 72,
+      "text": "A single M register may hold multiple, one, or part of a square, depending on implementation-defined parameters and programmed datatype. In contrast, an Acc register always holds exactly one square."
+    },
+    {
+      "file": "instructions.adoc",
+      "line": 5743,
+      "text": "Writes zero to every element of the M register group md."
+    },
+    {
+      "file": "instructions.adoc",
+      "line": 1046,
+      "text": "Broadcasts column c (from integer register rs1) of ms2 to every column of md, independently for every row."
+    },
+    {
+      "file": "instructions.adoc",
+      "line": 1130,
+      "text": "Writes to each element of the M register group md the zero-based index of the column containing that element."
+    },
+    {
+      "file": "instructions.adoc",
+      "line": 1172,
+      "text": "Elements shifted beyond the column boundary are filled with zero (no wrap-around)."
+    },
+    {
+      "file": "instruction_semantics.adoc",
+      "line": 177,
+      "text": "Each instruction applies the Operation defined on its detailed instruction page independently to every logical element of every square selected by operand formation"
+    },
+    {
+      "file": "instructions.adoc",
+      "line": 4330,
+      "text": "Broadcasts row c (from integer register rs1) of ms2 to every row of md, independently for every column."
+    },
+    {
+      "file": "instructions.adoc",
+      "line": 4414,
+      "text": "Writes to each element of the M register group md the zero-based index of the row containing that element."
+    },
+    {
+      "file": "instructions.adoc",
+      "line": 4456,
+      "text": "Elements shifted beyond the row boundary are filled with zero (no wrap-around)."
+    },
+    {
+      "file": "backend_management.adoc",
+      "line": 160,
+      "text": "Initial state has zero-valued M and Acc registers, zero-valued Md and Ad descriptors, and reset-valued writable AME CSRs. Failure changes neither backend binding, ameown, nor MS."
+    },
+    {
+      "file": "backend_management.adoc",
+      "line": 158,
+      "text": "A new grant atomically binds architectural initial state, sets ameown.OWNED to one, and sets each applicable MS field to Initial."
+    },
+    {
+      "file": "backend_management.adoc",
+      "line": 172,
+      "text": "If the current context is not the owner, the instruction is a no-op that preserves MS."
+    },
+    {
+      "file": "backend_management.adoc",
+      "line": 171,
+      "text": "After release, ameown.OWNED is zero and each applicable MS field is Initial."
+    },
+    {
+      "file": "state.adoc",
+      "line": 165,
+      "text": "ameown is a read-only CSR that reports whether the current software execution context owns the entire AME backend."
+    },
+    {
+      "file": "instructions.adoc",
+      "line": 1368,
+      "text": "The scalar is converted once to the destination datatype Md[md] as defined by the accepted exact operation/datatype tuple, then written to every logical element of M[md]."
+    },
+    {
+      "file": "instruction_semantics.adoc",
+      "line": 213,
+      "text": "AME floating-point rounding is selected by the destination datatype; AME has no global dynamic rounding mode analogous to fcsr.FRM."
+    },
+    {
+      "file": "instructions.adoc",
+      "line": 1365,
+      "text": "If sizeof(src_dtype) is less than XLEN, only the low sizeof(src_dtype) bits are used and higher X-register bits are ignored; if it is greater than XLEN, X[rs1] is zero-extended to that width."
+    },
+    {
+      "file": "instructions.adoc",
+      "line": 1370,
+      "text": "Packed destinations receive the value in every logical packed element."
+    },
+    {
+      "file": "instructions.adoc",
+      "line": 1373,
+      "text": "The source and destination datatype encodings must be supported, and the source-to-destination conversion must be supported."
+    },
+    {
+      "file": "datatypes.adoc",
+      "line": 57,
+      "text": "Integer types are distinguished by size/precision, signedness, saturation behavior, and rounding mode."
+    },
+    {
+      "file": "instructions.adoc",
+      "line": 1363,
+      "text": "Interprets the low 32 bits of X[rs2] as an AME datatype encoding and the X-register bit pattern as one scalar of that datatype, where src_dtype = X[rs2][31:0]."
+    },
+    {
+      "file": "instruction_semantics.adoc",
+      "line": 61,
+      "text": "An unsupported tuple sets amestatus.UN and leaves every destination register unchanged; it does not raise a synchronous exception."
+    },
+    {
+      "file": "instructions.adoc",
+      "line": 2561,
+      "text": "The contents of md are viewed, in row-major order, as N = sqrt(AME_NELEM) rows of row_elements = (N * AME_UNIT_DATATYPE_SIZE) / 16 16-bit elements each, independent of the configured datatype Md[md]."
+    },
+    {
+      "file": "instructions.adoc",
+      "line": 2612,
+      "text": "The contents of md are viewed, in row-major order, as N = sqrt(AME_NELEM) rows of row_elements = (N * AME_UNIT_DATATYPE_SIZE) / 32 32-bit elements each, independent of the configured datatype Md[md]."
+    },
+    {
+      "file": "instructions.adoc",
+      "line": 2663,
+      "text": "The contents of md are viewed, in row-major order, as N = sqrt(AME_NELEM) rows of row_elements = (N * AME_UNIT_DATATYPE_SIZE) / 64 64-bit elements each, independent of the configured datatype Md[md]."
+    },
+    {
+      "file": "instructions.adoc",
+      "line": 2510,
+      "text": "The contents of md are viewed, in row-major order, as N = sqrt(AME_NELEM) rows of row_elements = (N * AME_UNIT_DATATYPE_SIZE) / 8 8-bit elements each, independent of the configured datatype Md[md]."
+    },
+    {
+      "file": "instructions.adoc",
+      "line": 2518,
+      "text": "The element size is defined by the instruction itself: it does not read CSR[amestype], does not read or convert using Md[md], does not form a register group, and never sets amestatus.UN."
+    },
+    {
+      "file": "programming_model.adoc",
+      "line": 227,
+      "text": "For an ordinary 1D element-wise instruction, the logical element count is N_sq * AME_NELEM. The operator is applied to corresponding logical elements of every operand over that entire range."
+    },
+    {
+      "file": "programming_model.adoc",
+      "line": 168,
+      "text": "When a compute instruction references multiple tensor operands, all operands must contain the same total number of squares."
+    },
+    {
+      "file": "instruction_semantics.adoc",
+      "line": 73,
+      "text": "the result is the mathematical operation stated by the instruction, interpreted and converted according to the common datatype rules and applicable instruction-family semantics in this specification."
+    },
+    {
+      "file": "instruction_semantics.adoc",
+      "line": 220,
+      "text": "an operation covered by this subsection follows its exact mathematical expression and rounds a finite result once using the destination datatype's rounding mode."
+    },
+    {
+      "file": "instruction_semantics.adoc",
+      "line": 224,
+      "text": "Invalid operations include indeterminate infinity addition or subtraction and zero multiplied by infinity."
+    },
+    {
+      "file": "instruction_semantics.adoc",
+      "line": 244,
+      "text": "OF is set when the rounded result's magnitude exceeds the destination's finite range. Such a result also sets NX."
+    },
+    {
+      "file": "instruction_semantics.adoc",
+      "line": 248,
+      "text": "NX is set whenever the delivered finite result differs from the exact mathematical result because of rounding, including an implementation-defined approximation that is not exact."
+    },
+    {
+      "file": "instruction_semantics.adoc",
+      "line": 222,
+      "text": "Any NaN input or invalid operation produces the destination datatype's canonical quiet NaN; a signaling NaN is quieted."
+    },
+    {
+      "file": "instruction_semantics.adoc",
+      "line": 131,
+      "text": "B denotes ms2 in a two-source form, D denotes md, C denotes an accumulator operand, and c denotes an instruction-defined scalar value."
+    },
+    {
+      "file": "instruction_semantics.adoc",
+      "line": 192,
+      "text": "For standard integer arithmetic, the mathematical expression is evaluated without intermediate truncation and converted once to the destination integer datatype."
+    },
+    {
+      "file": "instruction_semantics.adoc",
+      "line": 194,
+      "text": "A saturating destination clamps an out-of-range result and sets amexsat.SAT; a non-saturating destination retains the low destination-width bits."
+    },
+    {
+      "file": "instruction_semantics.adoc",
+      "line": 167,
+      "text": "The implementation shall document its overflow, saturation, floating-point rounding, and optional fused-product behavior, which shall be deterministic for that tuple."
+    },
+    {
+      "file": "instructions.adoc",
+      "line": 5020,
+      "text": "Each shift amount is interpreted as an unsigned raw bit pattern and reduced modulo the ms1 element width."
+    },
+    {
+      "file": "instructions.adoc",
+      "line": 5055,
+      "text": "The shift amount is a fixed-type unsigned control scalar, does not read CSR[amestype], and is reduced modulo the ms2 element width."
+    },
+    {
+      "file": "instruction_semantics.adoc",
+      "line": 183,
+      "text": "For the mlog2sub.ew and msublog2.ew families, including their .ew.x forms, the operand of log2, and the destination, are standard floating-point datatypes; the bias is governed by the exact tuple's conversion and subtraction capabilities."
+    },
+    {
+      "file": "instructions.adoc",
+      "line": 1790,
+      "text": "md is both a source and destination: the existing element is read, the scaled value is added, and the sum is written back."
+    },
+    {
+      "file": "instruction_semantics.adoc",
+      "line": 181,
+      "text": "Among standard datatypes, mexp2.ew, mlog2.ew, mcos.ew, msin.ew, mtanh.ew, mrec.ew, mrsqrt.ew, msqrt.ew, and the mfrint*.ew family require floating-point source and destination datatypes. For the mlog2sub.ew and msublog2.ew families, including their .ew.x forms, the operand of log2, and the destination, are standard floating-point datatypes"
+    },
+    {
+      "file": "instruction_semantics.adoc",
+      "line": 37,
+      "text": "All source register values, source datatype values, scalar operands, and index operands are read from the architectural state that exists immediately before the instruction begins."
+    },
+    {
+      "file": "instructions.adoc",
+      "line": 1091,
+      "text": "md, ms1, and ms2 each contain exactly one logical square. Packed datatypes are unsupported. Md[ms1] and Md[md] shall be identical, and Md[ms2] shall be an integer datatype."
+    },
+    {
+      "file": "instructions.adoc",
+      "line": 1097,
+      "text": "The low 32 raw bits of each ms2 index element form an unsigned U32 value; higher element bits are ignored, and an element narrower than 32 bits is zero-extended."
+    },
+    {
+      "file": "programming_model.adoc",
+      "line": 233,
+      "text": "Prefix and reduction instructions apply their documented N x N transformation independently to each of the N_sq logical squares."
+    },
+    {
+      "file": "instructions.adoc",
+      "line": 4110,
+      "text": "Each destination-domain addition applies the destination rounding, saturation, and accrued status-flag behavior before its result is used by the next step."
+    },
+    {
+      "file": "state.adoc",
+      "line": 316,
+      "text": "SAT is set only when an integer operation whose destination datatype has Saturation=1 clamps (saturates) an out-of-range result to the destination range"
+    },
+    {
+      "file": "instructions.adoc",
+      "line": 4547,
+      "text": "Interleaves rows from the logical source square at ms1 and the logical source square at ms2, and writes the two result squares back into ms1 and ms2. Each operand is both a source and a destination."
+    },
+    {
+      "file": "instructions.adoc",
+      "line": 4563,
+      "text": "After the instruction-specific source selection and result placement, every element is copied bit-for-bit in that common datatype representation."
+    },
+    {
+      "file": "instruction_semantics.adoc",
+      "line": 151,
+      "text": "Every logical source square is N x N. Square s of the two formed source operands is paired as A[s] and B[s]; the accumulator is one N x N square, so each output element folds N_sq * N scalar products."
+    },
+    {
+      "file": "instructions.adoc",
+      "line": 1321,
+      "text": "The source and destination datatypes may each be a packed or a non-packed datatype; no particular packedness combination is required."
+    },
+    {
+      "file": "instructions.adoc",
+      "line": 5335,
+      "text": "Stores the typed M-register operand beginning at ms1 to memory in row-major format. The programmed datatype is read from Md[ms1]."
+    },
+    {
+      "file": "programming_model.adoc",
+      "line": 298,
+      "text": "Packed squares occur in ascending slot order; within each square, elements occur in the instruction's stated row-major or column-major order."
+    },
+    {
+      "file": "instructions.adoc",
+      "line": 5304,
+      "text": "Stores the typed M-register operand beginning at ms1 to memory in column-major format. The programmed datatype is read from Md[ms1]."
+    },
+    {
+      "file": "programming_model.adoc",
+      "line": 116,
+      "text": "A single operation may reference squares with different datatypes (for example, 8-bit integer inputs widening to a 16-bit integer output)."
+    },
+    {
+      "file": "instruction_semantics.adoc",
+      "line": 164,
+      "text": "It seeds the fold with the pre-instruction accumulator element and adds or subtracts each product in that order; it does not first reduce the products separately."
+    },
+    {
+      "file": "programming_model.adoc",
+      "line": 241,
+      "text": "Every result sums N_sq * N products across corresponding square pairs, and each accumulator result remains one N x N square."
+    },
+    {
+      "file": "programming_model.adoc",
+      "line": 101,
+      "text": "A packed M register holds pack_factor logical squares."
+    },
+    {
+      "file": "instructions.adoc",
+      "line": 3698,
+      "text": "The other sub-square slots of md are preserved (read-modify-write)."
+    },
+    {
+      "file": "programming_model.adoc",
+      "line": 205,
+      "text": "For 2D matrix multiply instructions, the inner product dimension extends to N_sq * N elements; see <<ame-common-matmul>>."
+    },
+    {
+      "file": "programming_model.adoc",
+      "line": 371,
+      "text": "They therefore neither read nor require a supported datatype, including when the programmed datatype is uninitialized or unsupported."
+    },
+    {
+      "file": "programming_model.adoc",
+      "line": 424,
+      "text": "the faulting instruction commits no update to its destination M register group and performs no explicit data-memory write, neither to the faulting portion of the access nor to any other portion."
+    },
+    {
+      "file": "instructions.adoc",
+      "line": 1328,
+      "text": "A packed source with a non-packed destination therefore expands the source squares; a non-packed source with a packed destination compresses them"
+    },
+    {
+      "file": "programming_model.adoc",
+      "line": 302,
+      "text": "For a strided transfer, the segment addresses are derived as follows. base is the unsigned XLEN-bit value X[rs1], and stride is the unsigned XLEN-bit value X[rs2]."
+    },
+    {
+      "file": "programming_model.adoc",
+      "line": 383,
+      "text": "The strided variants access memory as a sequence of equally spaced segments, one segment per row of the square, with consecutive segments separated by a programmable byte stride."
+    },
+    {
+      "file": "programming_model.adoc",
+      "line": 387,
+      "text": "Both support non-packed and packed datatypes; for a packed datatype the .st forms place the sub-squares side by side within each row, while the .tst forms stack them vertically."
+    },
+    {
+      "file": "instructions.adoc",
+      "line": 458,
+      "text": "Gets the 32-bit datatype descriptor of an Acc register by reading from Ad and zero-extending it to XLEN in X[rd]."
+    },
+    {
+      "file": "instructions.adoc",
+      "line": 1617,
+      "text": "Gets the 32-bit datatype descriptor of an M register by reading from Md and zero-extending it to XLEN in X[rd]."
+    },
+    {
+      "file": "instruction_semantics.adoc",
+      "line": 56,
+      "text": "An instruction datatype tuple is unsupported when a required datatype is zero or unknown, the operation is not implemented, the exact operation/datatype combination is not supported"
+    },
+    {
+      "file": "instructions.adoc",
+      "line": 5606,
+      "text": "Md[ms2] must be a packed datatype and Md[md] a non-packed datatype; otherwise amestatus.UN is set and no register is written."
+    }
+  ]
+}
