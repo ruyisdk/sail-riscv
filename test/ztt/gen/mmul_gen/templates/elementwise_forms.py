@@ -5,6 +5,12 @@
 #
 """Operand forms of the elementwise family.
 
+Spec:    instruction_semantics.adoc:129-133 (§6.1.5)
+Quote:   "B denotes ms2 in a two-source form, D denotes md, C denotes an accumulator operand, and c
+         denotes an instruction-defined scalar value."
+Checks:  the operand roles, the scalar-carrying forms, and the register groups of an elementwise
+         instruction all follow from its form alone
+
 An elementwise instruction is defined by its mnemonic, its operand form, and the
 input cases it wants; the storage layout, the checks, and the expected values are
 all derived from the form.  The form is therefore the family's only real axis of

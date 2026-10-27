@@ -5,6 +5,12 @@
 #
 """The softfloat elementwise recipe: nominal operands, one case per datatype.
 
+Spec:    instruction_semantics.adoc:220-222 (§6.2.3)
+Quote:   "an operation covered by this subsection follows its exact mathematical expression and rounds a
+         finite result once using the destination datatype's rounding mode."
+Checks:  each softfloat datatype's nominal operands must produce the model's answer, with a comparison's
+         destination seeded to the opposite result first
+
 Each softfloat datatype has its own nominal operand tuple (the same nominal
 values in that format), and the instruction declares what its answer is with its
 own ``evaluate_float``: an operand of the model's roster, or -- for a comparison

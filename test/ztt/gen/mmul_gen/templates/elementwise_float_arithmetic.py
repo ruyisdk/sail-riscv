@@ -5,6 +5,12 @@
 #
 """The softfloat arithmetic special-value recipe: invalid operations.
 
+Spec:    instruction_semantics.adoc:224-225 (§6.2.3)
+Quote:   "Invalid operations include indeterminate infinity addition or subtraction and zero multiplied
+         by infinity."
+Checks:  a NaN, zero-times-infinity, or infinity-minus-infinity vector in the role's own operand order
+         must produce a quiet NaN and the exact flag set
+
 These cases are the ones the IEEE rules make invalid or NaN-producing: a quiet
 or signaling NaN operand, zero times infinity, and infinity minus infinity.
 Every case clears amefflags, runs the instruction in its real operand order,

@@ -5,6 +5,12 @@
 #
 """Which data squares express each rounding case.
 
+Spec:    instruction_semantics.adoc:248-250 (§6.2.3)
+Quote:   "NX is set whenever the delivered finite result differs from the exact mathematical result
+         because of rounding, including an implementation-defined approximation that is not exact."
+Checks:  each arithmetic role names the data squares that overflow, underflow, or land halfway, and the
+         renderer reads that plan instead of branching on the role
+
 Every rounding sweep is driven by the same three questions -- which squares make
 the result overflow, underflow, or land exactly halfway -- and each question is
 answered per :class:`FloatArithmeticRole` here, so the template renderer next door

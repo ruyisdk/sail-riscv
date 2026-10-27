@@ -5,6 +5,12 @@
 #
 """The register vocabulary and the case emitter shared by every elementwise recipe.
 
+Spec:    programming_model.adoc:168-170 (§2.3.2)
+Quote:   "When a compute instruction references multiple tensor operands, all operands must contain the
+         same total number of squares."
+Checks:  every case loads each operand into a square of the same register span, runs the instruction,
+         and stores the destination square
+
 Every elementwise case has the same shape: load its operand squares into M
 registers (or a scalar into a general-purpose register), run the instruction,
 and store the destination square.  Which operands, which registers, and which

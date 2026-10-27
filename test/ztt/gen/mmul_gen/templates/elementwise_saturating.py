@@ -5,6 +5,12 @@
 #
 """The saturating elementwise recipe: edge operands that must set amexsat.
 
+Spec:    instruction_semantics.adoc:194-196 (§6.2.2)
+Quote:   "A saturating destination clamps an out-of-range result and sets amexsat.SAT; a non-saturating
+         destination retains the low destination-width bits."
+Checks:  each saturating case clears amexsat, runs an out-of-range operand pair, and requires amexsat set
+         with the destination clamped to the dtype bound
+
 Only seven of the elementwise instructions saturate, and each one needs a
 different operand pair to push its result out of range: adding one to the dtype
 maximum, multiplying the maximum by two, subtracting from the floor, and so on.

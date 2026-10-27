@@ -5,6 +5,12 @@
 #
 """The special-value softfloat recipe: NaN, infinity, and signed zero.
 
+Spec:    instruction_semantics.adoc:222-224 (§6.2.3)
+Quote:   "Any NaN input or invalid operation produces the destination datatype's canonical quiet NaN; a
+         signaling NaN is quieted."
+Checks:  each special operand pair must produce the format's canonical value and the exact amefflags set
+         after amefflags is cleared
+
 These nine instructions do not compute a nominal value; they pin down what the
 format's special encodings do.  An instruction states which behaviour it has as
 the single ``FloatSpecialRole`` it hands its template -- for a comparison, that role

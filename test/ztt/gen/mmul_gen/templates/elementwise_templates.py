@@ -5,6 +5,12 @@
 #
 """The seven elementwise templates, and what each one is given.
 
+Spec:    instruction_semantics.adoc:177-179 (§6.2.2)
+Quote:   "Each instruction applies the Operation defined on its detailed instruction page independently
+         to every logical element of every square selected by operand formation"
+Checks:  every instruction's template list is exactly the seven canonical classes in order, each
+         instantiated with that instruction's own inputs
+
 Each is a template that a class constructs with its own input::
 
     templates = (

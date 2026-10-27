@@ -5,6 +5,13 @@
 #
 """What one elementwise instruction sees when it evaluates a single element.
 
+Spec:    programming_model.adoc:227-231 (§2.3.2)
+Quote:   "For an ordinary 1D element-wise instruction, the logical element count is N_sq * AME_NELEM.
+         The operator is applied to corresponding logical elements of every operand over that entire
+         range."
+Checks:  each form yields its lhs/rhs/dest elements at the element width, with the same bits exposed
+         unsigned for the bitwise instructions
+
 The form decides how the operands reach the instruction (``integer_elements``);
 the instruction declares what it computes with them (``Instruction.evaluate``).
 Keeping the two apart is what lets an instruction state its own formula without

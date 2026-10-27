@@ -5,6 +5,12 @@
 #
 """The integer elementwise recipe: one operand rule set, six operand forms.
 
+Spec:    instruction_semantics.adoc:192-196 (§6.2.2)
+Quote:   "For standard integer arithmetic, the mathematical expression is evaluated without intermediate
+         truncation and converted once to the destination integer datatype."
+Checks:  each integer case emits all four operand squares, runs the instruction, and checks the
+         destination against the formula's exact result
+
 Every elementwise instruction runs this recipe, because it is where the integer
 semantics live; the form decides how the operands reach the instruction and
 which square carries the power-of-two sweep.  The recipe emits each case's four

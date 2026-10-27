@@ -5,6 +5,12 @@
 #
 """The softfloat rounding-mode recipe: overflow, underflow, and ties.
 
+Spec:    instruction_semantics.adoc:244-245 (§6.2.3)
+Quote:   "OF is set when the rounded result's magnitude exceeds the destination's finite range. Such a
+         result also sets NX."
+Checks:  each overflow, underflow, and halfway vector is run under all six mode-encoded destination
+         datatypes and must give the mode's value plus the exact flag set
+
 Each arithmetic instruction is swept over the six rounding modes.  The overflow
 block runs an operation whose exact result exceeds the format maximum, once per
 input sign (except for the absolute difference, which is unsigned by nature), and

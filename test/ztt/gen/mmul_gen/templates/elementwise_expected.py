@@ -5,6 +5,13 @@
 #
 """Expected results of the elementwise integer recipes.
 
+Spec:    instruction_semantics.adoc:72-76 (§6.1.3)
+Quote:   "the result is the mathematical operation stated by the instruction, interpreted and converted
+         according to the common datatype rules and applicable instruction-family semantics in this
+         specification."
+Checks:  a case's expected value is the instruction's own formula over the emitted operands, re-encoded
+         once at the element width
+
 Every expectation is the result of the formula the integer template was handed --
 the instruction's own ``evaluate`` -- computed from the operands the case emits
 and re-encoded at the element width.  The formula is passed in rather than looked
