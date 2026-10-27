@@ -5,6 +5,10 @@
 #
 """A store that faults must commit none of its bytes.
 
+Spec:    programming_model.adoc:424-426 (§2.6.3)
+Quote:   the faulting instruction commits no update to its destination `M` register group and performs no explicit data-memory write, neither to the faulting portion of the access nor to any other portion.
+Checks:  a faulting store must leave every byte of the window at its pre-fill value, and a later store into the same window must win
+
 Both store paths stage every destination byte before writing any of them, so a
 store that raises a fault leaves the destination exactly as it found it.  The
 recipe drives that with a fault the model cannot avoid:
