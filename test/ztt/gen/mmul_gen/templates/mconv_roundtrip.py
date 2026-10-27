@@ -5,6 +5,13 @@
 #
 """``mconv.ew`` storage/compute datatype conversion round trip.
 
+Spec:    instructions.adoc:1321-1322 (§6.28)
+Quote:   The source and destination datatypes may each be a packed or a
+         non-packed datatype; no particular packedness combination is required.
+Checks:  Widens a packed storage square into a compute square and narrows two
+         compute squares back into one packed storage square, then checks the
+         stored byte images.
+
 The instruction converts a formed M square between a descriptor stored at half
 the active UDS and its same-signedness twin at the full UDS.  One case exercises
 both directions: a packed storage square is widened into a compute square and

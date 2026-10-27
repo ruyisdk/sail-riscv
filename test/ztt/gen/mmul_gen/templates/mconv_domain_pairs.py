@@ -5,6 +5,14 @@
 #
 """``mconv.ew`` integer conversion across mismatched value domains.
 
+Spec:    instruction_semantics.adoc:194-196 (§6.2.2)
+Quote:   A saturating destination clamps an out-of-range result and sets
+         amexsat.SAT; a non-saturating destination retains the low
+         destination-width bits.
+Checks:  Loads a repeated 2**127 source square through each mismatched domain
+         pair, requires amexsat.SAT and checks the first and last destination
+         element against the saturated limit.
+
 The conversion must keep the source's *mathematical* value while it re-scales
 into the destination domain.  A 128-bit source whose value is ``2**127`` cannot
 be held by a signed intermediate, so an implementation that routes it through a
