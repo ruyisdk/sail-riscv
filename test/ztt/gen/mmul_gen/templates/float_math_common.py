@@ -313,9 +313,14 @@ def transcendental_numeric_case(
     """Expected bits and flags of the ``1.0`` numeric case, or ``(0, -1)``.
 
     The simulators widen a narrow format to f32, call the host libm, and round
-    the result back with RNE.  FP32 calls it natively (no narrowing, no NX);
-    FP64 uses the double entry point.  The f32 stage is cross-checked against a
-    30-digit mpmath reference so a host libm drift fails here, not in a test.
+    the result back with RNE.  FP32 calls it natively; FP64 uses the double
+    entry point.  Every one of these paths is an implementation-defined
+    approximation of a transcendental at a non-special input, so it is not
+    exact and raises NX (§6.2.3: "NX is set whenever the delivered finite
+    result differs from the exact mathematical result because of rounding,
+    including an implementation-defined approximation that is not exact").
+    The f32 stage is cross-checked against a 30-digit mpmath reference so a host
+    libm drift fails here, not in a test.
     """
 
     if dtype_name not in NUMERIC_DTYPES:
@@ -345,11 +350,10 @@ def transcendental_numeric_case(
                 f"the documented {LIBRARY_ULP_BUDGET}"
             )
         (expected_bits,) = struct.unpack("Q", struct.pack("d", expected))
-        return expected_bits, 0
+        return expected_bits, FFLAGS_NX
     if dtype_name == "AME_FP32_DTYPE":
-        # f32 computes natively in libm: no narrowing stage, therefore no NX.
         (expected_bits,) = struct.unpack("I", struct.pack("f", float32_result))
-        return expected_bits, 0
+        return expected_bits, FFLAGS_NX
     narrowed = np.array([float32_result], dtype=np.float32).astype(NUMERIC_DTYPES[dtype_name])
     view = np.uint16 if element_bits == 16 else np.uint8
     # Narrowing an f32 to a narrow format is generally inexact and both
