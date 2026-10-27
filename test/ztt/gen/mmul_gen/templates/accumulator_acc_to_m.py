@@ -5,6 +5,11 @@
 #
 """An accumulator read back into an M register carries the zeroed image.
 
+Spec:    instructions.adoc:2369-2370 (§6.59)
+Quote:   "All `AME_NELEM` elements are copied to the M register group `md`; a wide datatype occupies a group of
+         consecutive M registers."
+Checks:  an accumulator zeroed with mzero.2d.acc and then read back through mmov.m.a must store an all-zero square.
+
 Same emitted operation as the ``zero_acc`` template because the accumulator is
 primed with ``mzero.2d.acc`` before the move; the two differ in the input label
 they report.

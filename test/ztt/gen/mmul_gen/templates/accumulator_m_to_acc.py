@@ -5,6 +5,10 @@
 #
 """An M register moved into an accumulator and back keeps the zeroed image.
 
+Spec:    instructions.adoc:2428-2429 (§6.60)
+Quote:   "All `AME_NELEM` elements are copied to the single accumulator `acc`."
+Checks:  an M register zeroed and round-tripped through mmov.a.m and mmov.m.a must store an all-zero square.
+
 The destination M register aliases the source one: the accumulator has consumed
 the source by the time the result is read back, so the reuse is a real temporal
 alias rather than an accidental overlap.

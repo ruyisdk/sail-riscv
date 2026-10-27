@@ -5,6 +5,11 @@
 #
 """Shared shape of the accumulator utility templates.
 
+Spec:    instruction_semantics.adoc:43-46 (§6.1.2)
+Quote:   "all destination `M`, `Md`, `Acc`, and `Ad` writes, together with accrued `amefflags` and `amexsat` updates,
+         become architecturally visible as one commit only after the instruction completes successfully."
+Checks:  each case zeroes one register file, copies it into the other, and requires the stored square to be all zeros.
+
 Every case zeroes one register file and copies the result into the other one, so
 a single all-zero image check proves three things at once: the zeroing wrote the
 whole operand, the copy moved the whole operand, and nothing outside the operand

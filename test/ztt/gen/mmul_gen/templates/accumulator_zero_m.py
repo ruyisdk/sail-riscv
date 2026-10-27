@@ -5,6 +5,10 @@
 #
 """Zeroing an M register must leave an all-zero square once stored.
 
+Spec:    instructions.adoc:5743-5743 (§6.142)
+Quote:   "Writes zero to every element of the M register group `md`."
+Checks:  zeroing an M register with mzero.2d.m and storing it must produce an all-zero square.
+
 This is the only instruction of the family that addresses no accumulator, so
 its cases carry an M layout and no ACC layout.
 """

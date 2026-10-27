@@ -5,6 +5,12 @@
 #
 """Zeroing an accumulator and copying it out must leave an all-zero square.
 
+Spec:    programming_model.adoc:72-75 (§2.2)
+Quote:   "A single `M` register may hold multiple, one, or part of a square, depending on implementation-defined
+         parameters and programmed datatype.  In contrast, an `Acc` register always holds exactly one square."
+Checks:  zeroing an accumulator with mzero.2d.acc and copying it out must store an all-zero square rather than a stale
+         payload.
+
 The copy is what makes the check meaningful: it reads the accumulator back
 through ``mmov.m.a``, so a zeroed descriptor with a stale payload still fails.
 """
