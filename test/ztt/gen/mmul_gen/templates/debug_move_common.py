@@ -5,6 +5,14 @@
 #
 """Shared shape of the debug scalar/M-register move templates.
 
+Spec:    instructions.adoc:2518-2521 (§6.62)
+Quote:   "The element size is defined by the instruction itself: it does not read
+         `CSR[amestype]`, does not read or convert using `Md[md]`, does not form a
+         register group, and never sets `amestatus.UN`."
+Checks:  each width writes one scalar with .m.x, reads it back with .x.m, and checks
+         both ends of the element in the mss.rm image, independent of the datatype
+         programmed into m0
+
 One width is one template: the case writes a scalar into an M register at an
 element position with ``mmove<width>.m.x``, reads it back with
 ``mmove<width>.x.m``, and then checks the raw memory image with ``mss.rm``.  Both
