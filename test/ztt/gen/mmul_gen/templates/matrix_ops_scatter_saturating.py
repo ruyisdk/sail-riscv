@@ -7,7 +7,10 @@
 
 Every index aims at the first row and the destination is seeded with the largest
 representable value, so each addition saturates.  The case asserts the status bit
-and the clamped destination together.
+and the clamped destination together.  The all-zero index table is read through
+the narrowest unsigned integer that is not packed (``max(8, U)``), so the case
+stays a supported tuple on an implementation that rejects packed datatypes for
+gather/scatter.
 """
 
 from __future__ import annotations
@@ -19,18 +22,16 @@ from mmul_gen.asm import check_dst_element_lines, repeated_square_lines
 from mmul_gen.machine import SATURATING_INTEGER, MachineConfig, dtype_stem
 from mmul_gen.templates.base import Case, CaseOutput, Template, domain_index
 from mmul_gen.templates.matrix_ops_common import (
-    byte_index_data_lines,
     destination_lines,
+    index_bits,
+    index_data_lines,
+    index_dtype_name,
     max_value,
 )
 
 if TYPE_CHECKING:
     from mmul_gen.instruction import Instruction
     from mmul_gen.machine import DType
-
-
-#: The byte-sized descriptor the all-zero index table is read through.
-INDEX_DTYPE = "AME_UINT8_DTYPE"
 
 
 class ScatterSaturating(Template):
@@ -77,7 +78,7 @@ class ScatterSaturating(Template):
                 f"    li      t0, {dtype.name}",
                 f"    msettyp m{destination}, t0",
                 f"    msettyp m{addend}, t0",
-                f"    li      t1, {INDEX_DTYPE}",
+                f"    li      t1, {index_dtype_name(machine)}",
                 f"    msettyp m{table}, t1",
                 "    li      t6, 0",
                 "    csrw    amexsat, t6",
@@ -105,7 +106,11 @@ class ScatterSaturating(Template):
             repeated_square_lines(f"{prefix}one_square", 1, dtype.bits, machine)
         )
         out.data.extend(
-            byte_index_data_lines(f"{prefix}index_zero_square", [0] * machine.nelem)
+            index_data_lines(
+                f"{prefix}index_zero_square",
+                [0] * machine.nelem,
+                index_bits(machine),
+            )
         )
         out.data.extend(destination_lines(f"{prefix}dst_square", dtype.bits, machine))
         out.data.append("")

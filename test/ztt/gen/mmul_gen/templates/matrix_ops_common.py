@@ -31,10 +31,13 @@ if TYPE_CHECKING:
 
 #: The second source ramp starts here so a value names its own source square.
 SECOND_SOURCE_OFFSET = 101
-#: Byte alignment of the packed index tables.
+#: Byte alignment of the index tables.
 INDEX_TABLE_ALIGNMENT = 64
 #: Destination pre-fill, so a partial write cannot pass a check.
 DESTINATION_FILL = 0xA5
+#: Narrowest integer descriptor the macro file declares, and the floor for an
+#: index element: a narrower element is not individually byte-addressable.
+MIN_INDEX_BITS = 8
 
 
 def values_a(machine: MachineConfig) -> list[int]:
@@ -82,13 +85,39 @@ def source_data_lines(
     ]
 
 
-def byte_index_data_lines(label: str, values: Sequence[int]) -> list[str]:
-    """One labelled square of byte-sized index values."""
+def index_bits(machine: MachineConfig) -> int:
+    """Width of the descriptor an indexed operation reads its index through.
+
+    An index element is a control quantity with its own datatype, so its width is
+    chosen independently of the data element width: the narrowest unsigned
+    integer that is *not* packed.  A width below ``AME_UNIT_DATATYPE_SIZE`` would
+    be a packed datatype, and the gather/scatter pages state that packed
+    datatypes are unsupported, so a sub-``U`` index would not exercise the
+    operation at all on an implementation that follows that sentence.
+    """
+
+    return max(MIN_INDEX_BITS, machine.uds)
+
+
+def index_dtype_name(machine: MachineConfig) -> str:
+    """The unsigned integer descriptor :func:`index_bits` selects."""
+
+    return f"AME_UINT{index_bits(machine)}_DTYPE"
+
+
+def index_data_lines(
+    label: str, values: Sequence[int], index_element_bits: int
+) -> list[str]:
+    """One labelled square of index values, one element per index.
+
+    The index elements carry the width of the descriptor the instruction reads
+    them through, which is not the data element width.
+    """
 
     return [
         f".balign {INDEX_TABLE_ALIGNMENT}",
         f"{label}:",
-        *data_element_lines(values, 8),
+        *data_element_lines(values, index_element_bits),
     ]
 
 
@@ -202,11 +231,14 @@ def scatter_expected(
 __all__ = [
     "DESTINATION_FILL",
     "INDEX_TABLE_ALIGNMENT",
+    "MIN_INDEX_BITS",
     "SECOND_SOURCE_OFFSET",
-    "byte_index_data_lines",
     "destination_lines",
     "extra_registers",
     "gather_expected",
+    "index_bits",
+    "index_data_lines",
+    "index_dtype_name",
     "interpreted_values",
     "max_value",
     "reduce_expected",

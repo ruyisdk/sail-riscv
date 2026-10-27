@@ -5,11 +5,14 @@
 #
 """The extra-permute case of a column gather.
 
-The index table is a byte image rather than an element-sized square, so the
-gather reads it through a UINT8 descriptor whatever the element width is.  That
-is the point of the case: the index width and the element width are independent,
-and a gather that quietly typed the table as the element descriptor would read
-the wrong entry here.
+The index table is read through its own integer descriptor rather than the
+element descriptor, so the index width and the element width are independent:
+a gather that quietly typed the table as the element descriptor would read the
+wrong entry here.  The index descriptor is the narrowest unsigned integer that
+is not packed (``max(8, U)``), because the gather page states that packed
+datatypes are unsupported; at ``U = 8`` that is the byte image this case was
+written around, and at ``U >= 16`` it widens with ``U`` instead of becoming a
+packed datatype.
 """
 
 from __future__ import annotations
@@ -22,9 +25,11 @@ from mmul_gen.inputs import extra_permute_index_values
 from mmul_gen.machine import EXTRA_PERMUTE, MachineConfig, dtype_stem
 from mmul_gen.templates.base import Case, CaseOutput, Template, domain_index
 from mmul_gen.templates.matrix_ops_common import (
-    byte_index_data_lines,
     destination_lines,
     extra_registers,
+    index_bits,
+    index_data_lines,
+    index_dtype_name,
     source_data_lines,
     values_a,
 )
@@ -34,12 +39,8 @@ if TYPE_CHECKING:
     from mmul_gen.machine import DType
 
 
-#: The descriptor the byte-sized index table is read through.
-INDEX_DTYPE = "AME_UINT8_DTYPE"
-
-
 class GatherExtraIndex(Template):
-    """Gather through a byte-sized index table on a full-width descriptor."""
+    """Gather through a narrower index table on a full-width descriptor."""
 
     name = "gather_extra_dtype_index"
     dtypes = EXTRA_PERMUTE
@@ -73,6 +74,7 @@ class GatherExtraIndex(Template):
         dtype = case.dtype
         index = domain_index(machine, dtype, self.dtypes)
         prefix = f"case_extra{index}_{dtype_stem(dtype.name)}_"
+        index_element_bits = index_bits(machine)
         source, second_source, destination, destination_pair, table = extra_registers(
             machine, dtype.bits
         )
@@ -84,7 +86,7 @@ class GatherExtraIndex(Template):
                     f"    msettyp m{register}, t0"
                     for register in (source, second_source, destination, destination_pair)
                 ],
-                f"    li      t6, {INDEX_DTYPE}",
+                f"    li      t6, {index_dtype_name(machine)}",
                 f"    msettyp m{table}, t6",
                 "",
                 f"    la      t1, {prefix}src_a",
@@ -113,15 +115,17 @@ class GatherExtraIndex(Template):
             source_data_lines(f"{prefix}src_a", values, dtype.bits, machine)
         )
         out.data.extend(
-            byte_index_data_lines(
-                f"{prefix}index_square", extra_permute_index_values(n)
+            index_data_lines(
+                f"{prefix}index_square",
+                extra_permute_index_values(n),
+                index_element_bits,
             )
         )
         out.data.extend(destination_lines(f"{prefix}dst_square0", dtype.bits, machine))
         out.data.append("")
 
 
-__all__ = ["INDEX_DTYPE", "GatherExtraIndex"]
+__all__ = ["GatherExtraIndex"]
 
 
 GATHER_EXTRA_INDEX = GatherExtraIndex()
