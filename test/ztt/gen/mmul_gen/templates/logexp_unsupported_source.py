@@ -5,6 +5,15 @@
 #
 """The unsupported-integer-source case of the nonlinear log/exp family.
 
+Spec:    instruction_semantics.adoc:181-185 (§6.2.2), instruction_semantics.adoc:61-62 (§6.1.3)
+Quote:   "Among standard datatypes, mexp2.ew, mlog2.ew, mcos.ew, msin.ew, mtanh.ew,
+         mrec.ew, mrsqrt.ew, msqrt.ew, and the mfrint*.ew family require
+         floating-point source and destination datatypes.  For the mlog2sub.ew and
+         msublog2.ew families, including their .ew.x forms, the operand of log2, and
+         the destination, are standard floating-point datatypes"
+Checks:  a standard-integer source or destination tuple must set amestatus.UN and
+         leave the seeded destination square byte for byte intact
+
 v0.6 §6.2.2: "Among standard datatypes, mexp2.ew, mlog2.ew, mcos.ew, msin.ew,
 mtanh.ew, mrec.ew, mrsqrt.ew, msqrt.ew, and the mfrint*.ew family require
 floating-point source and destination datatypes.  For the mlog2sub.ew and

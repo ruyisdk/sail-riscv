@@ -5,6 +5,14 @@
 #
 """The nominal integer log/exp case, shared by every instruction.
 
+Spec:    instruction_semantics.adoc:177-180 (§6.2.2)
+Quote:   "Each instruction applies the `Operation` defined on its detailed
+         instruction page independently to every logical element of every square
+         selected by operand formation"
+Checks:  one case per integer datatype loads the named source squares, applies the
+         operation in its declared operand shape, and compares every stored element
+         against the value the instruction names
+
 One case per datatype: load the source squares an instruction names, apply the
 operation in the operand shape it names, store the destination, and check every
 element against the value it names.  All of that arrives as constructor

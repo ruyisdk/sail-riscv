@@ -5,6 +5,15 @@
 #
 """The mixed-datatype tuples of the biased base-2 logarithm family.
 
+Spec:    instruction_semantics.adoc:183-187 (§6.2.2)
+Quote:   "For the mlog2sub.ew and msublog2.ew families, including their .ew.x forms,
+         the operand of log2, and the destination, are standard floating-point
+         datatypes; the bias is governed by the exact tuple's conversion and
+         subtraction capabilities."
+Checks:  the integer-bias tuple must be accepted and produce 1.0 or -1.0 with
+         amefflags clear, while an integer log2 operand or an integer destination
+         sets amestatus.UN and keeps the seeded destination square
+
 v0.6 §6.2.2 (instruction_semantics.adoc:182-188): "For the mlog2sub.ew and
 msublog2.ew families, including their .ew.x forms, the operand of log2, and the
 destination, are standard floating-point datatypes; the bias is governed by the

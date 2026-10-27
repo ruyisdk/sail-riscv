@@ -5,6 +5,13 @@
 #
 """Saturating case of the scaled accumulate.
 
+Spec:    instructions.adoc:1788-1791 (§6.43), instruction_semantics.adoc:192-196 (§6.2.2)
+Quote:   "`md` is both a source and destination: the existing element is read, the
+         scaled value is added, and the sum is written back."
+Checks:  seeding the destination with the largest representable value makes the
+         accumulated sum overflow, so the stored square must clamp to that maximum
+         and amexsat.SAT must be set
+
 Accumulating a scaled representable value into a destination seeded with the
 largest representable value overflows by construction, so the accumulate form
 reaches saturation through its accumulator rather than through its exponent.

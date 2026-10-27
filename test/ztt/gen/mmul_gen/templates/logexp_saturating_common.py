@@ -5,6 +5,14 @@
 #
 """Shared shape of the saturating log/exp cases.
 
+Spec:    instruction_semantics.adoc:192-196 (§6.2.2)
+Quote:   "A saturating destination clamps an out-of-range result and sets
+         `amexsat.SAT`; a non-saturating destination retains the low
+         destination-width bits."
+Checks:  each case requires the stored square to hold the largest representable value
+         and amexsat.SAT to be set, so a wrong result and a missing status bit
+         cannot mask each other
+
 A saturating case checks two independent things: that the result clamps to the
 largest representable value, *and* that the operation reported the saturation
 through ``amexsat``.  Both are asserted, so a wrong result and a missing status

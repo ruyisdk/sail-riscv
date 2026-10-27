@@ -5,6 +5,14 @@
 #
 """The data vocabulary and operand shapes of the integer log/exp family.
 
+Spec:    programming_model.adoc:227-229 (§2.3.2)
+Quote:   "For an ordinary 1D element-wise instruction, the logical element count is
+         `N_sq * AME_NELEM`.  The operator is applied to corresponding logical
+         elements of every operand over that entire range."
+Checks:  the cases address whole m0/m1/m2 squares in the declared operand shape, so
+         all twelve instructions are held to one elementwise expectation over the
+         full square
+
 Every case works on whole squares: a destination at ``m0``, a first source at
 ``m1``, and -- for the forms that read two squares -- a second source at ``m2``.
 The values those squares hold are named here, so an instruction declares *which*
