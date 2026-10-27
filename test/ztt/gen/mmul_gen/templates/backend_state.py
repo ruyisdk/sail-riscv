@@ -5,6 +5,11 @@
 #
 """Shared shape and architectural constants for the backend-state templates.
 
+Spec:    state.adoc:165-166 (§3.2.1)
+Quote:   "`ameown` is a read-only CSR that reports whether the current software execution context owns the entire AME
+         backend."
+Checks:  each backend scenario builds one fixed case and observes the handshake through the ameown CSR.
+
 The ownership handshake is driven by a request mask and observed through a state
 CSR, and all four scenarios use the same two, so they live here instead of in
 each scenario file.

@@ -3,7 +3,12 @@
 # Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
 # SPDX-License-Identifier: BSD-3-Clause-Clear
 #
-"""Backend release while unowned: the release must be a no-op."""
+"""Backend release while unowned: the release must be a no-op.
+
+Spec:    backend_management.adoc:172-173 (§5.3.2)
+Quote:   "If the current context is not the owner, the instruction is a no-op that preserves `MS`."
+Checks:  ame.release without ownership must leave ameown.OWNED zero.
+"""
 
 from __future__ import annotations
 

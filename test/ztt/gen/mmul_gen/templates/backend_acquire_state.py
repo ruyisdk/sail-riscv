@@ -3,7 +3,13 @@
 # Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
 # SPDX-License-Identifier: BSD-3-Clause-Clear
 #
-"""Backend acquire without contention: ownership is granted and observable."""
+"""Backend acquire without contention: ownership is granted and observable.
+
+Spec:    backend_management.adoc:158-160 (§5.3.1)
+Quote:   "A new grant atomically binds architectural initial state, sets `ameown.OWNED` to one, and sets each
+         applicable `MS` field to Initial."
+Checks:  an uncontended ame.acquire must report GRANTED and leave ameown.OWNED set.
+"""
 
 from __future__ import annotations
 

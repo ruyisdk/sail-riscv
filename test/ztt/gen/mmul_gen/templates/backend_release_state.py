@@ -3,7 +3,12 @@
 # Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
 # SPDX-License-Identifier: BSD-3-Clause-Clear
 #
-"""Backend release: the state register must go back to idle."""
+"""Backend release: the state register must go back to idle.
+
+Spec:    backend_management.adoc:171-172 (§5.3.2)
+Quote:   "After release, `ameown.OWNED` is zero and each applicable `MS` field is Initial."
+Checks:  ame.release after a granted acquire must clear ameown.OWNED.
+"""
 
 from __future__ import annotations
 

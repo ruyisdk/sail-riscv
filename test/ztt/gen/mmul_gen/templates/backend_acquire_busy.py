@@ -3,7 +3,13 @@
 # Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
 # SPDX-License-Identifier: BSD-3-Clause-Clear
 #
-"""Backend acquire under contention: the request is refused and changes nothing."""
+"""Backend acquire under contention: the request is refused and changes nothing.
+
+Spec:    backend_management.adoc:160-162 (§5.3.1)
+Quote:   "Initial state has zero-valued `M` and `Acc` registers, zero-valued `Md` and `Ad` descriptors, and
+         reset-valued writable AME CSRs.  Failure changes neither backend binding, `ameown`, nor `MS`."
+Checks:  a contended ame.acquire must report BUSY and leave ameown.OWNED zero.
+"""
 
 from __future__ import annotations
 
