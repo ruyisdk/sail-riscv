@@ -46,6 +46,7 @@ from fp_semantics import (
     SQRT_TWO_RESULTS,
     overflow_result,
     pole_result,
+    signaling_nan_flags,
     signed,
 )
 
@@ -366,9 +367,18 @@ def transcendental_numeric_case(
 
 
 def transcendental_cases(
-    operation: MathOperation, dtype_name: str, element_bits: int
+    operation: MathOperation,
+    dtype_name: str,
+    element_bits: int,
+    e5m2_nan_ieee: bool = False,
 ) -> list[tuple[str, int, int, int]]:
-    """The exact-semantics scenarios of a transcendental instruction."""
+    """The exact-semantics scenarios of a transcendental instruction.
+
+    A signaling NaN is one of them: the input is quieted on the way out and the
+    result raises ``NV`` (instruction_semantics.adoc:237-238 sets the flag,
+    :222-224 requires the quieting).  E4M3 spends every all-ones significand on
+    NaN, so it has no signaling encoding and contributes no such case.
+    """
 
     boundaries = FLOAT_BOUNDARIES[dtype_name]
     positive_zero, negative_zero = operation.zero_expectations
@@ -377,6 +387,15 @@ def transcendental_cases(
         ("neg_zero", boundaries["neg_zero"], boundaries[negative_zero], 0),
         ("qnan", boundaries["qnan"], boundaries["qnan"], 0),
     ]
+    if boundaries["snan"] is not None:
+        cases.append(
+            (
+                "snan",
+                boundaries["snan"],
+                boundaries["qnan"],
+                signaling_nan_flags(dtype_name, e5m2_nan_ieee),
+            )
+        )
     if boundaries["inf"] != boundaries["finite"]:
         for name, negative in (("inf", False), ("neg_inf", True)):
             expected, flags = operation.infinite_expectation(boundaries, negative)

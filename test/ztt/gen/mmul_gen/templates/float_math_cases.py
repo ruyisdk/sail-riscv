@@ -5,9 +5,9 @@
 #
 """The cases of one floating-point unary math instruction.
 
-Spec:    instruction_semantics.adoc:213-214 (§6.2.3)
+Spec:    instruction_semantics.adoc:213-214 (§6.2.3), instruction_semantics.adoc:237-238 (§6.2.3)
 Quote:   AME floating-point rounding is selected by the destination datatype; AME has no global dynamic rounding mode analogous to `fcsr.FRM`.
-Checks:  each datatype of the family emits its nominal or transcendental case plus one boundary case per rounding mode, and every case must match its exact result and amefflags value
+Checks:  each datatype of the family emits its nominal or transcendental case plus one boundary case per rounding mode, every transcendental emits a signaling-NaN case whose result must be quiet and must raise NV, and every case must match its exact result and amefflags value
 
 One template carries the whole family because the generated file interleaves the
 cases *per datatype*: a datatype contributes its nominal case and then its
@@ -110,7 +110,9 @@ class FloatMathCases(Template):
         if operation.is_transcendental:
             payloads: list[object] = [
                 TranscendentalCase(*fields)
-                for fields in transcendental_cases(operation, dtype.name, dtype.bits)
+                for fields in transcendental_cases(
+                    operation, dtype.name, dtype.bits, machine.e5m2_nan_ieee
+                )
             ]
         else:
             payloads = [
