@@ -199,7 +199,10 @@ function ame_ew_float_math(md_dtype : bits(32), ms1_dtype : bits(32),
   }
   else if not(ame_check_formed_operand(md, md_dtype, nsq)) then false
   else if not(ame_check_formed_operand(ms1, ms1_dtype, nsq)) then false
-  else match ame_fp_rounding_mode(md_dtype) {
+  // mfrint* carries its own direction and instructions.adoc:1516-1517 makes it
+  // override the destination field, so the field cannot gate the tuple
+  // (ame_float_math_rm returns the opcode direction before reading it).
+  else match ame_float_math_rm(md_dtype, op) {
     None() => {
       ame_set_unsupported();
       true

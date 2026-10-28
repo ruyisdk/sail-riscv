@@ -442,3 +442,30 @@ function test_ztt_rno_destination_is_unsupported() -> unit = {
     None() => assert(true)
   }
 }
+
+$[test]
+function test_ztt_float_math_rounding_mode_ignores_field() -> unit = {
+  // instructions.adoc:1516-1517: "This instruction-specific rounding direction
+  // overrides the destination datatype rounding-mode field."  The four mfrint*
+  // operations therefore take their direction from the opcode for every value
+  // of that field, including the RNO encoding v0.6 gives no algorithm for, and
+  // the other operations of the family still take theirs from the field.
+  let fp32 : bits(32) = 0x20300120;
+  let rno_field : bits(32) = zeros(6) @ 0b0101 @ zeros(22);
+  let non_rounding_mask : bits(32) = zeros(6) @ 0b0000 @ ones(22);
+  let fp32_rno : bits(32) = (fp32 & non_rounding_mask) | rno_field;
+
+  // Both descriptors must give the opcode's own direction: RNE's field for the
+  // first, RNO's for the second.
+  assert(ame_float_math_rm(fp32_rno, AME_FLOAT_ROUND_DOWN) == Some(0b010));
+  assert(ame_float_math_rm(fp32, AME_FLOAT_ROUND_DOWN) == Some(0b010));
+  assert(ame_float_math_rm(fp32_rno, AME_FLOAT_ROUND_NEAREST) == Some(0b000));
+  assert(ame_float_math_rm(fp32, AME_FLOAT_ROUND_NEAREST) == Some(0b000));
+  assert(ame_float_math_rm(fp32_rno, AME_FLOAT_ROUND_UP) == Some(0b011));
+  assert(ame_float_math_rm(fp32, AME_FLOAT_ROUND_UP) == Some(0b011));
+  assert(ame_float_math_rm(fp32_rno, AME_FLOAT_ROUND_ZERO) == Some(0b001));
+  assert(ame_float_math_rm(fp32, AME_FLOAT_ROUND_ZERO) == Some(0b001));
+  // An operation that does read the field keeps the unsupported-RNO answer.
+  assert(ame_float_math_rm(fp32_rno, AME_FLOAT_SQRT) == None());
+  assert(ame_float_math_rm(fp32, AME_FLOAT_SQRT) == Some(0b000))
+}

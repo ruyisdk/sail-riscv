@@ -75,6 +75,32 @@ function ame_fp_rounding_mode(dtype : bits(32)) -> option(bits_rm) = {
   }
 }
 
+// The mfrint* family carries its rounding direction in the opcode, and
+// instructions.adoc:1516-1517 makes that direction *override* the destination
+// datatype's rounding-mode field.  The field is therefore an ignored bit for
+// these four instructions: v0.6 defines no RNO algorithm (see
+// ame_fp_rounding_mode above), but nothing on this path consumes the field, so
+// an RNO -- or any other -- encoding of it is not a reason to reject a tuple
+// the instruction can otherwise execute.
+function ame_float_math_own_rm(op : ame_float_math_op) -> option(bits_rm) = {
+  match op {
+    AME_FLOAT_ROUND_DOWN    => Some(0b010),
+    AME_FLOAT_ROUND_NEAREST => Some(0b000),
+    AME_FLOAT_ROUND_UP      => Some(0b011),
+    AME_FLOAT_ROUND_ZERO    => Some(0b001),
+    _                       => None()
+  }
+}
+
+// The rounding mode the floating-point math family actually uses: the opcode
+// direction when the instruction has one, else the destination datatype field.
+function ame_float_math_rm(dtype : bits(32), op : ame_float_math_op)
+  -> option(bits_rm) =
+  match ame_float_math_own_rm(op) {
+    Some(rm) => Some(rm),
+    None()   => ame_fp_rounding_mode(dtype)
+  }
+
 function ame_fp32_elem(value : bits(ame_max_dtype_size)) -> bits_S =
   value[31 .. 0]
 
