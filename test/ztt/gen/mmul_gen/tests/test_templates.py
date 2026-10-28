@@ -98,6 +98,7 @@ EXPECTED_TEMPLATE_CLASS_NAMES = (
     "gather_indexed_elements",
     "ldexpacc_saturating_boundary",
     "log2bias_tuple",
+    "logexp_float_math",
     "nominal",
     "logexp_unsupported_source",
     "supported_dtype_roundtrip",

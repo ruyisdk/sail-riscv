@@ -121,6 +121,9 @@ from mmul_gen.templates.integer_shift_scalar import (
 from mmul_gen.templates.log2bias_tuple import (
     Log2BiasTuple,
 )
+from mmul_gen.templates.logexp_float_math import (
+    LogExpFloatMath,
+)
 from mmul_gen.templates.logexp_nominal import (
     LogExpNominal,
 )
@@ -290,6 +293,7 @@ TEMPLATE_CLASSES = (
     GatherScatterIndexed,
     LdexpaccSaturatingBoundary,
     Log2BiasTuple,
+    LogExpFloatMath,
     LogExpNominal,
     LogExpUnsupportedSource,
     MTypeRoundtrip,
@@ -344,6 +348,7 @@ __all__ = [
     "INTEGER128_INGRESS",
     "LdexpaccSaturatingBoundary",
     "Log2BiasTuple",
+    "LogExpFloatMath",
     "LogExpNominal",
     "LogExpUnsupportedSource",
     "MCONV_ROUNDTRIP",
