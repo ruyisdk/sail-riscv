@@ -385,6 +385,54 @@ function ame_fp_ldexp_result(dtype : bits(32), rm : bits_rm,
 
 // --- mexp2 / mlog2 (FP32 core) -------------------------------------------
 
+/* Spec 6.2.3 :248-250: NX is set whenever the delivered finite result differs
+   from the exact mathematical result, "including an implementation-defined
+   approximation that is not exact".  These two functions are exact on a narrow
+   set of arguments and approximations everywhere else, so the flag is decided
+   from the argument instead of from the libm residue the host does not report:
+
+   * 2**x is rational only for an integral x, and then exactly 2**k, so it is
+     exact when x is integral and 2**x is representable (not overflowed to
+     infinity, not flushed to zero);
+   * log2(x) is rational only for a power of two, and then the integral
+     exponent, which every destination format represents exactly. */
+function ame_fp32_is_integral(value : bits_S) -> bool = {
+  let (flags, _) = riscv_f32roundToInt(0b001, value, true);
+  (flags & 0b00001) == zeros()
+}
+
+function ame_fp32_is_pow2(value : bits_S) -> bool =
+  if value[30 .. 23] != zeros() then value[22 .. 0] == zeros()
+  else
+    (value[22 .. 0] & (value[22 .. 0] - 0b00000000000000000000001)) ==
+      zeros()
+
+function ame_fp64_is_integral(value : bits_D) -> bool = {
+  let (flags, _) = riscv_f64roundToInt(0b001, value, true);
+  (flags & 0b00001) == zeros()
+}
+
+function ame_fp64_is_pow2(value : bits_D) -> bool =
+  if value[62 .. 52] != zeros() then value[51 .. 0] == zeros()
+  else
+    (value[51 .. 0] &
+     (value[51 .. 0] - 0b0000000000000000000000000000000000000000000000000001)) ==
+      zeros()
+
+function ame_fp32_exp2_flags(value : bits_S) -> bits_fflags = {
+  let r = ame_ztt_f32exp2(value);
+  let representable = (r[30 .. 23] != 0xFF) &
+                      (r[30 .. 23] != zeros() | r[22 .. 0] != zeros());
+  ame_transcendental_inexact_flags(ame_fp32_is_integral(value) & representable)
+}
+
+function ame_fp64_exp2_flags(value : bits_D) -> bits_fflags = {
+  let r = ame_ztt_f64exp2(value);
+  let representable = (r[62 .. 52] != 0b11111111111) &
+                      (r[62 .. 52] != zeros() | r[51 .. 0] != zeros());
+  ame_transcendental_inexact_flags(ame_fp64_is_integral(value) & representable)
+}
+
 function ame_fp32_logexp_result(op : ame_int_logexp_op, value : bits_S)
   -> (bits_fflags, bits_S) = {
   let exp_field = value[30 .. 23];
@@ -395,12 +443,14 @@ function ame_fp32_logexp_result(op : ame_int_logexp_op, value : bits_S)
     if exp_field == 0xFF then
       (zeros(), if value[31] == 0b0 then 0x7F800000 else 0x00000000)
     else if exp_field == 0x00 & frac == zeros() then (zeros(), 0x3F800000)
-    else (zeros(), ame_ztt_f32exp2(value))
+    else (ame_fp32_exp2_flags(value), ame_ztt_f32exp2(value))
   } else {
     if exp_field == 0x00 & frac == zeros() then (0b01000, 0xFF800000)
     else if value[31] == 0b1 then (0b10000, 0x7FC00000)
     else if exp_field == 0xFF then (zeros(), 0x7F800000)
-    else (zeros(), ame_ztt_f32log2(value))
+    else
+      (ame_transcendental_inexact_flags(ame_fp32_is_pow2(value)),
+       ame_ztt_f32log2(value))
   }
 }
 
@@ -453,7 +503,9 @@ function ame_fp64_logexp_result(op : ame_int_logexp_op, value : bits_D)
         if value[63] == 0b0 then 0x7FF0000000000000 else 0x0000000000000000))
     else if exp_field == zeros() & frac == zeros() then
       (zeros(), zero_extend(ame_max_dtype_size, 0x3FF0000000000000))
-    else (zeros(), zero_extend(ame_max_dtype_size, ame_ztt_f64exp2(value)))
+    else
+      (ame_fp64_exp2_flags(value),
+       zero_extend(ame_max_dtype_size, ame_ztt_f64exp2(value)))
   } else {
     if exp_field == zeros() & frac == zeros() then
       (0b01000, zero_extend(ame_max_dtype_size, 0xFFF0000000000000))
@@ -461,7 +513,9 @@ function ame_fp64_logexp_result(op : ame_int_logexp_op, value : bits_D)
       (0b10000, zero_extend(ame_max_dtype_size, 0x7FF8000000000000))
     else if exp_field == 0b11111111111 then
       (zeros(), zero_extend(ame_max_dtype_size, 0x7FF0000000000000))
-    else (zeros(), zero_extend(ame_max_dtype_size, ame_ztt_f64log2(value)))
+    else
+      (ame_transcendental_inexact_flags(ame_fp64_is_pow2(value)),
+       zero_extend(ame_max_dtype_size, ame_ztt_f64log2(value)))
   }
 }
 
