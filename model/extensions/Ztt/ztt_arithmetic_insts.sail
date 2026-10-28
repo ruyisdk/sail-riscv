@@ -631,20 +631,23 @@ function ame_logexp_unary_m(md_dtype : bits(32), ms1_dtype : bits(32),
      (op == AME_INT_EXP2 | op == AME_INT_LOG2) then {
     // mexp2/mlog2 with floating-point data: the transcendental is evaluated
     // with the destination datatype rounding mode and only amefflags is
-    // accrued (never the integer amexsat sticky bit).
-    if not(ame_same_float_format2(md_dtype, ms1_dtype)) then
-      ame_unsupported_result()
-    else if not(ame_check_formed_operand(md, md_dtype, nsq)) then false
+    // accrued (never the integer amexsat sticky bit).  §6.2.2 requires only
+    // that both datatypes are floating point, so a tuple whose two formats
+    // differ is evaluated at f64 precision and rounded once into D.
+    if not(ame_check_formed_operand(md, md_dtype, nsq)) then false
     else if not(ame_check_formed_operand(ms1, ms1_dtype, nsq)) then false
     else match ame_fp_rounding_mode(md_dtype) {
       None() => ame_unsupported_result(),
       Some(rm) => {
+        let same_format = ame_same_float_format2(md_dtype, ms1_dtype);
         let snapshot = ame_snapshot_mregs();
         var flags : bits_fflags = zeros();
 
         foreach (e from 0 to (nsq * ame_nelem - 1)) {
           let value = ame_read_snapshot_elem(snapshot, ms1_dtype, ms1, e);
-          let (fflags, result) = ame_float_logexp_unary_result(md_dtype, op, rm, value);
+          let (fflags, result) =
+            if same_format then ame_float_logexp_unary_result(md_dtype, op, rm, value)
+            else ame_float_logexp_unary_result_mixed(md_dtype, ms1_dtype, op, rm, value);
           flags = flags | fflags;
           write_m_elem(md_dtype, md, e, result)
         };
@@ -655,7 +658,7 @@ function ame_logexp_unary_m(md_dtype : bits(32), ms1_dtype : bits(32),
     }
   }
   else
-    // mexp2/mlog2 on anything other than a same-format floating-point tuple:
+    // mexp2/mlog2 on a tuple that is not floating-point on both sides:
     // unsupported, so UN is set and the destination keeps its old contents.
     ame_unsupported_result()
 }

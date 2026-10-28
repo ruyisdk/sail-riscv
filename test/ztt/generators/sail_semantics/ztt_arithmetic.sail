@@ -92,6 +92,29 @@ function ame_scalar_float_data_value(md_dtype : bits(32), raw : xlenbits)
   }
 }
 
+/* The bias of the ``.ew.x`` log2 family is ``rs1`` interpreted with amestype.
+   v0.6 §6.2.2 (instruction_semantics.adoc:182-188) leaves the bias to "the
+   exact tuple's conversion and subtraction capabilities", so a standard integer
+   amestype of up to 64 bits is converted to an FP32 destination with the
+   destination tuple's rounding mode; a float amestype contributes its bits
+   directly and must already be in the destination format. */
+function ame_scalar_log2_bias_value(md_dtype : bits(32), rm : bits_rm, raw : xlenbits)
+  -> option((bits_fflags, bits(ame_max_dtype_size))) = {
+  let scalar_dtype = amestype;
+  if not(ame_datatype_supported(scalar_dtype) &
+         ame_valid_softfloat_ew_dtype(md_dtype)) then None()
+  else if ame_is_float(scalar_dtype) then
+    match ame_scalar_float_data_value(md_dtype, raw) {
+      None() => None(),
+      Some(bits) => Some((zeros(), bits))
+    }
+  else if ame_valid_int_elementwise_dtype(scalar_dtype) &
+          ame_dtype_size(scalar_dtype) <= 64 & ame_dtype_size(md_dtype) == 32 then
+    Some(ame_int_bias_to_f32(scalar_dtype, rm,
+           zero_extend(ame_max_dtype_size, raw)))
+  else None()
+}
+
 function ame_float_binary_supported(op : ame_int_binary_op) -> bool =
   match op {
     AME_INT_ADD           => true,
@@ -602,20 +625,23 @@ function ame_logexp_unary_m(md_dtype : bits(32), ms1_dtype : bits(32),
      (op == AME_INT_EXP2 | op == AME_INT_LOG2) then {
     // mexp2/mlog2 with floating-point data: the transcendental is evaluated
     // with the destination datatype rounding mode and only amefflags is
-    // accrued (never the integer amexsat sticky bit).
-    if not(ame_same_float_format2(md_dtype, ms1_dtype)) then
-      ame_unsupported_result()
-    else if not(ame_check_formed_operand(md, md_dtype, nsq)) then false
+    // accrued (never the integer amexsat sticky bit).  §6.2.2 requires only
+    // that both datatypes are floating point, so a tuple whose two formats
+    // differ is evaluated at f64 precision and rounded once into D.
+    if not(ame_check_formed_operand(md, md_dtype, nsq)) then false
     else if not(ame_check_formed_operand(ms1, ms1_dtype, nsq)) then false
     else match ame_fp_rounding_mode(md_dtype) {
       None() => ame_unsupported_result(),
       Some(rm) => {
+        let same_format = ame_same_float_format2(md_dtype, ms1_dtype);
         let snapshot = ame_snapshot_mregs();
         var flags : bits_fflags = zeros();
 
         foreach (e from 0 to (nsq * ame_nelem - 1)) {
           let value = ame_read_snapshot_elem(snapshot, ms1_dtype, ms1, e);
-          let (fflags, result) = ame_float_logexp_unary_result(md_dtype, op, rm, value);
+          let (fflags, result) =
+            if same_format then ame_float_logexp_unary_result(md_dtype, op, rm, value)
+            else ame_float_logexp_unary_result_mixed(md_dtype, ms1_dtype, op, rm, value);
           flags = flags | fflags;
           write_m_elem(md_dtype, md, e, result)
         };
@@ -626,7 +652,7 @@ function ame_logexp_unary_m(md_dtype : bits(32), ms1_dtype : bits(32),
     }
   }
   else
-    // mexp2/mlog2 on anything other than a same-format floating-point tuple:
+    // mexp2/mlog2 on a tuple that is not floating-point on both sides:
     // unsupported, so UN is set and the destination keeps its old contents.
     ame_unsupported_result()
 }
@@ -646,9 +672,17 @@ function ame_logexp_binary_m(md_dtype : bits(32), ms1_dtype : bits(32),
      op == AME_INT_RDEXP | op == AME_INT_RDEXPACC) &
     ame_valid_softfloat_ew_dtype(md_dtype) & ame_valid_softfloat_ew_dtype(ms1_dtype) &
     ame_valid_int_elementwise_dtype(ms2_dtype) & ame_same_float_format2(md_dtype, ms1_dtype);
+  // §6.2.2 leaves only the log2 operand and the destination floating-point for
+  // mlog2sub/msublog2; the bias may be a standard integer square instead of a
+  // same-format float square (see ame_int_bias_to_f32 for the conversion).
+  let log2bias_int_bias =
+    ame_valid_int_elementwise_dtype(ms2_dtype) & ame_dtype_size(ms2_dtype) <= 64 &
+    ame_dtype_size(md_dtype) == 32;
   let log2bias_float =
     ame_valid_softfloat_ew_dtype(md_dtype) & ame_valid_softfloat_ew_dtype(ms1_dtype) &
-    ame_valid_softfloat_ew_dtype(ms2_dtype) & ame_same_float_format3(md_dtype, ms1_dtype, ms2_dtype);
+    ame_same_float_format2(md_dtype, ms1_dtype) &
+    (log2bias_int_bias |
+     (ame_valid_softfloat_ew_dtype(ms2_dtype) & ame_same_float_format2(md_dtype, ms2_dtype)));
 
   if ldexp_float then {
     // mldexp/mldexpacc/mrdexp/mrdexpacc with floating-point data and an
@@ -696,9 +730,13 @@ function ame_logexp_binary_m(md_dtype : bits(32), ms1_dtype : bits(32),
 
         foreach (e from 0 to (nsq * ame_nelem - 1)) {
           let ms1_val = ame_read_snapshot_elem(snapshot, ms1_dtype, ms1, e);
-          let ms2_val = ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e);
+          let (bias_flags, ms2_val) =
+            if ame_valid_softfloat_ew_dtype(ms2_dtype) then
+              (zeros(), ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e))
+            else ame_int_bias_to_f32(ms2_dtype, rm,
+                   ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e));
           let (fflags, result) = ame_float_log2bias_result(md_dtype, op, rm, ms1_val, ms2_val);
-          flags = flags | fflags;
+          flags = flags | bias_flags | fflags;
           write_m_elem(md_dtype, md, e, result)
         };
 
@@ -752,9 +790,9 @@ function ame_logexp_binary_x(md_dtype : bits(32), ms2_dtype : bits(32),
       None() => ame_unsupported_result(),
       Some(rm) =>
         if op == AME_INT_LOG2SUB | op == AME_INT_SUBLOG2 then
-          match ame_scalar_float_data_value(md_dtype, rs1_val) {
+          match ame_scalar_log2_bias_value(md_dtype, rm, rs1_val) {
             None() => { ame_set_unsupported(); true },
-            Some(scalar_elem) => {
+            Some((bias_flags, scalar_elem)) => {
               let snapshot = ame_snapshot_mregs();
               var flags : bits_fflags = zeros();
 
@@ -762,7 +800,7 @@ function ame_logexp_binary_x(md_dtype : bits(32), ms2_dtype : bits(32),
                 let ms2_val = ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e);
                 let (fflags, result) =
                   ame_float_log2bias_result(md_dtype, op, rm, ms2_val, scalar_elem);
-                flags = flags | fflags;
+                flags = flags | bias_flags | fflags;
                 write_m_elem(md_dtype, md, e, result)
               };
 

@@ -486,6 +486,21 @@ function ame_fp64_log2bias_result(op : ame_int_logexp_op, rm : bits_rm,
 // Storage formats narrower than FP32 evaluate the transcendental in FP32 and
 // narrow once, matching the documented approximation budget of the other Ztt
 // float-math instructions.
+// Mixed-format mexp2/mlog2.  §6.2.2 asks only that source and destination are
+// floating point, so the transcendental is evaluated at f64 precision and the
+// result is rounded once into D, exactly like the §6.2.2 family in
+// ztt_float.sail.  Evaluating in the source format would deliver an
+// f16-precision value in an f64 destination.
+function ame_float_logexp_unary_result_mixed(md_dtype : bits(32), ms1_dtype : bits(32),
+                                             op : ame_int_logexp_op, rm : bits_rm,
+                                             value : bits(ame_max_dtype_size))
+  -> (bits_fflags, bits(ame_max_dtype_size)) = {
+  let (input_flags, value64) = ame_float_to_fp64(ms1_dtype, value);
+  let (op_flags, result64) = ame_fp64_logexp_result(op, value64);
+  let (round_flags, result) = ame_fp64_to_float(md_dtype, rm, result64[63 .. 0]);
+  (input_flags | op_flags | round_flags, result)
+}
+
 function ame_float_logexp_unary_result(dtype : bits(32), op : ame_int_logexp_op,
                                        rm : bits_rm, value : bits(ame_max_dtype_size))
   -> (bits_fflags, bits(ame_max_dtype_size)) = {

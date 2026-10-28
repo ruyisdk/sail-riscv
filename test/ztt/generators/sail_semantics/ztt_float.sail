@@ -52,6 +52,47 @@ function ame_fp32_math_result(op : ame_float_math_op, rm : bits_rm, value : bits
   }
 }
 
+// Double-precision arm of ame_float_math_result.  It is also the evaluation
+// step of the mixed-format path below, which is why it is a named function.
+function ame_fp64_math_result(op : ame_float_math_op, rm : bits_rm, input : bits_D)
+  -> (bits_fflags, bits_D) = {
+  let one : bits_D = 0x3ff0000000000000;
+  match op {
+    AME_FLOAT_SQRT          => riscv_f64Sqrt(rm, input),
+    AME_FLOAT_RECIPROCAL    => riscv_f64Div(rm, one, input),
+    AME_FLOAT_RSQRT         => {
+      let (sqrt_flags, sqrt_value) = riscv_f64Sqrt(rm, input);
+      let (div_flags, quotient) = riscv_f64Div(rm, one, sqrt_value);
+      (sqrt_flags | div_flags, quotient)
+    },
+    AME_FLOAT_ROUND_DOWN    => riscv_f64roundToInt(0b010, input, false),
+    AME_FLOAT_ROUND_NEAREST => riscv_f64roundToInt(0b000, input, false),
+    AME_FLOAT_ROUND_UP      => riscv_f64roundToInt(0b011, input, false),
+    AME_FLOAT_ROUND_ZERO    => riscv_f64roundToInt(0b001, input, false),
+    AME_FLOAT_COS => {
+      if ((input[63 .. 52] & 0x7ff) == 0x7ff) & (input[51 .. 0] != zeros()) then
+        (if input[51] == 0b0 then 0b10000 else zeros(), 0x7ff8000000000000)
+      else if (input[63 .. 52] & 0x7ff) == 0x7ff then (0b10000, 0x7ff8000000000000)
+      else (ame_transcendental_inexact_flags(ame_fp64_is_zero(input)),
+            ame_ztt_f64cos(input))
+    },
+    AME_FLOAT_SIN => {
+      if ((input[63 .. 52] & 0x7ff) == 0x7ff) & (input[51 .. 0] != zeros()) then
+        (if input[51] == 0b0 then 0b10000 else zeros(), 0x7ff8000000000000)
+      else if (input[63 .. 52] & 0x7ff) == 0x7ff then (0b10000, 0x7ff8000000000000)
+      else (ame_transcendental_inexact_flags(ame_fp64_is_zero(input)),
+            ame_ztt_f64sin(input))
+    },
+    AME_FLOAT_TANH => {
+      if ((input[63 .. 52] & 0x7ff) == 0x7ff) & (input[51 .. 0] != zeros()) then
+        (if input[51] == 0b0 then 0b10000 else zeros(), 0x7ff8000000000000)
+      else if (input[63 .. 52] & 0x7ff) == 0x7ff then (zeros(), ame_ztt_f64tanh(input))
+      else (ame_transcendental_inexact_flags(ame_fp64_is_zero(input)),
+            ame_ztt_f64tanh(input))
+    }
+  }
+}
+
 function ame_bf16_math_result(op : ame_float_math_op, rm : bits_rm,
                               value : bits(ame_max_dtype_size))
   -> (bits_fflags, bits(ame_max_dtype_size)) = {
@@ -107,46 +148,38 @@ function ame_float_math_result(dtype : bits(32), op : ame_float_math_op,
       (flags, zero_extend(ame_max_dtype_size, result))
     },
     64 => {
-      let input : bits_D = value[63 .. 0];
-      let one : bits_D = 0x3ff0000000000000;
-      let (flags, result) : (bits_fflags, bits_D) = match op {
-        AME_FLOAT_SQRT          => riscv_f64Sqrt(rm, input),
-        AME_FLOAT_RECIPROCAL    => riscv_f64Div(rm, one, input),
-        AME_FLOAT_RSQRT         => {
-          let (sqrt_flags, sqrt_value) = riscv_f64Sqrt(rm, input);
-          let (div_flags, quotient) = riscv_f64Div(rm, one, sqrt_value);
-          (sqrt_flags | div_flags, quotient)
-        },
-        AME_FLOAT_ROUND_DOWN    => riscv_f64roundToInt(0b010, input, false),
-        AME_FLOAT_ROUND_NEAREST => riscv_f64roundToInt(0b000, input, false),
-        AME_FLOAT_ROUND_UP      => riscv_f64roundToInt(0b011, input, false),
-        AME_FLOAT_ROUND_ZERO    => riscv_f64roundToInt(0b001, input, false),
-        AME_FLOAT_COS => {
-          if ((value[63 .. 52] & 0x7ff) == 0x7ff) & (value[51 .. 0] != zeros()) then
-            (if value[51] == 0b0 then 0b10000 else zeros(), 0x7ff8000000000000)
-          else if (value[63 .. 52] & 0x7ff) == 0x7ff then (0b10000, 0x7ff8000000000000)
-          else (ame_transcendental_inexact_flags(ame_fp64_is_zero(input)),
-                ame_ztt_f64cos(input))
-        },
-        AME_FLOAT_SIN => {
-          if ((value[63 .. 52] & 0x7ff) == 0x7ff) & (value[51 .. 0] != zeros()) then
-            (if value[51] == 0b0 then 0b10000 else zeros(), 0x7ff8000000000000)
-          else if (value[63 .. 52] & 0x7ff) == 0x7ff then (0b10000, 0x7ff8000000000000)
-          else (ame_transcendental_inexact_flags(ame_fp64_is_zero(input)),
-                ame_ztt_f64sin(input))
-        },
-        AME_FLOAT_TANH => {
-          if ((value[63 .. 52] & 0x7ff) == 0x7ff) & (value[51 .. 0] != zeros()) then
-            (if value[51] == 0b0 then 0b10000 else zeros(), 0x7ff8000000000000)
-          else if (value[63 .. 52] & 0x7ff) == 0x7ff then (zeros(), ame_ztt_f64tanh(input))
-          else (ame_transcendental_inexact_flags(ame_fp64_is_zero(input)),
-                ame_ztt_f64tanh(input))
-        }
-      };
+      let (flags, result) = ame_fp64_math_result(op, rm, value[63 .. 0]);
       (flags, zero_extend(ame_max_dtype_size, result))
     },
     _ => internal_error(__FILE__, __LINE__, "unsupported AME float element size")
   }
+}
+
+// The mfrint* rounding direction governs the representation step too
+// (instructions.adoc:1515-1517: the instruction-specific rounding direction
+// "overrides the destination datatype rounding-mode field").  Every other
+// operation of the family rounds into D with D's own rounding mode.
+function ame_float_math_dest_rm(op : ame_float_math_op, rm : bits_rm) -> bits_rm =
+  match op {
+    AME_FLOAT_ROUND_DOWN    => 0b010,
+    AME_FLOAT_ROUND_NEAREST => 0b000,
+    AME_FLOAT_ROUND_UP      => 0b011,
+    AME_FLOAT_ROUND_ZERO    => 0b001,
+    _                       => rm
+  }
+
+function ame_float_math_result_mixed(md_dtype : bits(32), ms1_dtype : bits(32),
+                                     op : ame_float_math_op, rm : bits_rm,
+                                     value : bits(ame_max_dtype_size))
+  -> (bits_fflags, bits(ame_max_dtype_size)) = {
+  let (input_flags, value64) = ame_float_to_fp64(ms1_dtype, value);
+  let (op_flags, result64) = ame_fp64_math_result(op, rm, value64);
+  // A representable integral result is exact, so for mfrint* only representing
+  // it in D may raise NX; ame_fp64_math_result already reports zero flags
+  // there.  No other operation of the family has an exactness exemption.
+  let (round_flags, result) =
+    ame_fp64_to_float(md_dtype, ame_float_math_dest_rm(op, rm), result64);
+  (input_flags | op_flags | round_flags, result)
 }
 
 function ame_ew_float_math(md_dtype : bits(32), ms1_dtype : bits(32),
@@ -158,10 +191,6 @@ function ame_ew_float_math(md_dtype : bits(32), ms1_dtype : bits(32),
     ame_set_unsupported();
     true
   }
-  else if not(ame_same_float_format2(md_dtype, ms1_dtype)) then {
-    ame_set_unsupported();
-    true
-  }
   else if not(ame_check_formed_operand(md, md_dtype, nsq)) then false
   else if not(ame_check_formed_operand(ms1, ms1_dtype, nsq)) then false
   else match ame_fp_rounding_mode(md_dtype) {
@@ -170,12 +199,16 @@ function ame_ew_float_math(md_dtype : bits(32), ms1_dtype : bits(32),
       true
     },
     Some(rm) => {
+      let same_format = ame_same_float_format2(md_dtype, ms1_dtype);
       let snapshot = ame_snapshot_mregs();
       var flags : bits_fflags = zeros();
       foreach (e from 0 to (nsq * ame_nelem - 1)) {
-        let (fflags, result) = ame_float_math_result(
-          md_dtype, op, rm,
-          ame_read_snapshot_elem(snapshot, ms1_dtype, ms1, e));
+        let element = ame_read_snapshot_elem(snapshot, ms1_dtype, ms1, e);
+        // The same-format path is kept bit-for-bit as it was: it evaluates the
+        // operation with the destination (== source) format's own routine.
+        let (fflags, result) = if same_format then
+            ame_float_math_result(md_dtype, op, rm, element)
+          else ame_float_math_result_mixed(md_dtype, ms1_dtype, op, rm, element);
         flags = flags | fflags;
         write_m_elem(md_dtype, md, e, result)
       };

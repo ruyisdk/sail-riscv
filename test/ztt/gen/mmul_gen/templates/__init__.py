@@ -100,6 +100,9 @@ from mmul_gen.templates.elementwise_templates import (
 from mmul_gen.templates.float_math_cases import (
     FloatMathCases,
 )
+from mmul_gen.templates.float_mixed_format import (
+    FloatMixedFormat,
+)
 from mmul_gen.templates.float_pair_sweep import (
     FloatPairSweep,
 )
@@ -274,6 +277,7 @@ TEMPLATE_CLASSES = (
     AccumulatorSpanExceptions,
     AccumulatorSpanRouting,
     FloatMathCases,
+    FloatMixedFormat,
     FloatPairSweep,
     GatherScatterIndexed,
     LdexpaccSaturatingBoundary,
@@ -323,6 +327,7 @@ __all__ = [
     "ELEMENTWISE_TEMPLATE_CLASSES",
     "FLOATING_INGRESS",
     "FloatMathCases",
+    "FloatMixedFormat",
     "FloatPairSweep",
     "GATHER_EXTRA_INDEX",
     "GatherScatterIndexed",

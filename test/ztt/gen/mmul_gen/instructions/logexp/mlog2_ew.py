@@ -16,6 +16,8 @@ from mmul_gen.instructions.logexp.base import (
     LogExpInstruction,
 )
 from mmul_gen.machine import INTEGER
+from mmul_gen.mixed_math import MixedMathOperation
+from mmul_gen.templates.float_mixed_format import FloatMixedFormat
 from mmul_gen.templates.logexp_unsupported_source import (
     LogExpUnsupportedSource,
 )
@@ -28,6 +30,9 @@ class Mlog2Ew(LogExpInstruction):
     subject = "integer log/exp test cases."
     operands = (DESTINATION_OPERAND, FIRST_SOURCE_OPERAND)
     templates = (
+        # v0.6 §6.2.2 makes the source and the destination floating point but
+        # never asks them to share a format, so a mixed tuple runs.
+        FloatMixedFormat(MixedMathOperation.LOG2),
         LogExpUnsupportedSource(
             src1_label="pow2_square", form=LogExpForm.UNARY, domain=INTEGER
         ),

@@ -956,3 +956,96 @@ function ame_float_unary_result(dtype : bits(32), op : ame_int_unary_op,
     (zeros(), result)
   }
 }
+
+// Mixed-format tuples.
+//
+// §6.2.2 asks only that both datatypes are floating point; it does not ask
+// them to be the same format.  §6.2.3 then makes the result "round a finite
+// result once using the destination datatype's rounding mode", and the
+// msqrt.ew page pins that down further ("correctly rounded according to the
+// destination datatype's rounding mode").
+//
+// f64 is the widest format the model has, and every other supported format
+// widens into it exactly, so the mixed-format path evaluates `f` at f64
+// precision and rounds the outcome once into D.  Evaluating `f` in the
+// *source* format instead would deliver, say, an f16-precision square root in
+// an f64 destination -- value 0x3FF6A00000000000 instead of the correctly
+// rounded 0x3FF6A09E667F3BCD -- which those two rules forbid, and which no
+// simulator does.
+function ame_float_to_fp64(dtype : bits(32), value : bits(ame_max_dtype_size))
+  -> (bits_fflags, bits_D) =
+  match ame_dtype_size(dtype) {
+    8 => {
+      let (flags, value32) = ame_ocp_fp8_to_f32(dtype, value);
+      let (widen_flags, value64) = riscv_f32ToF64(0b000, value32);
+      (flags | widen_flags, value64)
+    },
+    16 => if ame_is_bf16_dtype(dtype) then {
+      let (flags, value32) = ame_bf16_to_f32(value);
+      let (widen_flags, value64) = riscv_f32ToF64(0b000, value32);
+      (flags | widen_flags, value64)
+    } else {
+      let (flags, value32) = riscv_f16ToF32(0b000, value[15 .. 0]);
+      let (widen_flags, value64) = riscv_f32ToF64(0b000, value32);
+      (flags | widen_flags, value64)
+    },
+    32 => riscv_f32ToF64(0b000, value[31 .. 0]),
+    64 => (zeros(), value[63 .. 0]),
+    _  => internal_error(__FILE__, __LINE__, "unsupported AME float element size")
+  }
+
+// Round one f64 element into bf16 with a single rounding.  bf16 is not an IEEE
+// interchange format here (different significand width from f16, same exponent
+// range as f32) and SoftFloat has no f64 -> bf16 conversion, so the f64
+// significand is handed to the exact bf16 grid routine the bf16 FMA already
+// uses.  A NaN result of `f` is already the destination canonical quiet NaN
+// (§6.2.3), so the NaN case cannot leak a payload.
+function ame_fp64_to_bf16(rm : bits_rm, value : bits_D) -> (bits_fflags, bits_BF16) = {
+  let sign = value[63 .. 63];
+  let biased_exponent = value[62 .. 52];
+  let fraction = unsigned(value[51 .. 0]);
+  if biased_exponent == ones() then {
+    if fraction == 0 then (zeros(), sign @ ones(8) @ zeros(7))
+    else (zeros(), 0x7fc0)
+  }
+  else if biased_exponent == zeros() & fraction == 0 then
+    (zeros(), sign @ zeros(15))
+  else {
+    let magnitude = if biased_exponent == zeros() then fraction else (2 ^ 52) + fraction;
+    let weight = if biased_exponent == zeros() then 0 - 1074
+                 else unsigned(biased_exponent) - 1075;
+    ame_bf16_round_exact(sign, rm, magnitude, weight)
+  }
+}
+
+// One rounding from f64 into D.
+//
+// The two OCP formats are reached through f32 because their rounding helpers
+// are stated on f32: with 3 or 4 significand bits they keep 20 bits of
+// headroom below f32's 24, so the f32 step cannot change how the value rounds
+// into D.  Its own flags are dropped and the fp8 step re-derives NX/OF/UF from
+// what it receives, so a value that leaves the f32 range still reports the
+// saturation the 8-bit format actually performs.
+function ame_fp64_to_float(dst_dtype : bits(32), rm : bits_rm, value : bits_D)
+  -> (bits_fflags, bits(ame_max_dtype_size)) = {
+  if ame_is_ocp_fp8_dtype(dst_dtype) then {
+    let (_, value32) = riscv_f64ToF32(rm, value);
+    ame_ocp_fp8_round_result(dst_dtype, rm, zeros(), value32)
+  }
+  else if ame_is_bf16_dtype(dst_dtype) then {
+    let (flags, result) = ame_fp64_to_bf16(rm, value);
+    (flags, ame_bf16_result(result))
+  }
+  else match ame_dtype_size(dst_dtype) {
+    16 => {
+      let (flags, result) = riscv_f64ToF16(rm, value);
+      (flags, zero_extend(ame_max_dtype_size, result))
+    },
+    32 => {
+      let (flags, result) = riscv_f64ToF32(rm, value);
+      (flags, zero_extend(ame_max_dtype_size, result))
+    },
+    64 => (zeros(), zero_extend(ame_max_dtype_size, value)),
+    _  => internal_error(__FILE__, __LINE__, "unsupported AME float element size")
+  }
+}

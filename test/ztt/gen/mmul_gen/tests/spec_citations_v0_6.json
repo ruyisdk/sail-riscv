@@ -249,6 +249,11 @@
     },
     {
       "file": "instruction_semantics.adoc",
+      "line": 181,
+      "text": "Among standard datatypes, mexp2.ew, mlog2.ew, mcos.ew, msin.ew, mtanh.ew, mrec.ew, mrsqrt.ew, msqrt.ew, and the mfrint*.ew family require floating-point source and destination datatypes."
+    },
+    {
+      "file": "instruction_semantics.adoc",
       "line": 167,
       "text": "The implementation shall document its overflow, saturation, floating-point rounding, and optional fused-product behavior, which shall be deterministic for that tuple."
     },
