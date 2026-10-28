@@ -15,9 +15,9 @@ from mmul_gen.instruction import (
 from mmul_gen.templates.raw_transfer import (
     RAW_TRANSFER,
 )
-from mmul_gen.templates.store_fault_atomicity import (
-    StoreFaultAtomicity,
-    StoreForm,
+from mmul_gen.templates.memory_fault_atomicity import (
+    MemoryFaultAtomicity,
+    MemoryForm,
 )
 
 
@@ -30,7 +30,9 @@ class Mss1r(Instruction):
     operands = (M_TRANSFER_OPERAND, SCALAR_DESTINATION_OPERAND)
     templates = (
         RAW_TRANSFER,
-        StoreFaultAtomicity(StoreForm("raw", strided=False)),
+        MemoryFaultAtomicity(
+            MemoryForm("raw", strided=False, is_load=False)
+        ),
     )
 
 

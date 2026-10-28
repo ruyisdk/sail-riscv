@@ -15,6 +15,10 @@ from mmul_gen.instruction import (
 from mmul_gen.templates.memory_order_col_to_row import (
     MEMORY_ORDER_COL_TO_ROW,
 )
+from mmul_gen.templates.memory_fault_atomicity import (
+    MemoryFaultAtomicity,
+    MemoryForm,
+)
 
 
 class MlsCm(Instruction):
@@ -24,7 +28,8 @@ class MlsCm(Instruction):
     summary = "load one M register with column-major addressing"
     subject = "row/column-major memory-order test cases."
     operands = (M_TRANSFER_OPERAND, SCALAR_SOURCE_OPERAND)
-    templates = (MEMORY_ORDER_COL_TO_ROW,)
+    templates = (
+        MemoryFaultAtomicity(MemoryForm("cm", strided=False, is_load=True)),MEMORY_ORDER_COL_TO_ROW,)
 
 
 __all__ = ["MlsCm"]

@@ -338,6 +338,11 @@
       "text": "The source and destination datatypes may each be a packed or a non-packed datatype; no particular packedness combination is required."
     },
     {
+      "file": "programming_model.adoc",
+      "line": 424,
+      "text": "No partial completion is permitted: the faulting instruction commits no update to its destination M register group and performs no explicit data-memory write, neither to the faulting portion of the access nor to any other portion."
+    },
+    {
       "file": "instructions.adoc",
       "line": 5335,
       "text": "Stores the typed M-register operand beginning at ms1 to memory in row-major format. The programmed datatype is read from Md[ms1]."
@@ -386,11 +391,6 @@
       "file": "programming_model.adoc",
       "line": 371,
       "text": "They therefore neither read nor require a supported datatype, including when the programmed datatype is uninitialized or unsupported."
-    },
-    {
-      "file": "programming_model.adoc",
-      "line": 424,
-      "text": "the faulting instruction commits no update to its destination M register group and performs no explicit data-memory write, neither to the faulting portion of the access nor to any other portion."
     },
     {
       "file": "instructions.adoc",

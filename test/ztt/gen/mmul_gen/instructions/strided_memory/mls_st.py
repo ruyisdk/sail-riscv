@@ -20,6 +20,10 @@ from mmul_gen.templates.strided_conversion_pairs import (
     StridedConversionPairs,
 )
 from mmul_gen.templates.strided_memory_common import StridedTransfer
+from mmul_gen.templates.memory_fault_atomicity import (
+    MemoryFaultAtomicity,
+    MemoryForm,
+)
 
 class MlsSt(StridedMemoryInstruction):
     """Load one square with a stride, one element per segment."""
@@ -29,6 +33,7 @@ class MlsSt(StridedMemoryInstruction):
     subject = "strided-memory semantic test cases."
     operands = ()
     templates = (
+        MemoryFaultAtomicity(MemoryForm("st", strided=True, is_load=True)),
         StridedNormalSquare(StridedTransfer(is_load=True, transposed=False)),
         StridedPackedStorage(StridedTransfer(is_load=True, transposed=False)),
         StridedConversionPairs(StridedTransfer(is_load=True, transposed=False)),

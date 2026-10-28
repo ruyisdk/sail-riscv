@@ -110,7 +110,7 @@ EXPECTED_TEMPLATE_CLASS_NAMES = (
     "saturating_boundary",
     "shift_register_source",
     "shift_scalar_source",
-    "store_fault_atomicity",
+    "memory_fault_atomicity",
     "strided_conversion_pairs",
     "strided_normal_square",
     "strided_packed_storage",

@@ -15,6 +15,10 @@ from mmul_gen.instruction import (
 from mmul_gen.templates.raw_transfer import (
     RAW_TRANSFER,
 )
+from mmul_gen.templates.memory_fault_atomicity import (
+    MemoryFaultAtomicity,
+    MemoryForm,
+)
 
 
 class Mls1r(Instruction):
@@ -24,7 +28,10 @@ class Mls1r(Instruction):
     summary = "load one physical M register from memory"
     subject = "raw load/store test cases."
     operands = (M_TRANSFER_OPERAND, SCALAR_SOURCE_OPERAND)
-    templates = (RAW_TRANSFER,)
+    templates = (
+        MemoryFaultAtomicity(MemoryForm("raw", strided=False, is_load=True)),
+        RAW_TRANSFER,
+    )
 
 
 __all__ = ["Mls1r"]

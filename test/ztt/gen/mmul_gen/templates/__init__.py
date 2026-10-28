@@ -191,8 +191,8 @@ from mmul_gen.templates.raw_transfer import (
 from mmul_gen.templates.saturating_boundary import (
     SaturatingBoundary,
 )
-from mmul_gen.templates.store_fault_atomicity import (
-    StoreFaultAtomicity,
+from mmul_gen.templates.memory_fault_atomicity import (
+    MemoryFaultAtomicity,
 )
 from mmul_gen.templates.strided_conversion_pairs import (
     StridedConversionPairs,
@@ -302,7 +302,7 @@ TEMPLATE_CLASSES = (
     SaturatingBoundary,
     ShiftRegisterSource,
     ShiftScalarSource,
-    StoreFaultAtomicity,
+    MemoryFaultAtomicity,
     StridedConversionPairs,
     StridedNormalSquare,
     StridedPackedStorage,
@@ -376,7 +376,7 @@ __all__ = [
     "SaturatingBoundary",
     "ShiftRegisterSource",
     "ShiftScalarSource",
-    "StoreFaultAtomicity",
+    "MemoryFaultAtomicity",
     "StridedConversionPairs",
     "StridedNormalSquare",
     "StridedPackedStorage",

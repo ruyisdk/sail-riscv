@@ -15,9 +15,9 @@ from mmul_gen.instruction import (
 from mmul_gen.templates.memory_order_row_to_col import (
     MEMORY_ORDER_ROW_TO_COL,
 )
-from mmul_gen.templates.store_fault_atomicity import (
-    StoreFaultAtomicity,
-    StoreForm,
+from mmul_gen.templates.memory_fault_atomicity import (
+    MemoryFaultAtomicity,
+    MemoryForm,
 )
 
 
@@ -30,7 +30,9 @@ class MssCm(Instruction):
     operands = (M_TRANSFER_OPERAND, SCALAR_DESTINATION_OPERAND)
     templates = (
         MEMORY_ORDER_ROW_TO_COL,
-        StoreFaultAtomicity(StoreForm("cm", strided=False)),
+        MemoryFaultAtomicity(
+            MemoryForm("cm", strided=False, is_load=False)
+        ),
     )
 
 

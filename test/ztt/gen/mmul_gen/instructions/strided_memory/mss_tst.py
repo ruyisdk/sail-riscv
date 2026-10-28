@@ -20,9 +20,9 @@ from mmul_gen.templates.strided_conversion_pairs import (
     StridedConversionPairs,
 )
 from mmul_gen.templates.strided_memory_common import StridedTransfer
-from mmul_gen.templates.store_fault_atomicity import (
-    StoreFaultAtomicity,
-    StoreForm,
+from mmul_gen.templates.memory_fault_atomicity import (
+    MemoryFaultAtomicity,
+    MemoryForm,
 )
 
 class MssTst(StridedMemoryInstruction):
@@ -36,7 +36,9 @@ class MssTst(StridedMemoryInstruction):
         StridedNormalSquare(StridedTransfer(is_load=False, transposed=True)),
         StridedPackedStorage(StridedTransfer(is_load=False, transposed=True)),
         StridedConversionPairs(StridedTransfer(is_load=False, transposed=True)),
-        StoreFaultAtomicity(StoreForm("tst", strided=True)),
+        MemoryFaultAtomicity(
+            MemoryForm("tst", strided=True, is_load=False)
+        ),
     )
 
 __all__ = ["MssTst"]
