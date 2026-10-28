@@ -52,6 +52,10 @@ def softfloat_product_expected(dtype_name: str, n: int, *, negated: bool) -> int
 #: ``amefflags.NX``: the result was rounded.
 FFLAGS_NX = 0x01
 
+#: ``amefflags.OF``: the rounded result's magnitude exceeds the destination's
+#: finite range (instruction_semantics.adoc:244-245).
+FFLAGS_OF = 0x04
+
 #: The smallest most-significant byte of a stored element whose exponent field is
 #: all ones, i.e. an infinity or a NaN.  The "finite number" check of the
 #: approximate operations masks the sign bit off the top byte and compares it
@@ -107,6 +111,32 @@ class FloatFormat:
         """Exponent of the least significant bit of a subnormal value."""
 
         return self.minimum_exponent - self.significand_bits
+
+    @property
+    def maximum_finite(self) -> Fraction:
+        """The largest finite magnitude the format holds.
+
+        Both families of format lose their top significand pattern to
+        something else, but a different one: an IEEE format's all-ones
+        significand is one more finite step and the all-ones *exponent* is the
+        reserved one, while E4M3 has no infinity at all and spends the all-ones
+        significand of its top exponent on NaN (OCP OFP8: ``0x7F``/``0xFF``).
+        """
+
+        step = (
+            Fraction(1, 1 << self.significand_bits)
+            if self.has_infinity
+            else Fraction(2, 1 << self.significand_bits)
+        )
+        return (Fraction(2) - step) * Fraction(2) ** self.maximum_exponent
+
+    @property
+    def infinity_bits(self) -> int | None:
+        """The stored pattern of +infinity, or ``None`` if the format has none."""
+
+        if not self.has_infinity:
+            return None
+        return ((1 << self.exponent_bits) - 1) << self.significand_bits
 
 
 #: The six floating-point formats of §6.2.2.
@@ -240,6 +270,54 @@ def encode_rounded(
     return encoded, chosen != magnitude
 
 
+def encode_overflow(
+    value: Fraction, dtype_name: str, direction: str
+) -> tuple[int, int]:
+    """Store an overflowing value in ``direction``; return bits and ``amefflags``.
+
+    An overflowing representational rounding is decided by IEEE 754-2019 7.4:
+    round-to-nearest carries every overflow to the infinity, round-toward-zero
+    to the largest finite magnitude, and the two other directed modes depend on
+    the sign -- round-toward-negative takes a positive overflow to the largest
+    finite value and a negative one to -infinity, round-toward-positive the
+    mirror image.  instruction_semantics.adoc:229-232 then saturates a required
+    infinity the destination cannot represent (E4M3), and :244-245 makes the
+    delivered value raise ``OF`` together with ``NX``.
+
+    The caller must pass a value at or beyond ``2**(emax+1)``: that is the point
+    from which every direction overflows, so the answer does not depend on the
+    grid the value happens to sit on.
+    """
+
+    fmt = FORMATS[dtype_name]
+    if direction not in (ROUND_DOWN, ROUND_NEAREST, ROUND_UP, ROUND_ZERO):
+        raise ValueError(f"{direction}: not a rounding direction of the family")
+    magnitude = -value if value < 0 else value
+    threshold = Fraction(2) ** (fmt.maximum_exponent + 1)
+    if magnitude < threshold:
+        raise ValueError(
+            f"{value} does not overflow {dtype_name} in every direction "
+            f"(the safe threshold is 2**{fmt.maximum_exponent + 1})"
+        )
+    infinity = fmt.infinity_bits
+    largest = encode_exact(fmt.maximum_finite, dtype_name)
+    if largest is None:  # pragma: no cover - a format's own maximum is exact
+        raise ValueError(f"{dtype_name} has no encoder for its maximum finite value")
+    if infinity is None:
+        bits = largest
+    elif direction == ROUND_NEAREST:
+        bits = infinity
+    elif direction == ROUND_ZERO:
+        bits = largest
+    elif direction == ROUND_DOWN:
+        bits = infinity if value < 0 else largest
+    else:
+        bits = largest if value < 0 else infinity
+    if value < 0:
+        bits |= 1 << (fmt.bits - 1)
+    return bits, FFLAGS_OF | FFLAGS_NX
+
+
 def exact_root(value: Fraction) -> Fraction:
     """The exact square root of a perfect square."""
 
@@ -253,12 +331,14 @@ __all__ = [
     "CANONICAL_NAN",
     "FINITE_LIMIT_BYTE",
     "FORMATS",
+    "FFLAGS_OF",
     "FloatFormat",
     "ROUND_DOWN",
     "ROUND_NEAREST",
     "ROUND_UP",
     "ROUND_ZERO",
     "encode_exact",
+    "encode_overflow",
     "encode_rounded",
     "exact_root",
     "floor_log2",

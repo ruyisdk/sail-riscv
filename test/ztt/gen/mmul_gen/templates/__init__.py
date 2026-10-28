@@ -106,6 +106,9 @@ from mmul_gen.templates.float_ignored_rm import (
 from mmul_gen.templates.float_mixed_format import (
     FloatMixedFormat,
 )
+from mmul_gen.templates.float_rounding_overflow import (
+    FloatRoundingOverflow,
+)
 from mmul_gen.templates.float_pair_sweep import (
     FloatPairSweep,
 )
@@ -282,6 +285,7 @@ TEMPLATE_CLASSES = (
     FloatMathCases,
     FloatIgnoredRoundingMode,
     FloatMixedFormat,
+    FloatRoundingOverflow,
     FloatPairSweep,
     GatherScatterIndexed,
     LdexpaccSaturatingBoundary,
@@ -333,6 +337,7 @@ __all__ = [
     "FloatIgnoredRoundingMode",
     "FloatMathCases",
     "FloatMixedFormat",
+    "FloatRoundingOverflow",
     "FloatPairSweep",
     "GATHER_EXTRA_INDEX",
     "GatherScatterIndexed",

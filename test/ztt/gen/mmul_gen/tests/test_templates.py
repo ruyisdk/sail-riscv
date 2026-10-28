@@ -93,6 +93,7 @@ EXPECTED_TEMPLATE_CLASS_NAMES = (
     "float_math_cases",
     "float_ignored_rounding_mode",
     "float_mixed_format",
+    "float_rounding_overflow",
     "float_pair_sweep",
     "gather_indexed_elements",
     "ldexpacc_saturating_boundary",
