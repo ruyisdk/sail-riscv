@@ -18,6 +18,7 @@ from mmul_gen.templates.float_math_cases import (
 )
 from mmul_gen.templates.float_math_common import MathOperation
 from mmul_gen.mixed_math import MixedMathOperation
+from mmul_gen.templates.float_ignored_rm import FloatIgnoredRoundingMode
 from mmul_gen.templates.float_mixed_format import FloatMixedFormat
 from mmul_gen.templates.logexp_common import LogExpForm
 from mmul_gen.templates.logexp_unsupported_source import (
@@ -33,6 +34,7 @@ class MfrintnEw(FloatMathInstruction):
     templates = (
         FloatMathCases(MathOperation.NEAREST),
         FloatMixedFormat(MixedMathOperation.NEAREST),
+        FloatIgnoredRoundingMode(MixedMathOperation.NEAREST),
         LogExpUnsupportedSource(
             src1_label="mant_square", form=LogExpForm.UNARY, domain=INTEGER
         ),

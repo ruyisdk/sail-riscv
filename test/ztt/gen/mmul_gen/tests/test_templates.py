@@ -91,6 +91,7 @@ EXPECTED_TEMPLATE_CLASS_NAMES = (
     "acc_span_exceptions",
     "acc_span_routing",
     "float_math_cases",
+    "float_ignored_rounding_mode",
     "float_mixed_format",
     "float_pair_sweep",
     "gather_indexed_elements",

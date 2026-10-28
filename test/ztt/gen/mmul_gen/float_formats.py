@@ -170,6 +170,76 @@ def encode_exact(value: Fraction, dtype_name: str) -> int | None:
     return sign | (exponent_field << fmt.significand_bits) | (significand - hidden)
 
 
+#: The four rounding directions the mfrint* family names.
+ROUND_DOWN = "RDN"
+ROUND_NEAREST = "RNE"
+ROUND_UP = "RUP"
+ROUND_ZERO = "RTZ"
+
+
+def _grid_step(fmt: FloatFormat, magnitude: Fraction) -> Fraction:
+    """The spacing of representable values around ``magnitude``."""
+
+    if magnitude == 0:
+        return Fraction(2) ** fmt.subnormal_bit_weight
+    exponent = floor_log2(magnitude)
+    if exponent < fmt.minimum_exponent:
+        return Fraction(2) ** fmt.subnormal_bit_weight
+    return Fraction(2) ** (max(exponent, fmt.minimum_exponent) - fmt.significand_bits)
+
+
+def encode_rounded(
+    value: Fraction, dtype_name: str, direction: str
+) -> tuple[int, bool]:
+    """Round ``value`` into ``dtype_name`` in ``direction``; return bits and inexact.
+
+    This is the representation step of the mfrint* family: the rounded integral
+    result still has to be *stored* in the destination format, and
+    instructions.adoc:1516-1517 makes the instruction's own direction govern
+    that step, so the expectation cannot come from the destination field.  The
+    two grid neighbours bracket every answer, so the search is exhaustive.
+    """
+
+    if direction not in (ROUND_DOWN, ROUND_NEAREST, ROUND_UP, ROUND_ZERO):
+        raise ValueError(f"{direction}: not a rounding direction of the family")
+    fmt = FORMATS[dtype_name]
+    if value == 0:
+        return 0, False
+    negative = value < 0
+    magnitude = -value if negative else value
+    sign = 1 << (fmt.bits - 1) if negative else 0
+    step = _grid_step(fmt, magnitude)
+    steps = magnitude / step
+    below = Fraction(steps.numerator // steps.denominator) * step
+    above = below + step
+    if magnitude == below:
+        chosen = below
+    elif direction == ROUND_ZERO:
+        chosen = below
+    elif direction == ROUND_DOWN:
+        chosen = above if negative else below
+    elif direction == ROUND_UP:
+        chosen = below if negative else above
+    else:
+        distance_below = magnitude - below
+        distance_above = above - magnitude
+        if distance_below < distance_above:
+            chosen = below
+        elif distance_above < distance_below:
+            chosen = above
+        else:
+            # Ties to even: keep the neighbour whose least significant
+            # significand bit is zero.
+            chosen = below if int(below / step) % 2 == 0 else above
+    encoded = encode_exact(-chosen if negative else chosen, dtype_name)
+    if encoded is None:
+        raise ValueError(
+            f"rounded value {chosen} is not representable in {dtype_name}; "
+            "the caller asked for an out-of-range representation"
+        )
+    return encoded, chosen != magnitude
+
+
 def exact_root(value: Fraction) -> Fraction:
     """The exact square root of a perfect square."""
 
@@ -184,7 +254,12 @@ __all__ = [
     "FINITE_LIMIT_BYTE",
     "FORMATS",
     "FloatFormat",
+    "ROUND_DOWN",
+    "ROUND_NEAREST",
+    "ROUND_UP",
+    "ROUND_ZERO",
     "encode_exact",
+    "encode_rounded",
     "exact_root",
     "floor_log2",
     "softfloat_power_of_two",

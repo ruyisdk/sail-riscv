@@ -59,6 +59,16 @@ from mmul_gen.mixed_math import MixedMathOperation
 #: ``amefflags.NX``: the result was rounded.
 FFLAGS_NX = 0x01
 from mmul_gen.machine import FORMED_SOFTFLOAT, dtype_stem
+from mmul_gen.square_layout import (
+    cycles,
+    emit_square,
+    geometry,
+    pack_factor,
+    register_group,
+    sampled_indices,
+    span,
+    transfer_steps,
+)
 from mmul_gen.templates.base import Case, CaseOutput, Template, case_payload
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
@@ -91,20 +101,6 @@ MIXED_FORMAT_PAIRS = (
 
 
 
-def _pack_factor(machine: "MachineConfig", element_bits: int) -> int:
-    """How many logical squares one physical register holds for a format."""
-
-    return machine.storage_elements(element_bits) // machine.nelem
-
-
-def _cycles(values: tuple[int, ...], count: int) -> tuple[int, ...]:
-    """``count`` elements taken from a short value roster, in order."""
-
-    if not values:
-        raise ValueError("a mixed-format square needs at least one value")
-    return tuple(values[index % len(values)] for index in range(count))
-
-
 @dataclass(frozen=True)
 class MixedFormatGeometry:
     """The register groups and logical-square count one format pair needs."""
@@ -128,25 +124,6 @@ class MixedFormatCase:
     geometry: MixedFormatGeometry
 
 
-def _register_group(
-    num_m_regs: int, span: int, preferred: int, occupied: list[tuple[int, int]]
-) -> int:
-    """An aligned M-register group of ``span`` registers that is free."""
-
-    if span > num_m_regs:
-        raise ValueError(f"a {span}-register operand does not fit in {num_m_regs}")
-    candidates = [
-        base
-        for base in range(0, num_m_regs - span + 1, span)
-        if all(base + span <= low or high <= base for low, high in occupied)
-    ]
-    if not candidates:
-        raise ValueError(
-            f"no free group of {span} M registers in a file of {num_m_regs}"
-        )
-    return preferred if preferred in candidates else candidates[0]
-
-
 class FloatMixedFormat(Template):
     """One source and one destination floating-point format that differ."""
 
@@ -162,7 +139,7 @@ class FloatMixedFormat(Template):
         return {dtype.name: dtype for dtype in FORMED_SOFTFLOAT(machine)}
 
     def _span(self, machine: "MachineConfig", element_bits: int, nsq: int) -> int:
-        return nsq * machine.nregs(element_bits)
+        return span(machine, element_bits, nsq)
 
     def _geometry(
         self,
@@ -170,17 +147,10 @@ class FloatMixedFormat(Template):
         source_bits: int,
         destination_bits: int,
     ) -> MixedFormatGeometry:
-        nsq = max(_pack_factor(machine, source_bits), _pack_factor(machine, destination_bits))
-        source_span = self._span(machine, source_bits, nsq)
-        destination_span = self._span(machine, destination_bits, nsq)
-        source_base = _register_group(machine.num_m_regs, source_span, 0, [])
-        destination_base = _register_group(
-            machine.num_m_regs,
-            destination_span,
-            16,
-            [(source_base, source_base + source_span)],
+        placed = geometry(machine, source_bits, destination_bits)
+        return MixedFormatGeometry(
+            placed.source_base, placed.destination_base, placed.nsq
         )
-        return MixedFormatGeometry(source_base, destination_base, nsq)
 
     def _pairs(
         self, machine: "MachineConfig", destination_name: str | None = None
@@ -266,8 +236,8 @@ class FloatMixedFormat(Template):
         return MixedFormatCase(
             source_dtype=source.name,
             destination_dtype=destination.name,
-            source_values=_cycles(tuple(sources), count),
-            expected=_cycles(tuple(answers), count) if answers else (),
+            source_values=cycles(tuple(sources), count),
+            expected=cycles(tuple(answers), count) if answers else (),
             flags=0 if operation.answer_is_exact else FFLAGS_NX,
             exact=operation.answer_is_exact,
             description=(
@@ -301,21 +271,21 @@ class FloatMixedFormat(Template):
         # and destination pack differently therefore needs one transfer per
         # image on the side that does not pack them, or the second logical
         # square would never leave memory.
-        source_steps = _transfer_steps(
+        source_steps = transfer_steps(
             machine,
             geometry.nsq,
             source_format.bits,
             geometry.source_base,
             source_label,
         )
-        destination_steps = _transfer_steps(
+        destination_steps = transfer_steps(
             machine,
             geometry.nsq,
             destination_format.bits,
             geometry.destination_base,
             destination_label,
         )
-        seed_steps = _transfer_steps(
+        seed_steps = transfer_steps(
             machine,
             geometry.nsq,
             destination_format.bits,
@@ -369,7 +339,7 @@ class FloatMixedFormat(Template):
                     f"    mss.rm     m{register_base}, t2",
                 ]
             )
-        for index in _sampled_indices(len(payload.expected) or len(payload.source_values)):
+        for index in sampled_indices(len(payload.expected) or len(payload.source_values)):
             if payload.exact:
                 out.text.extend(
                     check_dst_element_lines(
@@ -385,8 +355,8 @@ class FloatMixedFormat(Template):
                         index, destination_format.bits, payload.destination_dtype, destination_label
                     )
                 )
-        _emit_square(out, machine, source_label, payload.source_values, source_format.bits)
-        _emit_square(
+        emit_square(out, machine, source_label, payload.source_values, source_format.bits)
+        emit_square(
             out,
             machine,
             seed_label,
@@ -396,7 +366,7 @@ class FloatMixedFormat(Template):
         # The approximate cases do not know the value, so the store target is a
         # scratch image; the exact cases seed it with the answer as well, which
         # keeps the expected image next to the case that checks it.
-        _emit_square(
+        emit_square(
             out,
             machine,
             destination_label,
@@ -406,58 +376,6 @@ class FloatMixedFormat(Template):
             destination_format.bits,
         )
         out.data.append("")
-
-
-def _transfer_steps(
-    machine: "MachineConfig", nsq: int, element_bits: int, base: int, label: str
-) -> list[tuple[int, str]]:
-    """The register group and image label of every ``mls.rm``/``mss.rm`` step.
-
-    One transfer moves one formed square image.  A packed format fits ``pack``
-    logical squares in an image, so a packed operand needs fewer transfers than
-    logical squares; a wide one needs exactly one per square.
-    """
-
-    pack = _pack_factor(machine, element_bits)
-    if nsq % pack != 0:
-        raise ValueError(f"{nsq} logical squares do not fill {pack}-square images")
-    stride = machine.nregs(element_bits)
-    return [
-        (base + image * stride, label if image == 0 else f"{label}_block{image}")
-        for image in range(nsq // pack)
-    ]
-
-
-def _sampled_indices(count: int) -> list[int]:
-    """The element positions a mixed-format case checks."""
-
-    return sorted({0, 1, 2, count - 1})
-
-
-def _emit_square(
-    out: CaseOutput,
-    machine: "MachineConfig",
-    label: str,
-    values: tuple[int, ...],
-    element_bits: int,
-) -> None:
-    """Emit one operand image, one physical square at a time."""
-
-    per_block = machine.storage_elements(element_bits)
-    if len(values) % per_block != 0:
-        raise ValueError(
-            f"{label}: {len(values)} elements do not fill {per_block}-element squares"
-        )
-    for block in range(len(values) // per_block):
-        block_label = label if block == 0 else f"{label}_block{block}"
-        out.data.extend(
-            square_lines(
-                block_label,
-                values[block * per_block : (block + 1) * per_block],
-                element_bits,
-                machine,
-            )
-        )
 
 
 def _finite_element_lines(

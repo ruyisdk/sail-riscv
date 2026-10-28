@@ -24,7 +24,13 @@ import math
 from enum import StrEnum
 from fractions import Fraction
 
-from mmul_gen.float_formats import exact_root
+from mmul_gen.float_formats import (
+    ROUND_DOWN,
+    ROUND_NEAREST,
+    ROUND_UP,
+    ROUND_ZERO,
+    exact_root,
+)
 
 
 class MixedMathOperation(StrEnum):
@@ -120,6 +126,26 @@ class MixedMathOperation(StrEnum):
             ):
                 return (Fraction(3), Fraction(5), Fraction(6), Fraction(7))
         raise ValueError(f"{self}: no stimulus")  # pragma: no cover - exhaustive
+
+    @property
+    def rounding_direction(self) -> str:
+        """The direction this rounding operation names, as float_formats spells it.
+
+        The direction is the instruction's own (``instructions.adoc:1516-1517``),
+        so it also governs the representational rounding of a mixed-format tuple.
+        """
+
+        match self:
+            case MixedMathOperation.FLOOR:
+                return ROUND_DOWN
+            case MixedMathOperation.NEAREST:
+                return ROUND_NEAREST
+            case MixedMathOperation.CEIL:
+                return ROUND_UP
+            case MixedMathOperation.TRUNC:
+                return ROUND_ZERO
+            case _:
+                raise ValueError(f"{self} names no rounding direction")
 
     def exact_answer(self, value: Fraction) -> Fraction:
         """The mathematical answer of an exact operation for one exact source."""
