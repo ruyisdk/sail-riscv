@@ -5,7 +5,7 @@
 #
 """mfrint*.ew executed with a destination rounding field the instruction ignores.
 
-Spec:    instructions.adoc:1480-1482, 1515-1517, 1550-1552, 1585-1587
+Spec:    instructions.adoc:1480-1482, instructions.adoc:1515-1517, instructions.adoc:1550-1552, instructions.adoc:1585-1587
 Quote:   For a standard floating-point operand, infinity is unchanged, zero preserves its sign, and a representable integral result is exact.  This instruction-specific rounding direction overrides the destination datatype rounding-mode field.
 Checks:  every rounding instruction emits each tuple twice, once with the destination rounding-mode field set to RNE and once to RNO, and both runs must store the same bits, leave amestatus.UN clear and raise the same amefflags
 
