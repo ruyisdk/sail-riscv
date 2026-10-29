@@ -248,6 +248,11 @@
       "text": "A saturating destination clamps an out-of-range result and sets amexsat.SAT; a non-saturating destination retains the low destination-width bits."
     },
     {
+      "file": "instruction_semantics.adoc",
+      "line": 215,
+      "text": "accrue IEEE exception flags in amefflags and do not modify fflags"
+    },
+    {
       "file": "instructions.adoc",
       "line": 1480,
       "text": "For a standard floating-point operand, infinity is unchanged, zero preserves its sign, and a representable integral result is exact. This instruction-specific rounding direction overrides the destination datatype rounding-mode field."

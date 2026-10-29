@@ -74,6 +74,7 @@ EXPECTED_TEMPLATE_NAMES = (
     "reduce_saturating_boundary",
     "gather_extra_dtype_index",
     "scatter_saturating_boundary",
+    "float_flag_isolation",
 )
 
 #: The templates that carry per-instruction inputs, in registry order: the

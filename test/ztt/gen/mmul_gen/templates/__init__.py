@@ -103,6 +103,9 @@ from mmul_gen.templates.float_math_cases import (
 from mmul_gen.templates.float_ignored_rm import (
     FloatIgnoredRoundingMode,
 )
+from mmul_gen.templates.float_flag_isolation import (
+    FLOAT_FLAG_ISOLATION,
+)
 from mmul_gen.templates.float_mixed_format import (
     FloatMixedFormat,
 )
@@ -270,6 +273,7 @@ ALL_TEMPLATES = (
     REDUCE_SATURATING,
     GATHER_EXTRA_INDEX,
     SCATTER_SATURATING,
+    FLOAT_FLAG_ISOLATION,
 )
 # The elementwise templates are not here: every elementwise instruction constructs
 # the templates it runs with their own inputs, so the family's coverage is stated
@@ -340,6 +344,7 @@ __all__ = [
     "FLOATING_INGRESS",
     "FloatIgnoredRoundingMode",
     "FloatMathCases",
+    "FLOAT_FLAG_ISOLATION",
     "FloatMixedFormat",
     "FloatRoundingOverflow",
     "FloatPairSweep",
