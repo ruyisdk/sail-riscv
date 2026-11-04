@@ -61,6 +61,49 @@ function ame_valid_permute_dtype(dtype : bits(32)) -> bool = {
 
 // The manual's rs1_val-shift instructions apply a signed low-32-bit offset
 // along one matrix axis, zero-filling positions that leave the square.
+// The permutation family shares one rule for its data shapes: both squares
+// carry the same permutable datatype, and the index square (where there is one)
+// is an integer of the elementwise width.  Named once, used by every driver.
+function ame_permute_accepts(md_dtype : bits(32), ms1_dtype : bits(32)) -> bool =
+  ame_valid_permute_dtype(md_dtype) &
+  ame_valid_permute_dtype(ms1_dtype) &
+  ame_dtype_size(md_dtype) == ame_dtype_size(ms1_dtype)
+
+function ame_permute_index_accepts(md_dtype : bits(32), ms1_dtype : bits(32),
+                                   ms2_dtype : bits(32)) -> bool =
+  ame_permute_accepts(md_dtype, ms1_dtype) &
+  ame_valid_int_ew_dtype(ms2_dtype)
+
+function ame_scatter_accepts(md_dtype : bits(32), ms1_dtype : bits(32),
+                             ms2_dtype : bits(32)) -> bool =
+  ame_valid_int_elementwise_dtype(md_dtype) &
+  ame_valid_int_elementwise_dtype(ms1_dtype) &
+  ame_valid_int_ew_dtype(ms2_dtype) &
+  ame_dtype_size(md_dtype) == ame_dtype_size(ms1_dtype) &
+  ame_is_signed(md_dtype) == ame_is_signed(ms1_dtype)
+
+function ame_pack_accepts(md_dtype : bits(32), ms1_dtype : bits(32)) -> bool =
+  ame_datatype_supported(md_dtype) &
+  ame_datatype_supported(ms1_dtype) &
+  ame_is_integer(md_dtype) &
+  ame_is_integer(ms1_dtype) &
+  ame_is_storage_only(md_dtype) &
+  not(ame_is_storage_only(ms1_dtype)) &
+  ame_dtype_size(ms1_dtype) == ame_unit_dtype_size &
+  ame_dtype_size(md_dtype) * 2 == ame_unit_dtype_size &
+  ame_pack_factor(ame_dtype_size(md_dtype)) == 2
+
+function ame_unpack_accepts(md_dtype : bits(32), ms1_dtype : bits(32)) -> bool =
+  ame_datatype_supported(md_dtype) &
+  ame_datatype_supported(ms1_dtype) &
+  ame_is_integer(md_dtype) &
+  ame_is_integer(ms1_dtype) &
+  not(ame_is_storage_only(md_dtype)) &
+  ame_is_storage_only(ms1_dtype) &
+  ame_dtype_size(md_dtype) == ame_unit_dtype_size &
+  ame_dtype_size(ms1_dtype) * 2 == ame_unit_dtype_size &
+  ame_pack_factor(ame_dtype_size(ms1_dtype)) == 2
+
 function ame_shift_axis_ew(md_dtype : bits(32), ms1_dtype : bits(32),
                            md : ameregidx, ms1 : ameregidx,
                            shift : int, shift_rows : bool) -> bool = {
@@ -69,10 +112,12 @@ function ame_shift_axis_ew(md_dtype : bits(32), ms1_dtype : bits(32),
   let dest_nregs = ame_nregs(dest_size);
   let src_nregs = ame_nregs(src_size);
 
-  if not(ame_valid_permute_dtype(md_dtype) & ame_valid_permute_dtype(ms1_dtype)) then ame_unsupported_result()
-  else if dest_size != src_size then ame_unsupported_result()
-  else if not(ame_check_mreg_group(md, dest_nregs)) then false
-  else if not(ame_check_mreg_group(ms1, src_nregs)) then false
+if not(ame_permute_accepts(md_dtype, ms1_dtype)) then
+    return ame_unsupported_result();
+
+  if not(ame_check_mreg_group(md, dest_nregs)) |
+     not(ame_check_mreg_group(ms1, src_nregs))
+  then false
   else {
     let src_data = read_m_square_rm(ms1_dtype, ms1);
     var dest_data : bits(acclen) = zeros();
@@ -106,11 +151,13 @@ function ame_broadcast_axis_ew(md_dtype : bits(32), ms1_dtype : bits(32),
   let src_nregs = ame_nregs(src_size);
   let source_axis = unsigned(coordinate);
 
-  if not(ame_valid_permute_dtype(md_dtype) & ame_valid_permute_dtype(ms1_dtype)) then ame_unsupported_result()
-  else if dest_size != src_size then ame_unsupported_result()
-  else if source_axis >= ame_nlen then false
-  else if not(ame_check_mreg_group(md, dest_nregs)) then false
-  else if not(ame_check_mreg_group(ms1, src_nregs)) then false
+if not(ame_permute_accepts(md_dtype, ms1_dtype)) then
+    return ame_unsupported_result();
+
+  if source_axis >= ame_nlen then false
+  else if not(ame_check_mreg_group(md, dest_nregs)) |
+          not(ame_check_mreg_group(ms1, src_nregs))
+  then false
   else {
     let src_data = read_m_square_rm(ms1_dtype, ms1);
     var dest_data : bits(acclen) = zeros();
@@ -161,11 +208,13 @@ function ame_gather_ew(md_dtype : bits(32), ms1_dtype : bits(32),
   let src_nregs = ame_nregs(src_size);
   let index_nregs = ame_nregs(index_size);
 
-  if not(ame_valid_permute_dtype(md_dtype) & ame_valid_permute_dtype(ms1_dtype) & ame_valid_int_ew_dtype(ms2_dtype)) then ame_unsupported_result()
-  else if dest_size != src_size then ame_unsupported_result()
-  else if not(ame_check_mreg_group(md, dest_nregs)) then false
-  else if not(ame_check_mreg_group(ms1, src_nregs)) then false
-  else if not(ame_check_mreg_group(ms2, index_nregs)) then false
+if not(ame_permute_index_accepts(md_dtype, ms1_dtype, ms2_dtype)) then
+    return ame_unsupported_result();
+
+  if not(ame_check_mreg_group(md, dest_nregs)) |
+     not(ame_check_mreg_group(ms1, src_nregs)) |
+     not(ame_check_mreg_group(ms2, index_nregs))
+  then false
   else {
     let src_data = read_m_square_rm(ms1_dtype, ms1);
     let index_data = read_m_square_rm(ms2_dtype, ms2);
@@ -220,11 +269,13 @@ function ame_scatter_ew(md_dtype : bits(32), ms1_dtype : bits(32),
   let src_nregs = ame_nregs(src_size);
   let index_nregs = ame_nregs(index_size);
 
-  if not(ame_valid_int_elementwise_dtype(md_dtype) & ame_valid_int_elementwise_dtype(ms1_dtype) & ame_valid_int_ew_dtype(ms2_dtype)) then ame_unsupported_result()
-  else if dest_size != src_size | ame_is_signed(md_dtype) != ame_is_signed(ms1_dtype) then ame_unsupported_result()
-  else if not(ame_check_mreg_group(md, dest_nregs)) then false
-  else if not(ame_check_mreg_group(ms1, src_nregs)) then false
-  else if not(ame_check_mreg_group(ms2, index_nregs)) then false
+if not(ame_scatter_accepts(md_dtype, ms1_dtype, ms2_dtype)) then
+    return ame_unsupported_result();
+
+  if not(ame_check_mreg_group(md, dest_nregs)) |
+     not(ame_check_mreg_group(ms1, src_nregs)) |
+     not(ame_check_mreg_group(ms2, index_nregs))
+  then false
   else {
     let src_data = read_m_square_rm(ms1_dtype, ms1);
     let index_data = read_m_square_rm(ms2_dtype, ms2);
@@ -268,11 +319,14 @@ function ame_pair_permute_ew(ms1_dtype : bits(32), ms2_dtype : bits(32),
   let nregs1 = ame_nregs(size1);
   let nregs2 = ame_nregs(size2);
 
-  if ameregidx_bits(reg1) == ameregidx_bits(reg2) then false
-  else if not(ame_valid_permute_dtype(ms1_dtype) & ame_valid_permute_dtype(ms2_dtype)) then ame_unsupported_result()
-  else if size1 != size2 then ame_unsupported_result()
-  else if not(ame_check_mreg_group(reg1, nregs1)) then false
-  else if not(ame_check_mreg_group(reg2, nregs2)) then false
+if ameregidx_bits(reg1) == ameregidx_bits(reg2) then return false;
+
+  if not(ame_permute_accepts(ms1_dtype, ms2_dtype)) then
+    return ame_unsupported_result();
+
+  if not(ame_check_mreg_group(reg1, nregs1)) |
+     not(ame_check_mreg_group(reg2, nregs2))
+  then false
   else {
     let src1 = read_m_square_rm(ms1_dtype, reg1);
     let src2 = read_m_square_rm(ms2_dtype, reg2);
@@ -346,9 +400,12 @@ function ame_broadcast_typed_x(md_dtype : bits(32), ms1_dtype : bits(32),
   let dest_size = ame_dtype_size(md_dtype);
   let dest_nregs = ame_nregs(dest_size);
 
-  if not(ame_datatype_supported(md_dtype) & ame_datatype_supported(ms1_dtype)) then ame_unsupported_result()
-  else if md_dtype != ms1_dtype then ame_unsupported_result()
-  else if not(ame_check_mreg_group(md, dest_nregs)) then false
+if not(ame_datatype_supported(md_dtype) &
+         ame_datatype_supported(ms1_dtype) &
+         md_dtype == ms1_dtype) then
+    return ame_unsupported_result();
+
+  if not(ame_check_mreg_group(md, dest_nregs)) then false
   else {
     let value : bits(ame_max_dtype_size) = zero_extend(ame_max_dtype_size, rs1_val);
     foreach (e from 0 to (ame_total_elements(md_dtype) - 1)) {
@@ -367,15 +424,14 @@ function ame_pack_square_ew(md_dtype : bits(32), ms1_dtype : bits(32),
   let src_size = ame_dtype_size(ms1_dtype);
   let pack_factor = ame_pack_factor(dest_size);
 
-  if not(ame_datatype_supported(md_dtype) & ame_datatype_supported(ms1_dtype)) then ame_unsupported_result()
-  else if not(ame_is_integer(md_dtype) & ame_is_integer(ms1_dtype)) then ame_unsupported_result()
-  else if not(ame_is_storage_only(md_dtype)) | ame_is_storage_only(ms1_dtype) then ame_unsupported_result()
-  else if src_size != ame_unit_dtype_size | dest_size * 2 != ame_unit_dtype_size then ame_unsupported_result()
-  else if pack_factor != 2 then ame_unsupported_result()
-  else if not(ame_check_mreg_group(md, 1)) then false
-  else if not(ame_check_mreg_group(ms1, ame_nregs(src_size))) then false
+if not(ame_pack_accepts(md_dtype, ms1_dtype)) then
+    return ame_unsupported_result();
+
+  if not(ame_check_mreg_group(md, 1)) |
+     not(ame_check_mreg_group(ms1, ame_nregs(src_size)))
+  then false
   else {
-    let slot : nat = unsigned(slot_selector) % pack_factor;
+    let slot : nat = unsigned(slot_selector) % max(1, pack_factor);
     let src_data = read_m_square_rm(ms1_dtype, ms1);
     var dest_data = read_m_square_rm(md_dtype, md);
 
@@ -396,15 +452,14 @@ function ame_unpack_square_ew(md_dtype : bits(32), ms1_dtype : bits(32),
   let src_size = ame_dtype_size(ms1_dtype);
   let pack_factor = ame_pack_factor(src_size);
 
-  if not(ame_datatype_supported(md_dtype) & ame_datatype_supported(ms1_dtype)) then ame_unsupported_result()
-  else if not(ame_is_integer(md_dtype) & ame_is_integer(ms1_dtype)) then ame_unsupported_result()
-  else if ame_is_storage_only(md_dtype) | not(ame_is_storage_only(ms1_dtype)) then ame_unsupported_result()
-  else if dest_size != ame_unit_dtype_size | src_size * 2 != ame_unit_dtype_size then ame_unsupported_result()
-  else if pack_factor != 2 then ame_unsupported_result()
-  else if not(ame_check_mreg_group(md, ame_nregs(dest_size))) then false
-  else if not(ame_check_mreg_group(ms1, 1)) then false
+if not(ame_unpack_accepts(md_dtype, ms1_dtype)) then
+    return ame_unsupported_result();
+
+  if not(ame_check_mreg_group(md, ame_nregs(dest_size))) |
+     not(ame_check_mreg_group(ms1, 1))
+  then false
   else {
-    let slot : nat = unsigned(slot_selector) % pack_factor;
+    let slot : nat = unsigned(slot_selector) % max(1, pack_factor);
     let src_data = read_m_square_rm(ms1_dtype, ms1);
     var dest_data : bits(acclen) = zeros();
 
