@@ -107,6 +107,23 @@ function ame_fp32_elem(value : bits(ame_max_dtype_size)) -> bits_S =
 function ame_fp32_result(value : bits_S) -> bits(ame_max_dtype_size) =
   zero_extend(ame_max_dtype_size, value)
 
+// Format-independent IEEE classification.  Every binary interchange format
+// carries the same three fields in the same order, so the *rule* lives here
+// once and each format only states where its fields are; a format that is
+// added later cannot invent its own NaN rule.
+val ame_fp_is_nan : forall 'e 'f, 'e >= 1 & 'f >= 1. (bits('e), bits('f)) -> bool
+function ame_fp_is_nan(exp_field, frac_field) =
+  exp_field == ones() & frac_field != zeros()
+
+val ame_fp_is_snan : forall 'e 'f, 'e >= 1 & 'f >= 1.
+  (bits('e), bits('f), bit) -> bool
+function ame_fp_is_snan(exp_field, frac_field, quiet_bit) =
+  ame_fp_is_nan(exp_field, frac_field) & quiet_bit == 0b0
+
+val ame_fp_is_zero : forall 'e 'f, 'e >= 1 & 'f >= 1. (bits('e), bits('f)) -> bool
+function ame_fp_is_zero(exp_field, frac_field) =
+  exp_field == zeros() & frac_field == zeros()
+
 function ame_fp32_abs(value : bits_S) -> bits_S =
   [value with 31 = 0b0]
 
@@ -114,13 +131,13 @@ function ame_fp32_negate(value : bits_S) -> bits_S =
   [value with 31 = not_bit(value[31])]
 
 function ame_fp32_is_nan(value : bits_S) -> bool =
-  value[30 .. 23] == ones() & value[22 .. 0] != zeros()
+  ame_fp_is_nan(value[30 .. 23], value[22 .. 0])
 
 function ame_fp32_is_snan(value : bits_S) -> bool =
-  ame_fp32_is_nan(value) & value[22] == 0b0
+  ame_fp_is_snan(value[30 .. 23], value[22 .. 0], value[22])
 
 function ame_fp32_is_neg_zero(value : bits_S) -> bool =
-  value[31] == 0b1 & value[30 .. 23] == zeros() & value[22 .. 0] == zeros()
+  value[31] == 0b1 & ame_fp_is_zero(value[30 .. 23], value[22 .. 0])
 
 function ame_fp64_is_zero(value : bits_D) -> bool =
   value[62 .. 52] == zeros() & value[51 .. 0] == zeros()
@@ -134,7 +151,7 @@ function ame_transcendental_inexact_flags(exact_input : bool) -> bits_fflags =
   if exact_input then zeros() else 0b00001
 
 function ame_fp32_is_pos_zero(value : bits_S) -> bool =
-  value[31] == 0b0 & value[30 .. 23] == zeros() & value[22 .. 0] == zeros()
+  value[31] == 0b0 & ame_fp_is_zero(value[30 .. 23], value[22 .. 0])
 
 function ame_fp32_canonical_nan() -> bits_S =
   0x7FC00000
@@ -170,10 +187,10 @@ function ame_fp32_fmax(ms1_val : bits_S, ms2_val : bits_S) -> (bits_fflags, bits
 }
 
 function ame_fp16_is_nan(value : bits_H) -> bool =
-  value[14 .. 10] == ones() & value[9 .. 0] != zeros()
+  ame_fp_is_nan(value[14 .. 10], value[9 .. 0])
 
 function ame_fp16_is_snan(value : bits_H) -> bool =
-  ame_fp16_is_nan(value) & value[9] == 0b0
+  ame_fp_is_snan(value[14 .. 10], value[9 .. 0], value[9])
 
 function ame_fp16_is_neg_zero(value : bits_H) -> bool =
   value == 0x8000
@@ -210,10 +227,10 @@ function ame_fp16_fmax(ms1_val : bits_H, ms2_val : bits_H) -> (bits_fflags, bits
 }
 
 function ame_fp64_is_nan(value : bits_D) -> bool =
-  value[62 .. 52] == ones() & value[51 .. 0] != zeros()
+  ame_fp_is_nan(value[62 .. 52], value[51 .. 0])
 
 function ame_fp64_is_snan(value : bits_D) -> bool =
-  ame_fp64_is_nan(value) & value[51] == 0b0
+  ame_fp_is_snan(value[62 .. 52], value[51 .. 0], value[51])
 
 function ame_fp64_is_neg_zero(value : bits_D) -> bool =
   value == 0x8000000000000000
@@ -363,16 +380,16 @@ function ame_float_overflow_to_inf(sign : bits(1), rm : bits_rm) -> bool =
   (rm == 0b010 & sign == 0b1)   // RDN
 
 function ame_bf16_is_nan(value : bits_BF16) -> bool =
-  value[14 .. 7] == ones() & value[6 .. 0] != zeros()
+  ame_fp_is_nan(value[14 .. 7], value[6 .. 0])
 
 function ame_bf16_is_snan(value : bits_BF16) -> bool =
-  ame_bf16_is_nan(value) & value[6] == 0b0
+  ame_fp_is_snan(value[14 .. 7], value[6 .. 0], value[6])
 
 function ame_bf16_is_inf(value : bits_BF16) -> bool =
   value[14 .. 7] == ones() & value[6 .. 0] == zeros()
 
 function ame_bf16_is_zero(value : bits_BF16) -> bool =
-  value[14 .. 7] == zeros() & value[6 .. 0] == zeros()
+  ame_fp_is_zero(value[14 .. 7], value[6 .. 0])
 
 // Decode a finite bf16 into `value = significand * 2 ^ exponent`.
 function ame_bf16_significand_exponent(value : bits_BF16) -> (int, int) = {
