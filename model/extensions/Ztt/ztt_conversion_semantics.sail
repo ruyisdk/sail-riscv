@@ -4,16 +4,22 @@ function ame_convert_integer_elem(ms1_dtype : bits(32), ms1_val : bits(ame_max_d
   -> bits(ame_max_dtype_size) =
   to_bits_unsafe(ame_max_dtype_size, ame_elem_int(ms1_dtype, ms1_val))
 
+// mconv.ew converts between integer squares; a zero-sized or non-integer
+// datatype on either side is not a tuple this instruction covers.
+function ame_mconv_accepts(md_dtype : bits(32), ms1_dtype : bits(32)) -> bool =
+  ame_dtype_size(md_dtype) != 0 &
+  ame_dtype_size(ms1_dtype) != 0 &
+  ame_is_integer(md_dtype) &
+  ame_is_integer(ms1_dtype)
+
 function ame_mconv_ew(md_dtype : bits(32), ms1_dtype : bits(32),
                       md : ameregidx, ms1 : ameregidx) -> bool = {
-  let dest_size = ame_dtype_size(md_dtype);
-  let src_size = ame_dtype_size(ms1_dtype);
   let nsq = ame_nsq2(md_dtype, ms1_dtype);
 
-  if dest_size == 0 | src_size == 0 then ame_unsupported_result()
-  else if not(ame_is_integer(md_dtype) & ame_is_integer(ms1_dtype)) then ame_unsupported_result()
-  else if not(ame_check_formed_operand(md, md_dtype, nsq)) then false
-  else if not(ame_check_formed_operand(ms1, ms1_dtype, nsq)) then false
+  if not(ame_mconv_accepts(md_dtype, ms1_dtype)) then
+    return ame_unsupported_result();
+
+  if not(ame_unary_formed(nsq, md, md_dtype, ms1, ms1_dtype)) then false
   else {
     let snapshot = ame_snapshot_mregs();
     var saturated : bits(1) = 0b0;

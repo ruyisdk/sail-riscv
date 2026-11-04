@@ -180,9 +180,11 @@ function ame_coordinate_id_ew(dtype : bits(32), md : ameregidx,
   let size = ame_dtype_size(dtype);
   let nregs = ame_nregs(size);
 
-  if not(ame_valid_int_ew_dtype(dtype)) then ame_unsupported_result()
-  else if (ame_nlen - 1) > ame_int_max_value(dtype) then ame_unsupported_result()
-  else if not(ame_check_mreg_group(md, nregs)) then false
+  if not(ame_valid_int_ew_dtype(dtype)) |
+     (ame_nlen - 1) > ame_int_max_value(dtype)
+  then return ame_unsupported_result();
+
+  if not(ame_check_mreg_group(md, nregs)) then false
   else {
     var dest_data : bits(acclen) = zeros();
     foreach (row from 0 to (ame_nlen - 1)) {
