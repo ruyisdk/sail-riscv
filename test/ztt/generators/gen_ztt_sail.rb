@@ -1269,19 +1269,33 @@ DISTINCT_M_REGISTER_PAIRS = {
 # Architectural operand validation must happen before any descriptor or data
 # state is read.  Keep it in the emitter so a regenerated execute file cannot
 # accidentally restore the old, helper-dependent validation order.
+# V-extension style: one guard block with `|`-joined conditions and a single
+# Illegal_Instruction() return, instead of one `if ... then return` per check.
+def render_illegal_guards(conditions)
+  return [] if conditions.empty?
+
+  lines = conditions.each_with_index.map do |condition, index|
+    separator = index == conditions.length - 1 ? "" : " |"
+    index.zero? ? "  if #{condition}#{separator}" : "     #{condition}#{separator}"
+  end
+  lines << "  then return Illegal_Instruction();"
+  lines << ""
+  lines
+end
+
 def first_stage_index_checks(inst)
   names = inst[:variables].map(&:name)
-  checks = names.grep(/\A(?:#{M_REGISTER_OPERANDS.join('|')})\z/).map do |name|
-    "  if not(ame_check_mreg_operand(#{name})) then return Illegal_Instruction();"
+  conditions = names.grep(/\A(?:#{M_REGISTER_OPERANDS.join('|')})\z/).map do |name|
+    "not(ame_check_mreg_operand(#{name}))"
   end
-  checks.concat(names.grep(/\A(?:#{ACC_REGISTER_OPERANDS.join('|')})\z/).map do |name|
-    "  if not(ame_check_acc_reg_operand(#{name})) then return Illegal_Instruction();"
+  conditions.concat(names.grep(/\A(?:#{ACC_REGISTER_OPERANDS.join('|')})\z/).map do |name|
+    "not(ame_check_acc_reg_operand(#{name}))"
   end)
 
   if (pair = DISTINCT_M_REGISTER_PAIRS[inst[:name]])
-    checks << "  if #{pair[0]} == #{pair[1]} then return Illegal_Instruction();"
+    conditions << "#{pair[0]} == #{pair[1]}"
   end
-  checks
+  render_illegal_guards(conditions)
 end
 
 def instruction_family(inst)
@@ -1469,24 +1483,24 @@ def family_common_checks(family, entries)
   names = entries.map { |inst| inst.fetch(:name) }
 
   unless names.all? { |name| BACKEND_MANAGEMENT_INSTRUCTIONS.include?(name) }
-    checks << "  if not(ame_context_owned()) then return Illegal_Instruction();"
+    checks << "not(ame_context_owned())"
   end
   if names.any? { |name| CONTEXT_ENABLED_INSTRUCTIONS.include?(name) }
-    checks << "  if not(ame_context_enabled()) then return Illegal_Instruction();"
+    checks << "not(ame_context_enabled())"
   end
 
   definition.fetch(:arguments).zip(signature).each do |argument, role|
     if role == "md" || role == "ms"
-      checks << "  if not(ame_check_mreg_operand(#{argument})) then return Illegal_Instruction();"
+      checks << "not(ame_check_mreg_operand(#{argument}))"
     elsif %w[ad as].include?(role)
-      checks << "  if not(ame_check_acc_reg_operand(#{argument})) then return Illegal_Instruction();"
+      checks << "not(ame_check_acc_reg_operand(#{argument}))"
     end
   end
 
   if layout_name == :r3_pair && entries.all? { |inst| DISTINCT_M_REGISTER_PAIRS.key?(inst.fetch(:name)) }
-    checks << "  if ms1 == ms2 then return Illegal_Instruction();"
+    checks << "ms1 == ms2"
   end
-  checks
+  render_illegal_guards(checks)
 end
 
 def emit_family(family, entries, include_execute:)

@@ -41,9 +41,11 @@ mapping clause assembly = PERM_R3_MD_XS_MS_TYPE(op, rd, rs1, rs2)
   <-> perm_r3funct7_md_xs_ms_assembly(op, rd, rs1, rs2)
 
 function clause execute PERM_R3_MD_XS_MS_TYPE(op, rd, rs1, rs2) = {
-  if not(ame_context_owned()) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(rd)) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(rs2)) then return Illegal_Instruction();
+  if not(ame_context_owned()) |
+     not(ame_check_mreg_operand(rd)) |
+     not(ame_check_mreg_operand(rs2))
+  then return Illegal_Instruction();
+
   match op {
     AME_MCOLBCAST_EW_X => ame_retire_if(ame_broadcast_axis_ew(MD(Mdregidx(rd)), MD(Mdregidx(rs2)), Ameregidx(rd), Ameregidx(rs2), X(Regidx(trunc(rs1))), false)),
     AME_MCOLSHIFT_EW_X => ame_retire_if(ame_shift_axis_ew(MD(Mdregidx(rd)), MD(Mdregidx(rs2)), Ameregidx(rd), Ameregidx(rs2), signed(X(Regidx(trunc(rs1)))[31..0]), false)),
@@ -117,10 +119,12 @@ mapping clause assembly = PERM_R3_MD_MS_MS_TYPE(op, rd, rs1, rs2)
   <-> perm_r3funct7_md_ms_ms_assembly(op, rd, rs1, rs2)
 
 function clause execute PERM_R3_MD_MS_MS_TYPE(op, rd, rs1, rs2) = {
-  if not(ame_context_owned()) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(rd)) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(rs1)) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(rs2)) then return Illegal_Instruction();
+  if not(ame_context_owned()) |
+     not(ame_check_mreg_operand(rd)) |
+     not(ame_check_mreg_operand(rs1)) |
+     not(ame_check_mreg_operand(rs2))
+  then return Illegal_Instruction();
+
   match op {
     AME_MCOLGATHER_EW => ame_retire_if(ame_gather_ew(MD(Mdregidx(rd)), MD(Mdregidx(rs1)), MD(Mdregidx(rs2)), Ameregidx(rd), Ameregidx(rs1), Ameregidx(rs2), false)),
     AME_MROWGATHER_EW => ame_retire_if(ame_gather_ew(MD(Mdregidx(rd)), MD(Mdregidx(rs1)), MD(Mdregidx(rs2)), Ameregidx(rd), Ameregidx(rs1), Ameregidx(rs2), true)),
@@ -164,10 +168,12 @@ mapping clause assembly = PERM_R3PAIR_MS_MS_TYPE(op, ms1, ms2)
   <-> perm_r3pairfunct7_ms_ms_assembly(op, ms1, ms2)
 
 function clause execute PERM_R3PAIR_MS_MS_TYPE(op, ms1, ms2) = {
-  if not(ame_context_owned()) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(ms1)) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(ms2)) then return Illegal_Instruction();
-  if ms1 == ms2 then return Illegal_Instruction();
+  if not(ame_context_owned()) |
+     not(ame_check_mreg_operand(ms1)) |
+     not(ame_check_mreg_operand(ms2)) |
+     ms1 == ms2
+  then return Illegal_Instruction();
+
   match op {
     AME_MCOLUNZIP_EW => ame_retire_if(ame_pair_permute_ew(MD(Mdregidx(ms1)), MD(Mdregidx(ms2)), Ameregidx(ms1), Ameregidx(ms2), AME_PAIR_COL_UNZIP)),
     AME_MCOLZIP_EW => ame_retire_if(ame_pair_permute_ew(MD(Mdregidx(ms1)), MD(Mdregidx(ms2)), Ameregidx(ms1), Ameregidx(ms2), AME_PAIR_COL_ZIP)),
@@ -212,8 +218,10 @@ mapping clause assembly = PERM_R3_MD_XS_XS_TYPE(op, rd, rs1, rs2)
   <-> perm_r3funct7_md_xs_xs_assembly(op, rd, rs1, rs2)
 
 function clause execute PERM_R3_MD_XS_XS_TYPE(op, rd, rs1, rs2) = {
-  if not(ame_context_owned()) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(rd)) then return Illegal_Instruction();
+  if not(ame_context_owned()) |
+     not(ame_check_mreg_operand(rd))
+  then return Illegal_Instruction();
+
   match op {
     AME_MBCAST_M_X => {
       let md_dtype : bits(32) = MD(Mdregidx(rd));
@@ -266,8 +274,10 @@ mapping clause assembly = PERM_R3_XD_MS_XS_TYPE(op, rd, rs1, rs2)
   <-> perm_r3funct7_xd_ms_xs_assembly(op, rd, rs1, rs2)
 
 function clause execute PERM_R3_XD_MS_XS_TYPE(op, rd, rs1, rs2) = {
-  if not(ame_context_owned()) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(rs1)) then return Illegal_Instruction();
+  if not(ame_context_owned()) |
+     not(ame_check_mreg_operand(rs1))
+  then return Illegal_Instruction();
+
   match op {
     AME_MMOVE8_X_M => {
       match ame_debug_mmove_read(Ameregidx(rs1), X(Regidx(trunc(rs2))), 8) {
@@ -309,8 +319,10 @@ mapping clause assembly = AME_MCONV_EW(rd, rs1)
   <-> "mconv.ew" ^ spc() ^ amereg_name_raw(rd) ^ sep() ^ amereg_name_raw(rs1)
 
 function clause execute AME_MCONV_EW(rd, rs1) = {
-  if not(ame_context_owned()) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(rd)) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(rs1)) then return Illegal_Instruction();
+  if not(ame_context_owned()) |
+     not(ame_check_mreg_operand(rd)) |
+     not(ame_check_mreg_operand(rs1))
+  then return Illegal_Instruction();
+
   ame_retire_if(ame_mconv_ew(MD(Mdregidx(rd)), MD(Mdregidx(rs1)), Ameregidx(rd), Ameregidx(rs1)))
 }

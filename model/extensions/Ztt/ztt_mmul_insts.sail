@@ -41,10 +41,12 @@ mapping clause assembly = MMUL_R3_AD_MS_MS_TYPE(op, rd, rs1, rs2)
   <-> mmul_r3funct7_ad_ms_ms_assembly(op, rd, rs1, rs2)
 
 function clause execute MMUL_R3_AD_MS_MS_TYPE(op, rd, rs1, rs2) = {
-  if not(ame_context_owned()) then return Illegal_Instruction();
-  if not(ame_check_acc_reg_operand(rd)) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(rs1)) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(rs2)) then return Illegal_Instruction();
+  if not(ame_context_owned()) |
+     not(ame_check_acc_reg_operand(rd)) |
+     not(ame_check_mreg_operand(rs1)) |
+     not(ame_check_mreg_operand(rs2))
+  then return Illegal_Instruction();
+
   match op {
     AME_MMULACC_2D => {
       let md_dtype : bits(32) = AD(Ameadregidx(rd));

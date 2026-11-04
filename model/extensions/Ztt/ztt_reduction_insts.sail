@@ -53,9 +53,11 @@ mapping clause assembly = RED_R2_MD_MS_TYPE(op, rd, rs1)
   <-> red_r2funct12_md_ms_assembly(op, rd, rs1)
 
 function clause execute RED_R2_MD_MS_TYPE(op, rd, rs1) = {
-  if not(ame_context_owned()) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(rd)) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(rs1)) then return Illegal_Instruction();
+  if not(ame_context_owned()) |
+     not(ame_check_mreg_operand(rd)) |
+     not(ame_check_mreg_operand(rs1))
+  then return Illegal_Instruction();
+
   match op {
     AME_MPREFIXADD_COL => ame_retire_if(ame_prefix_ew(MD(Mdregidx(rd)), MD(Mdregidx(rs1)), Ameregidx(rd), Ameregidx(rs1), AME_INT_REDUCE_ADD, false)),
     AME_MPREFIXADD_ROW => ame_retire_if(ame_prefix_ew(MD(Mdregidx(rd)), MD(Mdregidx(rs1)), Ameregidx(rd), Ameregidx(rs1), AME_INT_REDUCE_ADD, true)),

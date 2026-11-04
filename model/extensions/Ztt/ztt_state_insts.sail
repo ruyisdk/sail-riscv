@@ -32,8 +32,10 @@ mapping clause assembly = STATE_R1_MD_TYPE(op, rd)
   <-> state_r1funct17_md_assembly(op, rd)
 
 function clause execute STATE_R1_MD_TYPE(op, rd) = {
-  if not(ame_context_owned()) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(rd)) then return Illegal_Instruction();
+  if not(ame_context_owned()) |
+     not(ame_check_mreg_operand(rd))
+  then return Illegal_Instruction();
+
   match op {
     AME_MCOLID_EW => ame_retire_if(ame_coordinate_id_ew(MD(Mdregidx(rd)), Ameregidx(rd), false)),
     AME_MROWID_EW => ame_retire_if(ame_coordinate_id_ew(MD(Mdregidx(rd)), Ameregidx(rd), true)),
@@ -66,9 +68,11 @@ mapping clause assembly = AME_MMOV_M_A(rd, rs1)
   <-> "mmov.m.a" ^ spc() ^ amereg_name_raw(rd) ^ sep() ^ ameaccreg_name_raw(rs1)
 
 function clause execute AME_MMOV_M_A(rd, rs1) = {
-  if not(ame_context_owned()) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(rd)) then return Illegal_Instruction();
-  if not(ame_check_acc_reg_operand(rs1)) then return Illegal_Instruction();
+  if not(ame_context_owned()) |
+     not(ame_check_mreg_operand(rd)) |
+     not(ame_check_acc_reg_operand(rs1))
+  then return Illegal_Instruction();
+
   let md_dtype : bits(32) = MD(Mdregidx(rd));
   let ms1_dtype : bits(32) = AD(Ameadregidx(rs1));
   let dest_size = ame_dtype_size(md_dtype);
@@ -109,9 +113,11 @@ mapping clause assembly = AME_MMOV_A_M(rd, rs1)
   <-> "mmov.a.m" ^ spc() ^ ameaccreg_name_raw(rd) ^ sep() ^ amereg_name_raw(rs1)
 
 function clause execute AME_MMOV_A_M(rd, rs1) = {
-  if not(ame_context_owned()) then return Illegal_Instruction();
-  if not(ame_check_acc_reg_operand(rd)) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(rs1)) then return Illegal_Instruction();
+  if not(ame_context_owned()) |
+     not(ame_check_acc_reg_operand(rd)) |
+     not(ame_check_mreg_operand(rs1))
+  then return Illegal_Instruction();
+
   let md_dtype : bits(32) = AD(Ameadregidx(rd));
   let ms1_dtype : bits(32) = MD(Mdregidx(rs1));
   let dest_size = ame_dtype_size(md_dtype);
@@ -152,9 +158,11 @@ mapping clause assembly = AME_MMOV_M_M(rd, rs1)
   <-> "mmov.m.m" ^ spc() ^ amereg_name_raw(rd) ^ sep() ^ amereg_name_raw(rs1)
 
 function clause execute AME_MMOV_M_M(rd, rs1) = {
-  if not(ame_context_owned()) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(rd)) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(rs1)) then return Illegal_Instruction();
+  if not(ame_context_owned()) |
+     not(ame_check_mreg_operand(rd)) |
+     not(ame_check_mreg_operand(rs1))
+  then return Illegal_Instruction();
+
   let md_dtype : bits(32) = MD(Mdregidx(rd));
   let ms1_dtype : bits(32) = MD(Mdregidx(rs1));
   let dest_size = ame_dtype_size(md_dtype);
@@ -183,8 +191,10 @@ mapping clause assembly = AME_MZERO_2D_ACC(rd)
   <-> "mzero.2d.acc" ^ spc() ^ ameaccreg_name_raw(rd)
 
 function clause execute AME_MZERO_2D_ACC(rd) = {
-  if not(ame_context_owned()) then return Illegal_Instruction();
-  if not(ame_check_acc_reg_operand(rd)) then return Illegal_Instruction();
+  if not(ame_context_owned()) |
+     not(ame_check_acc_reg_operand(rd))
+  then return Illegal_Instruction();
+
   let dtype : bits(32) = AD(Ameadregidx(rd));
   if not(ame_datatype_supported(dtype)) then {
     ame_set_unsupported();

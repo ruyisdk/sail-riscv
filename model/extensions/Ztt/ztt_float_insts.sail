@@ -59,9 +59,11 @@ mapping clause assembly = FP_FR2_MD_MS_TYPE(op, rd, rs1)
   <-> fp_fpr2funct12_md_ms_assembly(op, rd, rs1)
 
 function clause execute FP_FR2_MD_MS_TYPE(op, rd, rs1) = {
-  if not(ame_context_owned()) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(rd)) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(rs1)) then return Illegal_Instruction();
+  if not(ame_context_owned()) |
+     not(ame_check_mreg_operand(rd)) |
+     not(ame_check_mreg_operand(rs1))
+  then return Illegal_Instruction();
+
   match op {
     AME_MCOS_EW => ame_retire_if(ame_ew_float_math(MD(Mdregidx(rd)), MD(Mdregidx(rs1)), Ameregidx(rd), Ameregidx(rs1), AME_FLOAT_COS)),
     AME_MEXP2_EW => ame_retire_if(ame_ew_float_math(MD(Mdregidx(rd)), MD(Mdregidx(rs1)), Ameregidx(rd), Ameregidx(rs1), AME_FLOAT_EXP2)),
@@ -105,10 +107,12 @@ mapping clause assembly = FP_FR3_MD_MS_MS_TYPE(op, rd, rs1, rs2)
   <-> fp_fpr3funct7_md_ms_ms_assembly(op, rd, rs1, rs2)
 
 function clause execute FP_FR3_MD_MS_MS_TYPE(op, rd, rs1, rs2) = {
-  if not(ame_context_owned()) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(rd)) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(rs1)) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(rs2)) then return Illegal_Instruction();
+  if not(ame_context_owned()) |
+     not(ame_check_mreg_operand(rd)) |
+     not(ame_check_mreg_operand(rs1)) |
+     not(ame_check_mreg_operand(rs2))
+  then return Illegal_Instruction();
+
   match op {
     AME_MLOG2SUB_EW => ame_retire_if(ame_logexp_binary_m(MD(Mdregidx(rd)), MD(Mdregidx(rs1)), MD(Mdregidx(rs2)), Ameregidx(rd), Ameregidx(rs1), Ameregidx(rs2), AME_INT_LOG2SUB)),
     AME_MSUBLOG2_EW => ame_retire_if(ame_logexp_binary_m(MD(Mdregidx(rd)), MD(Mdregidx(rs1)), MD(Mdregidx(rs2)), Ameregidx(rd), Ameregidx(rs1), Ameregidx(rs2), AME_INT_SUBLOG2)),
@@ -142,9 +146,11 @@ mapping clause assembly = FP_FR3_MD_XS_MS_TYPE(op, rd, rs1, rs2)
   <-> fp_fpr3funct7_md_xs_ms_assembly(op, rd, rs1, rs2)
 
 function clause execute FP_FR3_MD_XS_MS_TYPE(op, rd, rs1, rs2) = {
-  if not(ame_context_owned()) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(rd)) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(rs2)) then return Illegal_Instruction();
+  if not(ame_context_owned()) |
+     not(ame_check_mreg_operand(rd)) |
+     not(ame_check_mreg_operand(rs2))
+  then return Illegal_Instruction();
+
   match op {
     AME_MLOG2SUB_EW_X => ame_retire_if(ame_logexp_binary_x(MD(Mdregidx(rd)), MD(Mdregidx(rs2)), Ameregidx(rd), X(Regidx(trunc(rs1))), Ameregidx(rs2), AME_INT_LOG2SUB)),
     AME_MSUBLOG2_EW_X => ame_retire_if(ame_logexp_binary_x(MD(Mdregidx(rd)), MD(Mdregidx(rs2)), Ameregidx(rd), X(Regidx(trunc(rs1))), Ameregidx(rs2), AME_INT_SUBLOG2)),

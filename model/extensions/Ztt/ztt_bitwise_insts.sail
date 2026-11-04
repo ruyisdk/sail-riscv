@@ -47,10 +47,12 @@ mapping clause assembly = BIT_R3_MD_MS_MS_TYPE(op, rd, rs1, rs2)
   <-> bit_r3funct7_md_ms_ms_assembly(op, rd, rs1, rs2)
 
 function clause execute BIT_R3_MD_MS_MS_TYPE(op, rd, rs1, rs2) = {
-  if not(ame_context_owned()) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(rd)) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(rs1)) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(rs2)) then return Illegal_Instruction();
+  if not(ame_context_owned()) |
+     not(ame_check_mreg_operand(rd)) |
+     not(ame_check_mreg_operand(rs1)) |
+     not(ame_check_mreg_operand(rs2))
+  then return Illegal_Instruction();
+
   match op {
     AME_MAND_EW => ame_retire_if(ame_ew_binary_m(MD(Mdregidx(rd)), MD(Mdregidx(rs1)), MD(Mdregidx(rs2)), Ameregidx(rd), Ameregidx(rs1), Ameregidx(rs2), AME_INT_AND)),
     AME_MANDNOT_EW => ame_retire_if(ame_ew_binary_m(MD(Mdregidx(rd)), MD(Mdregidx(rs1)), MD(Mdregidx(rs2)), Ameregidx(rd), Ameregidx(rs1), Ameregidx(rs2), AME_INT_ANDNOT)),
@@ -108,9 +110,11 @@ mapping clause assembly = BIT_R3_MD_XS_MS_TYPE(op, rd, rs1, rs2)
   <-> bit_r3funct7_md_xs_ms_assembly(op, rd, rs1, rs2)
 
 function clause execute BIT_R3_MD_XS_MS_TYPE(op, rd, rs1, rs2) = {
-  if not(ame_context_owned()) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(rd)) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(rs2)) then return Illegal_Instruction();
+  if not(ame_context_owned()) |
+     not(ame_check_mreg_operand(rd)) |
+     not(ame_check_mreg_operand(rs2))
+  then return Illegal_Instruction();
+
   match op {
     AME_MAND_EW_X => ame_retire_if(ame_ew_binary_x(MD(Mdregidx(rd)), MD(Mdregidx(rs2)), Ameregidx(rd), X(Regidx(trunc(rs1))), Ameregidx(rs2), AME_INT_AND)),
     AME_MANDNOT_EW_X => ame_retire_if(ame_ew_binary_x(MD(Mdregidx(rd)), MD(Mdregidx(rs2)), Ameregidx(rd), X(Regidx(trunc(rs1))), Ameregidx(rs2), AME_INT_ANDNOT)),

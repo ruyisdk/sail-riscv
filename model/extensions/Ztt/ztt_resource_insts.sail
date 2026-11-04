@@ -14,7 +14,9 @@ mapping clause assembly = AME_AME_ACQUIRE(rd, rs1)
   <-> "ame.acquire" ^ spc() ^ reg_name(encdec_reg(rd)) ^ sep() ^ reg_name(encdec_reg(rs1))
 
 function clause execute AME_AME_ACQUIRE(rd, rs1) = {
-  if not(ame_context_enabled()) then return Illegal_Instruction();
+  if not(ame_context_enabled())
+  then return Illegal_Instruction();
+
   X(Regidx(trunc(rd))) = ame_acquire_backend(X(Regidx(trunc(rs1))));
   RETIRE_SUCCESS
 }

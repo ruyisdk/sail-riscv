@@ -32,8 +32,10 @@ mapping clause assembly = MEM_R2_MD_XS_TYPE(op, rd, rs1)
   <-> mem_r2funct12_md_xs_assembly(op, rd, rs1)
 
 function clause execute MEM_R2_MD_XS_TYPE(op, rd, rs1) = {
-  if not(ame_context_owned()) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(rd)) then return Illegal_Instruction();
+  if not(ame_context_owned()) |
+     not(ame_check_mreg_operand(rd))
+  then return Illegal_Instruction();
+
   match op {
     AME_MLS_1R => {
       let byte_count = mlen / 8;
@@ -73,8 +75,10 @@ mapping clause assembly = MEM_R3_MD_XA_XS_TYPE(op, rd, rs1, rs2)
   <-> mem_r3funct7_md_xa_xs_assembly(op, rd, rs1, rs2)
 
 function clause execute MEM_R3_MD_XA_XS_TYPE(op, rd, rs1, rs2) = {
-  if not(ame_context_owned()) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(rd)) then return Illegal_Instruction();
+  if not(ame_context_owned()) |
+     not(ame_check_mreg_operand(rd))
+  then return Illegal_Instruction();
+
   match op {
     AME_MLS_ST => ame_load_mreg_square_strided_memory(Ameregidx(rd), Regidx(trunc(rs1)), Regidx(trunc(rs2)), false),
     AME_MLS_TST => ame_load_mreg_square_strided_memory(Ameregidx(rd), Regidx(trunc(rs1)), Regidx(trunc(rs2)), true),
@@ -111,8 +115,10 @@ mapping clause assembly = MEM_R2_MS_XS_TYPE(op, rd, rs1)
   <-> mem_r2funct12_ms_xs_assembly(op, rd, rs1)
 
 function clause execute MEM_R2_MS_XS_TYPE(op, rd, rs1) = {
-  if not(ame_context_owned()) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(rd)) then return Illegal_Instruction();
+  if not(ame_context_owned()) |
+     not(ame_check_mreg_operand(rd))
+  then return Illegal_Instruction();
+
   match op {
     AME_MSS_1R => {
       let byte_count = mlen / 8;
@@ -152,8 +158,10 @@ mapping clause assembly = MEM_R3_MS_XA_XS_TYPE(op, rd, rs1, rs2)
   <-> mem_r3funct7_ms_xa_xs_assembly(op, rd, rs1, rs2)
 
 function clause execute MEM_R3_MS_XA_XS_TYPE(op, rd, rs1, rs2) = {
-  if not(ame_context_owned()) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(rd)) then return Illegal_Instruction();
+  if not(ame_context_owned()) |
+     not(ame_check_mreg_operand(rd))
+  then return Illegal_Instruction();
+
   match op {
     AME_MSS_ST => ame_store_mreg_square_strided_memory(Ameregidx(rd), Regidx(trunc(rs1)), Regidx(trunc(rs2)), false),
     AME_MSS_TST => ame_store_mreg_square_strided_memory(Ameregidx(rd), Regidx(trunc(rs1)), Regidx(trunc(rs2)), true),

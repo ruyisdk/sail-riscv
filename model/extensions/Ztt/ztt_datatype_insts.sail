@@ -14,8 +14,10 @@ mapping clause assembly = AME_AGETTYP(rd, rs1)
   <-> "agettyp" ^ spc() ^ reg_name(encdec_reg(rd)) ^ sep() ^ ameaccreg_name_raw(rs1)
 
 function clause execute AME_AGETTYP(rd, rs1) = {
-  if not(ame_context_owned()) then return Illegal_Instruction();
-  if not(ame_check_acc_reg_operand(rs1)) then return Illegal_Instruction();
+  if not(ame_context_owned()) |
+     not(ame_check_acc_reg_operand(rs1))
+  then return Illegal_Instruction();
+
   X(Regidx(trunc(rd))) = zero_extend(AD(Ameadregidx(rs1)));
   RETIRE_SUCCESS
 }
@@ -32,8 +34,10 @@ mapping clause assembly = AME_ASETTYP(rd, rs1)
   <-> "asettyp" ^ spc() ^ ameaccreg_name_raw(rd) ^ sep() ^ reg_name(encdec_reg(rs1))
 
 function clause execute AME_ASETTYP(rd, rs1) = {
-  if not(ame_context_owned()) then return Illegal_Instruction();
-  if not(ame_check_acc_reg_operand(rd)) then return Illegal_Instruction();
+  if not(ame_context_owned()) |
+     not(ame_check_acc_reg_operand(rd))
+  then return Illegal_Instruction();
+
   let dtype : bits(32) = X(Regidx(trunc(rs1)))[31..0];
   if not(ame_datatype_supported(dtype)) then {
     ame_set_unsupported();
@@ -57,8 +61,10 @@ mapping clause assembly = AME_MGETTYP(rd, rs1)
   <-> "mgettyp" ^ spc() ^ reg_name(encdec_reg(rd)) ^ sep() ^ amereg_name_raw(rs1)
 
 function clause execute AME_MGETTYP(rd, rs1) = {
-  if not(ame_context_owned()) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(rs1)) then return Illegal_Instruction();
+  if not(ame_context_owned()) |
+     not(ame_check_mreg_operand(rs1))
+  then return Illegal_Instruction();
+
   X(Regidx(trunc(rd))) = zero_extend(MD(Mdregidx(rs1)));
   RETIRE_SUCCESS
 }
@@ -75,8 +81,10 @@ mapping clause assembly = AME_MSETTYP(rd, rs1)
   <-> "msettyp" ^ spc() ^ amereg_name_raw(rd) ^ sep() ^ reg_name(encdec_reg(rs1))
 
 function clause execute AME_MSETTYP(rd, rs1) = {
-  if not(ame_context_owned()) then return Illegal_Instruction();
-  if not(ame_check_mreg_operand(rd)) then return Illegal_Instruction();
+  if not(ame_context_owned()) |
+     not(ame_check_mreg_operand(rd))
+  then return Illegal_Instruction();
+
   let dtype : bits(32) = X(Regidx(trunc(rs1)))[31..0];
   if not(ame_datatype_supported(dtype)) then {
     ame_set_unsupported();
