@@ -21,7 +21,6 @@ require_relative "manual_instruction_data"
 
 MACHINE_READABLE_ROOT = Pathname.new(__FILE__).dirname.parent.expand_path
 DEFAULT_OUT_DIR = MACHINE_READABLE_ROOT.parent.parent / "model/extensions/Ztt"
-SEMANTIC_SOURCE_DIR = MACHINE_READABLE_ROOT / "generators/sail_semantics"
 IMPLEMENTED_INSTRUCTIONS_FILE = MACHINE_READABLE_ROOT / "manual-main/implemented-instructions.json"
 IMPLEMENTED_INSTRUCTIONS = JSON.parse(IMPLEMENTED_INSTRUCTIONS_FILE.read)
   .fetch("instructions")
@@ -462,7 +461,7 @@ CATEGORY_CODES = {
 # The manual's "Register move / data conversion" category stays folded into the
 # Permutation Sail file: its instructions already form separate
 # operand-signature families (mconv, mmove*, mpack/munpack, mbcast) there and
-# their semantics live in sail_semantics/ztt_conversion.sail.  Keep the fold
+# their semantics live in ztt_conversion_semantics.sail.  Keep the fold
 # explicit so the importer can record manual category names verbatim.
 CATEGORY_ALIASES = {
   "Register move / data conversion" => "Permutation"
@@ -491,21 +490,6 @@ FLOAT_ONLY_INSTRUCTIONS = %w[
   msublog2.ew.x
   mtanh.ew
 ].to_set.freeze
-
-# Sail follows the V-extension convention of keeping instruction encodings and
-# their execution semantics in the same category file.  These source
-# fragments are inserted before the generated encoding clauses.  They remain
-# separate generator inputs so regeneration cannot overwrite reviewed semantic
-# code while the model still presents one file per instruction category.
-SEMANTIC_SOURCES = {
-  "Floating Point" => %w[ztt_float.sail],
-  "Elementwise Arithmetic" => %w[ztt_arithmetic.sail],
-  "Bitwise" => %w[ztt_bitwise.sail],
-  "Compare and Predication" => %w[ztt_compare.sail],
-  "Permutation" => %w[ztt_conversion.sail ztt_permutation.sail],
-  "Matrix Multiply" => %w[ztt_matrix.sail],
-  "Reduction" => %w[ztt_reduction.sail]
-}.freeze
 
 # The AME encoding uses a small number of fixed layouts.  Keep one union
 # constructor per semantic category, layout, and operand-role signature, like
@@ -618,15 +602,6 @@ def family_comment(family)
   category, layout, signature = family_parts(family)
   category_name = category == :fp ? "Floating Point" : category.to_s.tr("_", " ").split.map(&:capitalize).join(" ")
   "#{category_name}: #{layout.to_s.upcase}(#{signature.join(', ')}) instruction family"
-end
-
-def semantic_source_text(category)
-  SEMANTIC_SOURCES.fetch(category, []).map do |filename|
-    path = SEMANTIC_SOURCE_DIR / filename
-    raise "missing Ztt semantic source: #{path}" unless path.file?
-
-    path.read.rstrip
-  end.join("\n\n")
 end
 
 def retire_if_true(call)
@@ -1693,13 +1668,6 @@ category_texts = category_order.to_h do |category|
     include_execute ? "#{category} instruction families generated from the manual instruction snapshot." :
                       "#{category} encodings generated without execute clauses."
   )
-  semantic_text = include_execute ? semantic_source_text(category) : ""
-  unless semantic_text.empty?
-    category_lines << "// Hand-written execution semantics for this instruction category."
-    category_lines << ""
-    category_lines.concat(semantic_text.lines(chomp: true))
-    category_lines << ""
-  end
   family_order.select { |family| family_parts(family).first.to_s == category_code(category) }.each do |family|
     entries = family_entries.fetch(family).select { |inst| instruction_category(inst) == category }
     category_lines.concat(emit_family(family, entries, include_execute: include_execute)) unless entries.empty?

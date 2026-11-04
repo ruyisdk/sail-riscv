@@ -355,8 +355,20 @@ extensions {
         extensions/Ztt/ztt_float_logexp_utils.sail,
         extensions/Ztt/ztt_backend_utils.sail
     }
+    Ztt_semantics {
+      requires Ztt_types, Ztt_regs, Ztt_utils
+      files
+        extensions/Ztt/ztt_float_semantics.sail,
+        extensions/Ztt/ztt_arithmetic_semantics.sail,
+        extensions/Ztt/ztt_bitwise_semantics.sail,
+        extensions/Ztt/ztt_compare_semantics.sail,
+        extensions/Ztt/ztt_conversion_semantics.sail,
+        extensions/Ztt/ztt_permutation_semantics.sail,
+        extensions/Ztt/ztt_matrix_semantics.sail,
+        extensions/Ztt/ztt_reduction_semantics.sail
+    }
     Ztt_insts {
-      requires sys, exceptions, FD_core, Ztt_types, Ztt_regs, Ztt_utils
+      requires sys, exceptions, FD_core, Ztt_types, Ztt_regs, Ztt_utils, Ztt_semantics
       files
         extensions/Ztt/ztt_insts_common.sail,
         extensions/Ztt/ztt_resource_insts.sail,
@@ -648,7 +660,7 @@ postlude {
 
 unit_tests {
   after postlude
-  requires prelude, core, sys, exceptions, postlude, Ztt_types, Ztt_regs, Ztt_utils, Ztt_insts
+  requires prelude, core, sys, exceptions, postlude, Ztt_types, Ztt_regs, Ztt_utils, Ztt_semantics, Ztt_insts
 
   files
     unit_tests/test_mstatus.sail,
