@@ -692,115 +692,275 @@ function ame_ew_unary_m(md_dtype : bits(32), ms1_dtype : bits(32),
   }
 }
 
-function ame_logexp_binary_m(md_dtype : bits(32), ms1_dtype : bits(32),
-                             ms2_dtype : bits(32), md : ameregidx,
-                             ms1 : ameregidx, ms2 : ameregidx,
-                             op : ame_int_logexp_op) -> bool = {
-  let dest_size = ame_dtype_size(md_dtype);
-  let src1_size = ame_dtype_size(ms1_dtype);
-  let src2_size = ame_dtype_size(ms2_dtype);
-  let nsq = max(ame_pack_factor(dest_size),
-                max(ame_pack_factor(src1_size), ame_pack_factor(src2_size)));
+/* The log/exp family is the one place where an instruction mixes an integer
+   operand into a floating-point computation: mldexp* takes its exponent from
+   the integer operand, mlog2sub/msublog2 take a bias that may be either a
+   same-format float square or a standard integer square (§6.2.2).  The family
+   therefore has three execution shapes, each with its own acceptance
+   predicate. */
 
-  let ldexp_float =
-    (op == AME_INT_LDEXP | op == AME_INT_LDEXPACC |
-     op == AME_INT_RDEXP | op == AME_INT_RDEXPACC) &
-    ame_valid_softfloat_ew_dtype(md_dtype) & ame_valid_softfloat_ew_dtype(ms1_dtype) &
-    ame_valid_int_elementwise_dtype(ms2_dtype) & ame_same_float_format2(md_dtype, ms1_dtype);
-  // §6.2.2 leaves only the log2 operand and the destination floating-point for
-  // mlog2sub/msublog2; the bias may be a standard integer square instead of a
-  // same-format float square (see ame_int_bias_to_f32 for the conversion).
-  let log2bias_int_bias =
-    ame_valid_int_elementwise_dtype(ms2_dtype) & ame_dtype_size(ms2_dtype) <= 64 &
-    ame_dtype_size(md_dtype) == 32;
-  let log2bias_float =
-    ame_valid_softfloat_ew_dtype(md_dtype) & ame_valid_softfloat_ew_dtype(ms1_dtype) &
-    ame_same_float_format2(md_dtype, ms1_dtype) &
-    (log2bias_int_bias |
-     (ame_valid_softfloat_ew_dtype(ms2_dtype) & ame_same_float_format2(md_dtype, ms2_dtype)));
+function ame_logexp_nsq(md_dtype : bits(32), ms1_dtype : bits(32),
+                        ms2_dtype : bits(32)) -> nat =
+  max(ame_pack_factor(ame_dtype_size(md_dtype)),
+      max(ame_pack_factor(ame_dtype_size(ms1_dtype)),
+          ame_pack_factor(ame_dtype_size(ms2_dtype))))
 
-  if ldexp_float then {
-    // mldexp/mldexpacc/mrdexp/mrdexpacc with floating-point data and an
-    // integer exponent operand.  The exact product is rounded a single time
-    // to the destination datatype; only amefflags is accrued.
-    if not(ame_check_formed_operand(md, md_dtype, nsq)) then false
-    else if not(ame_check_formed_operand(ms1, ms1_dtype, nsq)) then false
-    else if not(ame_check_formed_operand(ms2, ms2_dtype, nsq)) then false
-    else match ame_fp_rounding_mode(md_dtype) {
-      None() => ame_unsupported_result(),
-      Some(rm) => {
-        let snapshot = ame_snapshot_mregs();
-        var flags : bits_fflags = zeros();
+// The bias of mlog2sub/msublog2 is either a same-format float square or a
+// standard integer square of at most 64 bits converting to an FP32
+// destination; §6.2.2 leaves that conversion to the exact tuple.
+function ame_logexp_bias_supported(md_dtype : bits(32), ms2_dtype : bits(32)) -> bool =
+  (ame_valid_int_elementwise_dtype(ms2_dtype) &
+   ame_dtype_size(ms2_dtype) <= 64 &
+   ame_dtype_size(md_dtype) == 32) |
+  (ame_valid_softfloat_ew_dtype(ms2_dtype) &
+   ame_same_float_format2(md_dtype, ms2_dtype))
 
-        foreach (e from 0 to (nsq * ame_nelem - 1)) {
-          let md_val = ame_read_snapshot_elem(snapshot, md_dtype, md, e);
-          let ms1_val = ame_read_snapshot_elem(snapshot, ms1_dtype, ms1, e);
-          let ms2_val = ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e);
-          let exp_value = ame_elem_int(ms2_dtype, ms2_val);
-          let (fflags, result) = ame_fp_ldexp_result(md_dtype, rm,
-            op == AME_INT_LDEXPACC | op == AME_INT_RDEXPACC,
-            op == AME_INT_RDEXP | op == AME_INT_RDEXPACC,
-            ms1_val, md_val, exp_value);
-          flags = flags | fflags;
-          write_m_elem(md_dtype, md, e, result)
-        };
-
-        accrue_amefflags(flags);
-        true
+function ame_logexp_ldexp_accepts(op : ame_int_logexp_op, md_dtype : bits(32),
+                                  ms1_dtype : bits(32), ms2_dtype : bits(32))
+  -> option(ame_fp_plan) =
+  if op == AME_INT_LDEXP | op == AME_INT_LDEXPACC |
+     op == AME_INT_RDEXP | op == AME_INT_RDEXPACC then
+    if ame_valid_softfloat_ew_dtype(md_dtype) &
+       ame_valid_int_elementwise_dtype(ms2_dtype) &
+       ame_same_float_format2(md_dtype, ms1_dtype) then
+      match ame_fp_rounding_mode(md_dtype) {
+        Some(rm) => Some(struct { dtype = md_dtype, rm = rm }),
+        None()   => None()
       }
-    }
-  }
-  else if log2bias_float then {
-    // mlog2sub/msublog2 with floating-point data: approximated in FP32.
-    if not(op == AME_INT_LOG2SUB | op == AME_INT_SUBLOG2) then
-      ame_unsupported_result()
-    else if not(ame_check_formed_operand(md, md_dtype, nsq)) then false
-    else if not(ame_check_formed_operand(ms1, ms1_dtype, nsq)) then false
-    else if not(ame_check_formed_operand(ms2, ms2_dtype, nsq)) then false
-    else match ame_fp_rounding_mode(md_dtype) {
-      None() => ame_unsupported_result(),
-      Some(rm) => {
-        let snapshot = ame_snapshot_mregs();
-        var flags : bits_fflags = zeros();
+    else None()
+  else None()
 
-        foreach (e from 0 to (nsq * ame_nelem - 1)) {
-          let ms1_val = ame_read_snapshot_elem(snapshot, ms1_dtype, ms1, e);
-          let (bias_flags, ms2_val) =
-            if ame_valid_softfloat_ew_dtype(ms2_dtype) then
-              (zeros(), ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e))
-            else ame_int_bias_to_f32(ms2_dtype, rm,
-                   ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e));
-          let (fflags, result) = ame_float_log2bias_result(md_dtype, op, rm, ms1_val, ms2_val);
-          flags = flags | bias_flags | fflags;
-          write_m_elem(md_dtype, md, e, result)
-        };
-
-        accrue_amefflags(flags);
-        true
-      }
-    }
+function ame_logexp_log2bias_accepts(op : ame_int_logexp_op,
+                                     md_dtype : bits(32), ms1_dtype : bits(32),
+                                     ms2_dtype : bits(32))
+  -> option(ame_fp_plan) =
+  if not(op == AME_INT_LOG2SUB | op == AME_INT_SUBLOG2) then None()
+  else if not(ame_valid_softfloat_ew_dtype(md_dtype) &
+              ame_same_float_format2(md_dtype, ms1_dtype)) then None()
+  else if not(ame_logexp_bias_supported(md_dtype, ms2_dtype)) then None()
+  else match ame_fp_rounding_mode(md_dtype) {
+    Some(rm) => Some(struct { dtype = md_dtype, rm = rm }),
+    None()   => None()
   }
-  else if ame_logexp_requires_float_source(op) then
-    ame_unsupported_result()
-  else if not(ame_valid_int_elementwise_dtype(md_dtype) & ame_valid_int_elementwise_dtype(ms1_dtype) & ame_valid_int_elementwise_dtype(ms2_dtype)) then
-    ame_unsupported_result()
-  else if dest_size != src1_size | dest_size != src2_size |
-          ame_is_signed(md_dtype) != ame_is_signed(ms1_dtype) |
-          ame_is_signed(md_dtype) != ame_is_signed(ms2_dtype) then
-    ame_unsupported_result()
-  else if not(ame_check_formed_operand(md, md_dtype, nsq)) then false
-  else if not(ame_check_formed_operand(ms1, ms1_dtype, nsq)) then false
-  else if not(ame_check_formed_operand(ms2, ms2_dtype, nsq)) then false
+
+function ame_logexp_int_accepts(op : ame_int_logexp_op, md_dtype : bits(32),
+                                ms1_dtype : bits(32), ms2_dtype : bits(32)) -> bool =
+  not(ame_logexp_requires_float_source(op)) &
+  ame_valid_int_elementwise_dtype(md_dtype) &
+  ame_valid_int_elementwise_dtype(ms1_dtype) &
+  ame_valid_int_elementwise_dtype(ms2_dtype) &
+  ame_dtype_size(md_dtype) == ame_dtype_size(ms1_dtype) &
+  ame_dtype_size(md_dtype) == ame_dtype_size(ms2_dtype) &
+  ame_is_signed(md_dtype) == ame_is_signed(ms1_dtype) &
+  ame_is_signed(md_dtype) == ame_is_signed(ms2_dtype)
+
+function ame_logexp_ldexp_m(nsq : nat, plan : ame_fp_plan, md_dtype : bits(32),
+                            ms1_dtype : bits(32), ms2_dtype : bits(32),
+                            md : ameregidx, ms1 : ameregidx, ms2 : ameregidx,
+                            op : ame_int_logexp_op) -> bool = {
+  if not(ame_binary_formed(nsq, md, md_dtype, ms1, ms1_dtype, ms2, ms2_dtype))
+  then false
+  else {
+    let snapshot = ame_snapshot_mregs();
+    var flags : bits_fflags = zeros();
+
+    foreach (e from 0 to (nsq * ame_nelem - 1)) {
+      let ms2_val = ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e);
+      let (element_flags, result) =
+        ame_fp_ldexp_result(plan.dtype, plan.rm,
+          op == AME_INT_LDEXPACC | op == AME_INT_RDEXPACC,
+          op == AME_INT_RDEXP | op == AME_INT_RDEXPACC,
+          ame_read_snapshot_elem(snapshot, ms1_dtype, ms1, e),
+          ame_read_snapshot_elem(snapshot, md_dtype, md, e),
+          ame_elem_int(ms2_dtype, ms2_val));
+      flags = flags | element_flags;
+      write_m_elem(md_dtype, md, e, result)
+    };
+
+    accrue_amefflags(flags);
+    true
+  }
+}
+
+function ame_logexp_log2bias_m(nsq : nat, plan : ame_fp_plan,
+                               md_dtype : bits(32), ms1_dtype : bits(32),
+                               ms2_dtype : bits(32), md : ameregidx,
+                               ms1 : ameregidx, ms2 : ameregidx,
+                               op : ame_int_logexp_op) -> bool = {
+  if not(ame_binary_formed(nsq, md, md_dtype, ms1, ms1_dtype, ms2, ms2_dtype))
+  then false
+  else {
+    let snapshot = ame_snapshot_mregs();
+    var flags : bits_fflags = zeros();
+
+    foreach (e from 0 to (nsq * ame_nelem - 1)) {
+      let raw_bias = ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e);
+      let (bias_flags, bias_val) =
+        if ame_valid_softfloat_ew_dtype(ms2_dtype) then (zeros(), raw_bias)
+        else ame_int_bias_to_f32(ms2_dtype, plan.rm, raw_bias);
+      let (element_flags, result) =
+        ame_float_log2bias_result(plan.dtype, op, plan.rm,
+          ame_read_snapshot_elem(snapshot, ms1_dtype, ms1, e), bias_val);
+      flags = flags | bias_flags | element_flags;
+      write_m_elem(md_dtype, md, e, result)
+    };
+
+    accrue_amefflags(flags);
+    true
+  }
+}
+
+function ame_logexp_int_m(nsq : nat, md_dtype : bits(32), ms1_dtype : bits(32),
+                          ms2_dtype : bits(32), md : ameregidx, ms1 : ameregidx,
+                          ms2 : ameregidx, op : ame_int_logexp_op) -> bool = {
+  if not(ame_binary_formed(nsq, md, md_dtype, ms1, ms1_dtype, ms2, ms2_dtype))
+  then false
   else {
     let snapshot = ame_snapshot_mregs();
     var saturated : bits(1) = 0b0;
 
     foreach (e from 0 to (nsq * ame_nelem - 1)) {
-      let md_val = ame_read_snapshot_elem(snapshot, md_dtype, md, e);
-      let ms1_val = ame_read_snapshot_elem(snapshot, ms1_dtype, ms1, e);
-      let ms2_val = ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e);
       let (element_saturated, result) =
-        ame_int_logexp_result(op, md_dtype, md_val, ms1_val, ms2_val);
+        ame_int_logexp_result(op, md_dtype,
+          ame_read_snapshot_elem(snapshot, md_dtype, md, e),
+          ame_read_snapshot_elem(snapshot, ms1_dtype, ms1, e),
+          ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e));
+      saturated = saturated | bool_to_bit(element_saturated);
+      write_m_elem(md_dtype, md, e, result)
+    };
+
+    if saturated == 0b1 then ame_set_saturated();
+    true
+  }
+}
+
+function ame_logexp_binary_m(md_dtype : bits(32), ms1_dtype : bits(32),
+                                ms2_dtype : bits(32), md : ameregidx,
+                                ms1 : ameregidx, ms2 : ameregidx,
+                                op : ame_int_logexp_op) -> bool = {
+  let nsq = ame_logexp_nsq(md_dtype, ms1_dtype, ms2_dtype);
+
+  if ame_logexp_int_accepts(op, md_dtype, ms1_dtype, ms2_dtype) then
+    return ame_logexp_int_m(nsq, md_dtype, ms1_dtype, ms2_dtype, md, ms1, ms2, op);
+
+  match ame_logexp_ldexp_accepts(op, md_dtype, ms1_dtype, ms2_dtype) {
+    Some(plan) => return ame_logexp_ldexp_m(nsq, plan, md_dtype, ms1_dtype,
+                                            ms2_dtype, md, ms1, ms2, op),
+    None()     => ()
+  };
+
+  match ame_logexp_log2bias_accepts(op, md_dtype, ms1_dtype, ms2_dtype) {
+    Some(plan) => ame_logexp_log2bias_m(nsq, plan, md_dtype, ms1_dtype,
+                                        ms2_dtype, md, ms1, ms2, op),
+    None()     => ame_unsupported_result()
+  }
+}
+
+function ame_logexp_ldexp_x_accepts(op : ame_int_logexp_op, md_dtype : bits(32),
+                                    ms2_dtype : bits(32)) -> option(ame_fp_plan) =
+  if not(op == AME_INT_LDEXP | op == AME_INT_LDEXPACC) then None()
+  else if not(ame_valid_softfloat_ew_dtype(md_dtype) &
+              ame_same_float_format2(md_dtype, ms2_dtype)) then None()
+  else match ame_fp_rounding_mode(md_dtype) {
+    Some(rm) => Some(struct { dtype = md_dtype, rm = rm }),
+    None()   => None()
+  }
+
+function ame_logexp_log2bias_x_accepts(op : ame_int_logexp_op,
+                                       md_dtype : bits(32), ms2_dtype : bits(32),
+                                       rs1_val : xlenbits)
+  -> option((ame_fp_plan, bits_fflags, bits(ame_max_dtype_size))) =
+  if not(op == AME_INT_LOG2SUB | op == AME_INT_SUBLOG2) then None()
+  else if not(ame_valid_softfloat_ew_dtype(md_dtype) &
+              ame_same_float_format2(md_dtype, ms2_dtype)) then None()
+  else match ame_fp_rounding_mode(md_dtype) {
+    None() => None(),
+    Some(rm) => match ame_scalar_log2_bias_value(md_dtype, rm, rs1_val) {
+      None()                       => None(),
+      Some((bias_flags, bias_word)) => Some((struct { dtype = md_dtype, rm = rm },
+                                             bias_flags, bias_word))
+    }
+  }
+
+function ame_logexp_int_x_accepts(op : ame_int_logexp_op, md_dtype : bits(32),
+                                  ms2_dtype : bits(32), rs1_val : xlenbits)
+  -> option(bits(ame_max_dtype_size)) =
+  if ame_logexp_requires_float_source(op) then None()
+  else if not(ame_valid_int_elementwise_dtype(md_dtype) &
+              ame_valid_int_elementwise_dtype(ms2_dtype) &
+              ame_dtype_size(md_dtype) == ame_dtype_size(ms2_dtype) &
+              ame_is_signed(md_dtype) == ame_is_signed(ms2_dtype)) then None()
+  else if op == AME_INT_LOG2SUB | op == AME_INT_SUBLOG2 then
+    ame_scalar_integer_data_value(ms2_dtype, rs1_val)
+  else
+    // mldexp*.ew.x and mrdexp*.ew.x use the instruction-defined exponent
+    // control rs1_val (a signed 128-bit integer, zero-extended on RV64), not
+    // amestype.
+    Some(zero_extend(ame_max_dtype_size, rs1_val))
+
+function ame_logexp_ldexp_x(nsq : nat, plan : ame_fp_plan, md_dtype : bits(32),
+                            ms2_dtype : bits(32), md : ameregidx, rs1_val : xlenbits,
+                            ms2 : ameregidx, op : ame_int_logexp_op) -> bool = {
+  if not(ame_unary_formed(nsq, md, md_dtype, ms2, ms2_dtype)) then false
+  else {
+    // The scalar form has no reverse variant, so op is LDEXP or LDEXPACC here.
+    let exp_value = ame_elem_int(ame_max_int_dtype_descriptor(),
+                                 zero_extend(ame_max_dtype_size, rs1_val));
+    let snapshot = ame_snapshot_mregs();
+    var flags : bits_fflags = zeros();
+
+    foreach (e from 0 to (nsq * ame_nelem - 1)) {
+      let (element_flags, result) =
+        ame_fp_ldexp_result(plan.dtype, plan.rm, op == AME_INT_LDEXPACC, false,
+          ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e),
+          ame_read_snapshot_elem(snapshot, md_dtype, md, e), exp_value);
+      flags = flags | element_flags;
+      write_m_elem(md_dtype, md, e, result)
+    };
+
+    accrue_amefflags(flags);
+    true
+  }
+}
+
+function ame_logexp_log2bias_x(nsq : nat, plan : ame_fp_plan,
+                               bias_flags : bits_fflags,
+                               bias_val : bits(ame_max_dtype_size),
+                               md_dtype : bits(32), ms2_dtype : bits(32),
+                               md : ameregidx, ms2 : ameregidx,
+                               op : ame_int_logexp_op) -> bool = {
+  if not(ame_unary_formed(nsq, md, md_dtype, ms2, ms2_dtype)) then false
+  else {
+    let snapshot = ame_snapshot_mregs();
+    var flags : bits_fflags = zeros();
+
+    foreach (e from 0 to (nsq * ame_nelem - 1)) {
+      let (element_flags, result) =
+        ame_float_log2bias_result(plan.dtype, op, plan.rm,
+          ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e), bias_val);
+      flags = flags | element_flags;
+      write_m_elem(md_dtype, md, e, result)
+    };
+
+    accrue_amefflags(bias_flags | flags);
+    true
+  }
+}
+
+function ame_logexp_int_x(nsq : nat, scalar : bits(ame_max_dtype_size),
+                          md_dtype : bits(32), ms2_dtype : bits(32),
+                          md : ameregidx, ms2 : ameregidx,
+                          op : ame_int_logexp_op) -> bool = {
+  if not(ame_unary_formed(nsq, md, md_dtype, ms2, ms2_dtype)) then false
+  else {
+    let snapshot = ame_snapshot_mregs();
+    var saturated : bits(1) = 0b0;
+
+    foreach (e from 0 to (nsq * ame_nelem - 1)) {
+      let (element_saturated, result) =
+        ame_int_logexp_result(op, md_dtype,
+          ame_read_snapshot_elem(snapshot, md_dtype, md, e),
+          ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e), scalar);
       saturated = saturated | bool_to_bit(element_saturated);
       write_m_elem(md_dtype, md, e, result)
     };
@@ -811,106 +971,27 @@ function ame_logexp_binary_m(md_dtype : bits(32), ms1_dtype : bits(32),
 }
 
 function ame_logexp_binary_x(md_dtype : bits(32), ms2_dtype : bits(32),
-                             md : ameregidx, rs1_val : xlenbits,
-                             ms2 : ameregidx, op : ame_int_logexp_op) -> bool = {
-  let dest_size = ame_dtype_size(md_dtype);
-  let src2_size = ame_dtype_size(ms2_dtype);
+                                md : ameregidx, rs1_val : xlenbits,
+                                ms2 : ameregidx, op : ame_int_logexp_op) -> bool = {
   let nsq = ame_nsq2(md_dtype, ms2_dtype);
 
-  if ame_valid_softfloat_ew_dtype(md_dtype) & ame_valid_softfloat_ew_dtype(ms2_dtype) &
-     ame_same_float_format2(md_dtype, ms2_dtype) then {
-    if not(ame_check_formed_operand(md, md_dtype, nsq)) then false
-    else if not(ame_check_formed_operand(ms2, ms2_dtype, nsq)) then false
-    else match ame_fp_rounding_mode(md_dtype) {
-      None() => ame_unsupported_result(),
-      Some(rm) =>
-        if op == AME_INT_LOG2SUB | op == AME_INT_SUBLOG2 then
-          match ame_scalar_log2_bias_value(md_dtype, rm, rs1_val) {
-            None() => { ame_set_unsupported(); true },
-            Some((bias_flags, scalar_elem)) => {
-              let snapshot = ame_snapshot_mregs();
-              var flags : bits_fflags = zeros();
+  match ame_logexp_int_x_accepts(op, md_dtype, ms2_dtype, rs1_val) {
+    Some(scalar) => return ame_logexp_int_x(nsq, scalar, md_dtype, ms2_dtype,
+                                            md, ms2, op),
+    None()       => ()
+  };
 
-              foreach (e from 0 to (nsq * ame_nelem - 1)) {
-                let ms2_val = ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e);
-                let (fflags, result) =
-                  ame_float_log2bias_result(md_dtype, op, rm, ms2_val, scalar_elem);
-                flags = flags | bias_flags | fflags;
-                write_m_elem(md_dtype, md, e, result)
-              };
+  match ame_logexp_log2bias_x_accepts(op, md_dtype, ms2_dtype, rs1_val) {
+    Some((plan, bias_flags, bias_val)) =>
+      return ame_logexp_log2bias_x(nsq, plan, bias_flags, bias_val, md_dtype,
+                                   ms2_dtype, md, ms2, op),
+    None() => ()
+  };
 
-              accrue_amefflags(flags);
-              true
-            }
-          }
-        else {
-          // mldexp*.ew.x and mrdexp*.ew.x use the instruction-defined
-          // exponent control rs1_val (a signed 128-bit integer, which on
-          // RV64 is the zero-extended 64-bit rs1 value), not amestype.
-          let exp_value = ame_elem_int(ame_max_int_dtype_descriptor(),
-                                       zero_extend(ame_max_dtype_size, rs1_val));
-          let snapshot = ame_snapshot_mregs();
-          var flags : bits_fflags = zeros();
-
-          foreach (e from 0 to (nsq * ame_nelem - 1)) {
-            let md_val = ame_read_snapshot_elem(snapshot, md_dtype, md, e);
-            let ms2_val = ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e);
-            let (fflags, result) = ame_fp_ldexp_result(md_dtype, rm,
-              op == AME_INT_LDEXPACC, false, ms2_val, md_val, exp_value);
-            flags = flags | fflags;
-            write_m_elem(md_dtype, md, e, result)
-          };
-
-          accrue_amefflags(flags);
-          true
-        }
-    }
-  }
-  else if ame_logexp_requires_float_source(op) then
-    ame_unsupported_result()
-  else if not(ame_valid_int_elementwise_dtype(md_dtype) & ame_valid_int_elementwise_dtype(ms2_dtype)) then
-    ame_unsupported_result()
-  else if dest_size != src2_size | ame_is_signed(md_dtype) != ame_is_signed(ms2_dtype) then
-    ame_unsupported_result()
-  else if not(ame_check_formed_operand(md, md_dtype, nsq)) then false
-  else if not(ame_check_formed_operand(ms2, ms2_dtype, nsq)) then false
-  else if op == AME_INT_LOG2SUB | op == AME_INT_SUBLOG2 then
-    match ame_scalar_integer_data_value(ms2_dtype, rs1_val) {
-      None() => { ame_set_unsupported(); true },
-      Some(scalar_elem) => {
-        let snapshot = ame_snapshot_mregs();
-        var saturated : bits(1) = 0b0;
-
-        foreach (e from 0 to (nsq * ame_nelem - 1)) {
-          let md_val = ame_read_snapshot_elem(snapshot, md_dtype, md, e);
-          let ms2_val = ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e);
-          let (element_saturated, result) =
-            ame_int_logexp_result(op, md_dtype, md_val, ms2_val, scalar_elem);
-          saturated = saturated | bool_to_bit(element_saturated);
-          write_m_elem(md_dtype, md, e, result)
-        };
-
-        if saturated == 0b1 then ame_set_saturated();
-        true
-      }
-    }
-  else {
-    // mldexp*.ew.x and mrdexp*.ew.x use the instruction-defined exponent
-    // control rs1_val, not amestype.
-    let scalar_elem : bits(ame_max_dtype_size) = zero_extend(ame_max_dtype_size, rs1_val);
-    let snapshot = ame_snapshot_mregs();
-    var saturated : bits(1) = 0b0;
-
-    foreach (e from 0 to (nsq * ame_nelem - 1)) {
-      let md_val = ame_read_snapshot_elem(snapshot, md_dtype, md, e);
-      let ms2_val = ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e);
-      let (element_saturated, result) =
-        ame_int_logexp_result(op, md_dtype, md_val, ms2_val, scalar_elem);
-      saturated = saturated | bool_to_bit(element_saturated);
-      write_m_elem(md_dtype, md, e, result)
-    };
-
-    if saturated == 0b1 then ame_set_saturated();
-    true
+  match ame_logexp_ldexp_x_accepts(op, md_dtype, ms2_dtype) {
+    Some(plan) => ame_logexp_ldexp_x(nsq, plan, md_dtype, ms2_dtype, md, rs1_val,
+                                     ms2, op),
+    None()     => ame_unsupported_result()
   }
 }
+
