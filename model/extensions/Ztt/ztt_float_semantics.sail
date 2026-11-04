@@ -202,39 +202,40 @@ function ame_float_math_result_mixed(md_dtype : bits(32), ms1_dtype : bits(32),
   }
 }
 
+// mfrint* carries its own direction and instructions.adoc:1516-1517 makes it
+// override the destination field, so the field cannot gate the tuple:
+// ame_float_math_rm returns the opcode direction before reading it.
+function ame_float_math_accepts(op : ame_float_math_op, md_dtype : bits(32),
+                                ms1_dtype : bits(32)) -> option(bits_rm) =
+  if not(ame_valid_softfloat_ew_dtype(md_dtype) &
+         ame_valid_softfloat_ew_dtype(ms1_dtype)) then None()
+  else ame_float_math_rm(md_dtype, op)
+
 function ame_ew_float_math(md_dtype : bits(32), ms1_dtype : bits(32),
                            md : ameregidx, ms1 : ameregidx,
                            op : ame_float_math_op) -> bool = {
   let nsq = ame_nsq2(md_dtype, ms1_dtype);
 
-  if not(ame_valid_softfloat_ew_dtype(md_dtype) & ame_valid_softfloat_ew_dtype(ms1_dtype)) then {
-    ame_set_unsupported();
-    true
-  }
-  else if not(ame_check_formed_operand(md, md_dtype, nsq)) then false
-  else if not(ame_check_formed_operand(ms1, ms1_dtype, nsq)) then false
-  // mfrint* carries its own direction and instructions.adoc:1516-1517 makes it
-  // override the destination field, so the field cannot gate the tuple
-  // (ame_float_math_rm returns the opcode direction before reading it).
-  else match ame_float_math_rm(md_dtype, op) {
-    None() => {
-      ame_set_unsupported();
-      true
-    },
-    Some(rm) => {
+  match ame_float_math_accepts(op, md_dtype, ms1_dtype) {
+    None()     => ame_unsupported_result(),
+    Some(rm) => if not(ame_unary_formed(nsq, md, md_dtype, ms1, ms1_dtype))
+                  then false
+                  else {
       let same_format = ame_same_float_format2(md_dtype, ms1_dtype);
       let snapshot = ame_snapshot_mregs();
       var flags : bits_fflags = zeros();
+
       foreach (e from 0 to (nsq * ame_nelem - 1)) {
         let element = ame_read_snapshot_elem(snapshot, ms1_dtype, ms1, e);
         // The same-format path is kept bit-for-bit as it was: it evaluates the
         // operation with the destination (== source) format's own routine.
-        let (fflags, result) = if same_format then
-            ame_float_math_result(md_dtype, op, rm, element)
+        let (element_flags, result) =
+          if same_format then ame_float_math_result(md_dtype, op, rm, element)
           else ame_float_math_result_mixed(md_dtype, ms1_dtype, op, rm, element);
-        flags = flags | fflags;
+        flags = flags | element_flags;
         write_m_elem(md_dtype, md, e, result)
       };
+
       accrue_amefflags(flags);
       true
     }

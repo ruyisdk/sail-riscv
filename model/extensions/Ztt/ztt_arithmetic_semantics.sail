@@ -485,18 +485,6 @@ function ame_ternary_fp_x_accepts(op : ame_int_ternary_op, md_dtype : bits(32),
     _                        => None()
   }
 
-function ame_binary_formed(nsq : nat, md : ameregidx, md_dtype : bits(32),
-                           ms1 : ameregidx, ms1_dtype : bits(32),
-                           ms2 : ameregidx, ms2_dtype : bits(32)) -> bool =
-  ame_check_formed_operand(md, md_dtype, nsq) &
-  ame_check_formed_operand(ms1, ms1_dtype, nsq) &
-  ame_check_formed_operand(ms2, ms2_dtype, nsq)
-
-function ame_unary_formed(nsq : nat, md : ameregidx, md_dtype : bits(32),
-                          ms1 : ameregidx, ms1_dtype : bits(32)) -> bool =
-  ame_check_formed_operand(md, md_dtype, nsq) &
-  ame_check_formed_operand(ms1, ms1_dtype, nsq)
-
 function ame_ternary_int_m(nsq : nat, md_dtype : bits(32), ms1_dtype : bits(32),
                            ms2_dtype : bits(32), md : ameregidx, ms1 : ameregidx,
                            ms2 : ameregidx, op : ame_int_ternary_op) -> bool = {

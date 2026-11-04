@@ -21,6 +21,20 @@ function ame_check_formed_operand(base_reg : ameregidx, dtype : bits(32),
     ameregidx_nat(base_reg) % max(1, per_square) == 0
 }
 
+// Operand-formation guards shared by the execute drivers: the binary forms check
+// three squares, the unary and scalar forms two.
+function ame_binary_formed(nsq : nat, md : ameregidx, md_dtype : bits(32),
+                           ms1 : ameregidx, ms1_dtype : bits(32),
+                           ms2 : ameregidx, ms2_dtype : bits(32)) -> bool =
+  ame_check_formed_operand(md, md_dtype, nsq) &
+  ame_check_formed_operand(ms1, ms1_dtype, nsq) &
+  ame_check_formed_operand(ms2, ms2_dtype, nsq)
+
+function ame_unary_formed(nsq : nat, md : ameregidx, md_dtype : bits(32),
+                          ms1 : ameregidx, ms1_dtype : bits(32)) -> bool =
+  ame_check_formed_operand(md, md_dtype, nsq) &
+  ame_check_formed_operand(ms1, ms1_dtype, nsq)
+
 function ameaccregidx_bits(Ameaccregidx(b) : ameaccregidx) -> bits(5) = b
 function ameaccregidx_nat(i : ameaccregidx) -> nat = unsigned(ameaccregidx_bits(i))
 function ameaccregidx_add(i : ameaccregidx, offset : nat) -> ameaccregidx =
