@@ -236,7 +236,7 @@ function ame_integer_binary_x_tuple_supported(op : ame_int_binary_op,
    which kernel they call, the way a V-extension clause differs only in its
    `match funct6` arms. */
 
-struct ame_binary_fp_plan = {
+struct ame_fp_plan = {
   dtype : bits(32),
   rm    : bits_rm
 }
@@ -252,7 +252,7 @@ function ame_binary_int_accepts(op : ame_int_binary_op, md_dtype : bits(32),
 
 function ame_binary_fp_accepts(op : ame_int_binary_op, md_dtype : bits(32),
                                ms1_dtype : bits(32), ms2_dtype : bits(32))
-  -> option(ame_binary_fp_plan) =
+  -> option(ame_fp_plan) =
   if ame_binary_is_comparison(op) then {
     if ame_valid_int_elementwise_dtype(md_dtype) &
        ame_valid_softfloat_ew_dtype(ms1_dtype) &
@@ -300,7 +300,7 @@ function ame_binary_int_m(nsq : nat, md_dtype : bits(32), ms1_dtype : bits(32),
   }
 }
 
-function ame_binary_fp_m(nsq : nat, plan : ame_binary_fp_plan,
+function ame_binary_fp_m(nsq : nat, plan : ame_fp_plan,
                          md_dtype : bits(32), ms1_dtype : bits(32),
                          ms2_dtype : bits(32), md : ameregidx, ms1 : ameregidx,
                          ms2 : ameregidx, op : ame_int_binary_op) -> bool = {
@@ -361,7 +361,7 @@ function ame_binary_x_int_accepts(op : ame_int_binary_op, md_dtype : bits(32),
 
 function ame_binary_x_fp_accepts(op : ame_int_binary_op, md_dtype : bits(32),
                                  ms2_dtype : bits(32), rs1_val : xlenbits)
-  -> option((ame_binary_fp_plan, bits(ame_max_dtype_size))) = {
+  -> option((ame_fp_plan, bits(ame_max_dtype_size))) = {
   let destination_ok =
     if ame_binary_is_comparison(op) then ame_valid_int_elementwise_dtype(md_dtype)
     else ame_valid_softfloat_ew_dtype(md_dtype) & ame_float_binary_supported(op) &
@@ -400,7 +400,7 @@ function ame_binary_int_x(nsq : nat, scalar : bits(ame_max_dtype_size),
   }
 }
 
-function ame_binary_fp_x(nsq : nat, plan : ame_binary_fp_plan,
+function ame_binary_fp_x(nsq : nat, plan : ame_fp_plan,
                          scalar : bits(ame_max_dtype_size), md_dtype : bits(32),
                          ms2_dtype : bits(32), md : ameregidx, ms2 : ameregidx,
                          op : ame_int_binary_op) -> bool = {
@@ -439,59 +439,172 @@ function ame_ew_binary_x(md_dtype : bits(32), ms2_dtype : bits(32),
   }
 }
 
+function ame_ternary_int_accepts(op : ame_int_ternary_op, md_dtype : bits(32),
+                                 ms1_dtype : bits(32),
+                                 ms2_dtype : bits(32)) -> bool =
+  ame_valid_int_elementwise_dtype(md_dtype) &
+  ame_valid_int_elementwise_dtype(ms1_dtype) &
+  ame_valid_int_elementwise_dtype(ms2_dtype)
+
+function ame_ternary_fp_accepts(op : ame_int_ternary_op, md_dtype : bits(32),
+                                ms1_dtype : bits(32), ms2_dtype : bits(32))
+  -> option(ame_fp_plan) =
+  if ame_valid_softfloat_ew_dtype(md_dtype) &
+     ame_valid_softfloat_ew_dtype(ms1_dtype) &
+     ame_valid_softfloat_ew_dtype(ms2_dtype) &
+     ame_float_ternary_supported(op) &
+     ame_same_float_format3(md_dtype, ms1_dtype, ms2_dtype) then
+    match ame_fp_rounding_mode(md_dtype) {
+      Some(rm) => Some(struct { dtype = md_dtype, rm = rm }),
+      None()   => None()
+    }
+  else None()
+
+function ame_ternary_int_x_accepts(op : ame_int_ternary_op, md_dtype : bits(32),
+                                   ms2_dtype : bits(32), rs1_val : xlenbits)
+  -> option(bits(ame_max_dtype_size)) = {
+  let raw_scalar : bits(ame_max_dtype_size) = zero_extend(ame_max_dtype_size, rs1_val);
+  let scalar = ame_int_result_from_int(ms2_dtype, ame_elem_int(amestype, raw_scalar));
+
+  if not(ame_valid_int_elementwise_dtype(md_dtype)) then None()
+  else if not(ame_valid_int_elementwise_dtype(ms2_dtype)) then None()
+  else if not(ame_datatype_supported(amestype) & ame_is_integer(amestype)) then None()
+  else Some(scalar)
+}
+
+function ame_ternary_fp_x_accepts(op : ame_int_ternary_op, md_dtype : bits(32),
+                                  ms2_dtype : bits(32), rs1_val : xlenbits)
+  -> option((ame_fp_plan, bits(ame_max_dtype_size))) =
+  if not(ame_valid_softfloat_ew_dtype(md_dtype)) &
+     not(ame_valid_softfloat_ew_dtype(ms2_dtype)) then None()
+  else if not(ame_float_ternary_supported(op) &
+              ame_same_float_format2(md_dtype, ms2_dtype)) then None()
+  else match (ame_scalar_float_data_value(md_dtype, rs1_val),
+              ame_fp_rounding_mode(md_dtype)) {
+    (Some(scalar), Some(rm)) => Some((struct { dtype = md_dtype, rm = rm }, scalar)),
+    _                        => None()
+  }
+
+function ame_binary_formed(nsq : nat, md : ameregidx, md_dtype : bits(32),
+                           ms1 : ameregidx, ms1_dtype : bits(32),
+                           ms2 : ameregidx, ms2_dtype : bits(32)) -> bool =
+  ame_check_formed_operand(md, md_dtype, nsq) &
+  ame_check_formed_operand(ms1, ms1_dtype, nsq) &
+  ame_check_formed_operand(ms2, ms2_dtype, nsq)
+
+function ame_unary_formed(nsq : nat, md : ameregidx, md_dtype : bits(32),
+                          ms1 : ameregidx, ms1_dtype : bits(32)) -> bool =
+  ame_check_formed_operand(md, md_dtype, nsq) &
+  ame_check_formed_operand(ms1, ms1_dtype, nsq)
+
+function ame_ternary_int_m(nsq : nat, md_dtype : bits(32), ms1_dtype : bits(32),
+                           ms2_dtype : bits(32), md : ameregidx, ms1 : ameregidx,
+                           ms2 : ameregidx, op : ame_int_ternary_op) -> bool = {
+  if not(ame_binary_formed(nsq, md, md_dtype, ms1, ms1_dtype, ms2, ms2_dtype))
+  then false
+  else {
+    let snapshot = ame_snapshot_mregs();
+    var saturated : bits(1) = 0b0;
+
+    foreach (e from 0 to (nsq * ame_nelem - 1)) {
+      let (element_saturated, result) =
+        ame_int_ternary_mixed_result(op, md_dtype, ms1_dtype, ms2_dtype,
+          ame_read_snapshot_elem(snapshot, md_dtype, md, e),
+          ame_read_snapshot_elem(snapshot, ms1_dtype, ms1, e),
+          ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e));
+      saturated = saturated | bool_to_bit(element_saturated);
+      write_m_elem(md_dtype, md, e, result)
+    };
+
+    if saturated == 0b1 then ame_set_saturated();
+    true
+  }
+}
+
+function ame_ternary_fp_m(nsq : nat, plan : ame_fp_plan, md_dtype : bits(32),
+                          ms1_dtype : bits(32), ms2_dtype : bits(32),
+                          md : ameregidx, ms1 : ameregidx, ms2 : ameregidx,
+                          op : ame_int_ternary_op) -> bool = {
+  if not(ame_binary_formed(nsq, md, md_dtype, ms1, ms1_dtype, ms2, ms2_dtype))
+  then false
+  else {
+    let snapshot = ame_snapshot_mregs();
+    var flags : bits_fflags = zeros();
+
+    foreach (e from 0 to (nsq * ame_nelem - 1)) {
+      let (element_flags, result) =
+        ame_float_ternary_result(plan.dtype, op, plan.rm,
+          ame_read_snapshot_elem(snapshot, md_dtype, md, e),
+          ame_read_snapshot_elem(snapshot, ms1_dtype, ms1, e),
+          ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e));
+      flags = flags | element_flags;
+      write_m_elem(md_dtype, md, e, result)
+    };
+
+    accrue_amefflags(flags);
+    true
+  }
+}
+
 function ame_ew_ternary_m(md_dtype : bits(32), ms1_dtype : bits(32),
                           ms2_dtype : bits(32), md : ameregidx,
                           ms1 : ameregidx, ms2 : ameregidx,
                           op : ame_int_ternary_op) -> bool = {
   let nsq = ame_nsq3(md_dtype, ms1_dtype, ms2_dtype);
 
-  if ame_valid_int_elementwise_dtype(md_dtype) & ame_valid_int_elementwise_dtype(ms1_dtype) & ame_valid_int_elementwise_dtype(ms2_dtype) then {
-    if not(ame_check_formed_operand(md, md_dtype, nsq)) then false
-    else if not(ame_check_formed_operand(ms1, ms1_dtype, nsq)) then false
-    else if not(ame_check_formed_operand(ms2, ms2_dtype, nsq)) then false
-    else {
-      let snapshot = ame_snapshot_mregs();
-      var saturated : bits(1) = 0b0;
-
-      foreach (e from 0 to (nsq * ame_nelem - 1)) {
-        let md_val = ame_read_snapshot_elem(snapshot, md_dtype, md, e);
-        let ms1_val = ame_read_snapshot_elem(snapshot, ms1_dtype, ms1, e);
-        let ms2_val = ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e);
-        let (element_saturated, result) = ame_int_ternary_mixed_result(
-          op, md_dtype, ms1_dtype, ms2_dtype, md_val, ms1_val, ms2_val);
-        saturated = saturated | bool_to_bit(element_saturated);
-        write_m_elem(md_dtype, md, e, result)
-      };
-      if saturated == 0b1 then ame_set_saturated();
-      true
-    }
+  if ame_ternary_int_accepts(op, md_dtype, ms1_dtype, ms2_dtype) then
+    ame_ternary_int_m(nsq, md_dtype, ms1_dtype, ms2_dtype, md, ms1, ms2, op)
+  else match ame_ternary_fp_accepts(op, md_dtype, ms1_dtype, ms2_dtype) {
+    Some(plan) => ame_ternary_fp_m(nsq, plan, md_dtype, ms1_dtype, ms2_dtype,
+                                   md, ms1, ms2, op),
+    None()     => ame_unsupported_result()
   }
-  else if ame_valid_softfloat_ew_dtype(md_dtype) & ame_valid_softfloat_ew_dtype(ms1_dtype) & ame_valid_softfloat_ew_dtype(ms2_dtype) & ame_float_ternary_supported(op) then {
-    if not(ame_same_float_format3(md_dtype, ms1_dtype, ms2_dtype)) then
-      ame_unsupported_result()
-    else if not(ame_check_formed_operand(md, md_dtype, nsq)) then false
-    else if not(ame_check_formed_operand(ms1, ms1_dtype, nsq)) then false
-    else if not(ame_check_formed_operand(ms2, ms2_dtype, nsq)) then false
-    else match ame_fp_rounding_mode(md_dtype) {
-      None() => ame_unsupported_result(),
-      Some(rm) => {
-        let snapshot = ame_snapshot_mregs();
-        var flags : bits_fflags = zeros();
+}
 
-        foreach (e from 0 to (nsq * ame_nelem - 1)) {
-          let md_val = ame_read_snapshot_elem(snapshot, md_dtype, md, e);
-          let ms1_val = ame_read_snapshot_elem(snapshot, ms1_dtype, ms1, e);
-          let ms2_val = ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e);
-          let (fflags, result) = ame_float_ternary_result(md_dtype, op, rm, md_val, ms1_val, ms2_val);
-          flags = flags | fflags;
-          write_m_elem(md_dtype, md, e, result)
-        };
-        accrue_amefflags(flags);
-        true
-      }
-    }
+function ame_ternary_int_x(nsq : nat, scalar : bits(ame_max_dtype_size),
+                           md_dtype : bits(32), ms2_dtype : bits(32),
+                           md : ameregidx, ms2 : ameregidx,
+                           op : ame_int_ternary_op) -> bool = {
+  if not(ame_unary_formed(nsq, md, md_dtype, ms2, ms2_dtype)) then false
+  else {
+    let snapshot = ame_snapshot_mregs();
+    var saturated : bits(1) = 0b0;
+
+    foreach (e from 0 to (nsq * ame_nelem - 1)) {
+      let (element_saturated, result) =
+        ame_int_ternary_mixed_result(op, md_dtype, ms2_dtype, ms2_dtype,
+          ame_read_snapshot_elem(snapshot, md_dtype, md, e), scalar,
+          ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e));
+      saturated = saturated | bool_to_bit(element_saturated);
+      write_m_elem(md_dtype, md, e, result)
+    };
+
+    if saturated == 0b1 then ame_set_saturated();
+    true
   }
-  else ame_unsupported_result()
+}
+
+function ame_ternary_fp_x(nsq : nat, plan : ame_fp_plan,
+                          scalar : bits(ame_max_dtype_size), md_dtype : bits(32),
+                          ms2_dtype : bits(32), md : ameregidx, ms2 : ameregidx,
+                          op : ame_int_ternary_op) -> bool = {
+  if not(ame_unary_formed(nsq, md, md_dtype, ms2, ms2_dtype)) then false
+  else {
+    let snapshot = ame_snapshot_mregs();
+    var flags : bits_fflags = zeros();
+
+    foreach (e from 0 to (nsq * ame_nelem - 1)) {
+      let (element_flags, result) =
+        ame_float_ternary_result(plan.dtype, op, plan.rm,
+          ame_read_snapshot_elem(snapshot, md_dtype, md, e), scalar,
+          ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e));
+      flags = flags | element_flags;
+      write_m_elem(md_dtype, md, e, result)
+    };
+
+    accrue_amefflags(flags);
+    true
+  }
 }
 
 function ame_ew_ternary_x(md_dtype : bits(32), ms2_dtype : bits(32),
@@ -499,109 +612,84 @@ function ame_ew_ternary_x(md_dtype : bits(32), ms2_dtype : bits(32),
                           ms2 : ameregidx, op : ame_int_ternary_op) -> bool = {
   let nsq = ame_nsq2(md_dtype, ms2_dtype);
 
-  if ame_valid_int_elementwise_dtype(md_dtype) & ame_valid_int_elementwise_dtype(ms2_dtype) then {
-    if not(ame_datatype_supported(amestype) &
-           ame_is_integer(amestype)) then ame_unsupported_result()
-    else {
-      let raw_element : bits(ame_max_dtype_size) = zero_extend(ame_max_dtype_size, rs1_val);
-      let ms1_val = ame_int_result_from_int(ms2_dtype,
-        ame_elem_int(amestype, raw_element));
-        if not(ame_check_formed_operand(md, md_dtype, nsq)) then false
-        else if not(ame_check_formed_operand(ms2, ms2_dtype, nsq)) then false
-        else {
-          let snapshot = ame_snapshot_mregs();
-          var saturated : bits(1) = 0b0;
-
-          foreach (e from 0 to (nsq * ame_nelem - 1)) {
-            let md_val = ame_read_snapshot_elem(snapshot, md_dtype, md, e);
-            let ms2_val = ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e);
-            let (element_saturated, result) = ame_int_ternary_mixed_result(
-              op, md_dtype, ms2_dtype, ms2_dtype, md_val, ms1_val, ms2_val);
-            saturated = saturated | bool_to_bit(element_saturated);
-            write_m_elem(md_dtype, md, e, result)
-          };
-
-          if saturated == 0b1 then ame_set_saturated();
-          true
-        }
+  match ame_ternary_int_x_accepts(op, md_dtype, ms2_dtype, rs1_val) {
+    Some(scalar) => ame_ternary_int_x(nsq, scalar, md_dtype, ms2_dtype, md, ms2, op),
+    None() => match ame_ternary_fp_x_accepts(op, md_dtype, ms2_dtype, rs1_val) {
+      Some((plan, scalar)) => ame_ternary_fp_x(nsq, plan, scalar, md_dtype,
+                                               ms2_dtype, md, ms2, op),
+      None()               => ame_unsupported_result()
     }
   }
-  else if ame_valid_softfloat_ew_dtype(md_dtype) & ame_valid_softfloat_ew_dtype(ms2_dtype) & ame_float_ternary_supported(op) then {
-    if not(ame_same_float_format2(md_dtype, ms2_dtype)) then
-      ame_unsupported_result()
-    else match (ame_scalar_float_data_value(md_dtype, rs1_val), ame_fp_rounding_mode(md_dtype)) {
-      (None(), _) => { ame_set_unsupported(); true },
-      (_, None()) => { ame_set_unsupported(); true },
-      (Some(ms1_val), Some(rm)) => {
-        if not(ame_check_formed_operand(md, md_dtype, nsq)) then false
-        else if not(ame_check_formed_operand(ms2, ms2_dtype, nsq)) then false
-        else {
-          let snapshot = ame_snapshot_mregs();
-          var flags : bits_fflags = zeros();
+}
 
-          foreach (e from 0 to (nsq * ame_nelem - 1)) {
-            let md_val = ame_read_snapshot_elem(snapshot, md_dtype, md, e);
-            let ms2_val = ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e);
-            let (fflags, result) = ame_float_ternary_result(md_dtype, op, rm, md_val, ms1_val, ms2_val);
-            flags = flags | fflags;
-            write_m_elem(md_dtype, md, e, result)
-          };
+function ame_unary_int_accepts(op : ame_int_unary_op, md_dtype : bits(32),
+                               ms1_dtype : bits(32)) -> bool =
+  ame_valid_int_elementwise_dtype(md_dtype) &
+  ame_valid_int_elementwise_dtype(ms1_dtype) &
+  ame_dtype_size(md_dtype) == ame_dtype_size(ms1_dtype) &
+  ame_is_signed(md_dtype) == ame_is_signed(ms1_dtype)
 
-          accrue_amefflags(flags);
-          true
-        }
-      }
-    }
+function ame_unary_fp_accepts(op : ame_int_unary_op, md_dtype : bits(32),
+                              ms1_dtype : bits(32)) -> option(bits(32)) =
+  if ame_valid_softfloat_ew_dtype(md_dtype) &
+     ame_valid_softfloat_ew_dtype(ms1_dtype) &
+     ame_fp32_unary_supported(op) &
+     ame_same_float_format2(md_dtype, ms1_dtype) then Some(md_dtype)
+  else None()
+
+function ame_unary_int_m(nsq : nat, md_dtype : bits(32), ms1_dtype : bits(32),
+                         md : ameregidx, ms1 : ameregidx,
+                         op : ame_int_unary_op) -> bool = {
+  if not(ame_unary_formed(nsq, md, md_dtype, ms1, ms1_dtype)) then false
+  else {
+    let snapshot = ame_snapshot_mregs();
+    var saturated : bits(1) = 0b0;
+
+    foreach (e from 0 to (nsq * ame_nelem - 1)) {
+      let (element_saturated, result) =
+        ame_int_unary_result(op, md_dtype,
+          ame_read_snapshot_elem(snapshot, ms1_dtype, ms1, e));
+      saturated = saturated | bool_to_bit(element_saturated);
+      write_m_elem(md_dtype, md, e, result)
+    };
+
+    if saturated == 0b1 then ame_set_saturated();
+    true
   }
-  else ame_unsupported_result()
+}
+
+function ame_unary_fp_m(nsq : nat, dtype : bits(32), md_dtype : bits(32),
+                        ms1_dtype : bits(32), md : ameregidx, ms1 : ameregidx,
+                        op : ame_int_unary_op) -> bool = {
+  if not(ame_unary_formed(nsq, md, md_dtype, ms1, ms1_dtype)) then false
+  else {
+    let snapshot = ame_snapshot_mregs();
+    var flags : bits_fflags = zeros();
+
+    foreach (e from 0 to (nsq * ame_nelem - 1)) {
+      let (element_flags, result) =
+        ame_float_unary_result(dtype, op,
+          ame_read_snapshot_elem(snapshot, ms1_dtype, ms1, e));
+      flags = flags | element_flags;
+      write_m_elem(md_dtype, md, e, result)
+    };
+
+    accrue_amefflags(flags);
+    true
+  }
 }
 
 function ame_ew_unary_m(md_dtype : bits(32), ms1_dtype : bits(32),
                         md : ameregidx, ms1 : ameregidx,
                         op : ame_int_unary_op) -> bool = {
-  let dest_size = ame_dtype_size(md_dtype);
-  let src_size = ame_dtype_size(ms1_dtype);
   let nsq = ame_nsq2(md_dtype, ms1_dtype);
 
-  if ame_valid_int_elementwise_dtype(md_dtype) & ame_valid_int_elementwise_dtype(ms1_dtype) then {
-    if dest_size != src_size | ame_is_signed(md_dtype) != ame_is_signed(ms1_dtype) then
-      ame_unsupported_result()
-    else if not(ame_check_formed_operand(md, md_dtype, nsq)) then false
-    else if not(ame_check_formed_operand(ms1, ms1_dtype, nsq)) then false
-    else {
-      let snapshot = ame_snapshot_mregs();
-      var saturated : bits(1) = 0b0;
-
-      foreach (e from 0 to (nsq * ame_nelem - 1)) {
-        let value = ame_read_snapshot_elem(snapshot, ms1_dtype, ms1, e);
-        let (element_saturated, result) = ame_int_unary_result(op, md_dtype, value);
-        saturated = saturated | bool_to_bit(element_saturated);
-        write_m_elem(md_dtype, md, e, result)
-      };
-      if saturated == 0b1 then ame_set_saturated();
-      true
-    }
+  if ame_unary_int_accepts(op, md_dtype, ms1_dtype) then
+    ame_unary_int_m(nsq, md_dtype, ms1_dtype, md, ms1, op)
+  else match ame_unary_fp_accepts(op, md_dtype, ms1_dtype) {
+    Some(dtype) => ame_unary_fp_m(nsq, dtype, md_dtype, ms1_dtype, md, ms1, op),
+    None()      => ame_unsupported_result()
   }
-  else if ame_valid_softfloat_ew_dtype(md_dtype) & ame_valid_softfloat_ew_dtype(ms1_dtype) & ame_fp32_unary_supported(op) then {
-    if not(ame_same_float_format2(md_dtype, ms1_dtype)) then
-      ame_unsupported_result()
-    else if not(ame_check_formed_operand(md, md_dtype, nsq)) then false
-    else if not(ame_check_formed_operand(ms1, ms1_dtype, nsq)) then false
-    else {
-      let snapshot = ame_snapshot_mregs();
-      var flags : bits_fflags = zeros();
-
-      foreach (e from 0 to (nsq * ame_nelem - 1)) {
-        let value = ame_read_snapshot_elem(snapshot, ms1_dtype, ms1, e);
-        let (fflags, result) = ame_float_unary_result(md_dtype, op, value);
-        flags = flags | fflags;
-        write_m_elem(md_dtype, md, e, result)
-      };
-      accrue_amefflags(flags);
-      true
-    }
-  }
-  else ame_unsupported_result()
 }
 
 function ame_logexp_binary_m(md_dtype : bits(32), ms1_dtype : bits(32),

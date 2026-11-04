@@ -62,6 +62,21 @@ function ame_int_shift_result(op : ame_int_shift_op, dtype : bits(32),
   }
 }
 
+function ame_shift_m_accepts(op : ame_int_shift_op, md_dtype : bits(32),
+                             ms1_dtype : bits(32), ms2_dtype : bits(32)) -> bool =
+  ame_valid_int_ew_dtype(md_dtype) &
+  ame_valid_int_ew_dtype(ms1_dtype) &
+  ame_valid_int_ew_dtype(ms2_dtype) &
+  md_dtype == ms1_dtype &
+  (if op == AME_INT_SHIFT_RIGHT_ARITH then ame_is_signed(ms1_dtype) else true)
+
+function ame_shift_x_accepts(op : ame_int_shift_op, md_dtype : bits(32),
+                             ms2_dtype : bits(32)) -> bool =
+  ame_valid_int_ew_dtype(md_dtype) &
+  ame_valid_int_ew_dtype(ms2_dtype) &
+  md_dtype == ms2_dtype &
+  (if op == AME_INT_SHIFT_RIGHT_ARITH then ame_is_signed(ms2_dtype) else true)
+
 function ame_ew_shift_m(md_dtype : bits(32), ms1_dtype : bits(32),
                         ms2_dtype : bits(32), md : ameregidx,
                         ms1 : ameregidx, ms2 : ameregidx,
@@ -69,17 +84,11 @@ function ame_ew_shift_m(md_dtype : bits(32), ms1_dtype : bits(32),
   let data_size = ame_dtype_size(ms1_dtype);
   let nsq = ame_nsq3(md_dtype, ms1_dtype, ms2_dtype);
 
-  if not(ame_valid_int_ew_dtype(md_dtype) & ame_valid_int_ew_dtype(ms1_dtype) & ame_valid_int_ew_dtype(ms2_dtype)) then {
-    ame_set_unsupported();
-    true
-  }
-  else if md_dtype != ms1_dtype | (op == AME_INT_SHIFT_RIGHT_ARITH & not(ame_is_signed(ms1_dtype))) then {
-    ame_set_unsupported();
-    true
-  }
-  else if not(ame_check_formed_operand(md, md_dtype, nsq)) then false
-  else if not(ame_check_formed_operand(ms1, ms1_dtype, nsq)) then false
-  else if not(ame_check_formed_operand(ms2, ms2_dtype, nsq)) then false
+  if not(ame_shift_m_accepts(op, md_dtype, ms1_dtype, ms2_dtype)) then
+    return ame_unsupported_result();
+
+  if not(ame_binary_formed(nsq, md, md_dtype, ms1, ms1_dtype, ms2, ms2_dtype))
+  then false
   else {
     let snapshot = ame_snapshot_mregs();
 
@@ -100,16 +109,10 @@ function ame_ew_shift_x(md_dtype : bits(32), ms2_dtype : bits(32),
   let data_size = ame_dtype_size(ms2_dtype);
   let nsq = ame_nsq2(md_dtype, ms2_dtype);
 
-  if not(ame_valid_int_ew_dtype(md_dtype) & ame_valid_int_ew_dtype(ms2_dtype)) then {
-    ame_set_unsupported();
-    true
-  }
-  else if md_dtype != ms2_dtype | (op == AME_INT_SHIFT_RIGHT_ARITH & not(ame_is_signed(ms2_dtype))) then {
-    ame_set_unsupported();
-    true
-  }
-  else if not(ame_check_formed_operand(md, md_dtype, nsq)) then false
-  else if not(ame_check_formed_operand(ms2, ms2_dtype, nsq)) then false
+  if not(ame_shift_x_accepts(op, md_dtype, ms2_dtype)) then
+    return ame_unsupported_result();
+
+  if not(ame_unary_formed(nsq, md, md_dtype, ms2, ms2_dtype)) then false
   else {
     let amount : nat = unsigned(rs1_val) % max(1, data_size);
     let snapshot = ame_snapshot_mregs();
