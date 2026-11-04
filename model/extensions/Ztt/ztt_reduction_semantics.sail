@@ -25,43 +25,50 @@ function ame_int_reduce_saturates(op : ame_int_reduce_op, dtype : bits(32),
   }
 }
 
+function ame_reduce_accepts(op : ame_int_reduce_op, md_dtype : bits(32),
+                            ms1_dtype : bits(32)) -> bool =
+  ame_valid_int_elementwise_dtype(md_dtype) &
+  ame_valid_int_elementwise_dtype(ms1_dtype) &
+  ame_dtype_size(md_dtype) == ame_dtype_size(ms1_dtype) &
+  ame_is_signed(md_dtype) == ame_is_signed(ms1_dtype)
+
 function ame_reduce_ew(md_dtype : bits(32), ms1_dtype : bits(32),
                        md : ameregidx, ms1 : ameregidx,
                        op : ame_int_reduce_op, by_row : bool) -> bool = {
-  let dest_size = ame_dtype_size(md_dtype);
-  let src_size = ame_dtype_size(ms1_dtype);
   let nsq = ame_nsq2(md_dtype, ms1_dtype);
 
-  if not(ame_valid_int_elementwise_dtype(md_dtype) & ame_valid_int_elementwise_dtype(ms1_dtype)) then
-    ame_unsupported_result()
-  else if dest_size != src_size | ame_is_signed(md_dtype) != ame_is_signed(ms1_dtype) then
-    ame_unsupported_result()
-  else if not(ame_check_formed_operand(md, md_dtype, nsq)) then false
-  else if not(ame_check_formed_operand(ms1, ms1_dtype, nsq)) then false
+  if not(ame_reduce_accepts(op, md_dtype, ms1_dtype)) then
+    return ame_unsupported_result();
+
+  if not(ame_unary_formed(nsq, md, md_dtype, ms1, ms1_dtype)) then false
   else {
     let snapshot = ame_snapshot_mregs();
     var saturated : bits(1) = 0b0;
 
     foreach (sq from 0 to (nsq - 1)) {
-    foreach (outer from 0 to (ame_nlen - 1)) {
-      var running : bits(ame_max_dtype_size) = zeros();
-      foreach (inner from 0 to (ame_nlen - 1)) {
-        let local_idx = if by_row then outer * ame_nlen + inner else inner * ame_nlen + outer;
-        let value = ame_read_snapshot_elem(snapshot, ms1_dtype, ms1,
-                                           sq * ame_nelem + local_idx);
-        if inner == 0 then
-          running = value
-        else {
-          saturated = saturated | bool_to_bit(ame_int_reduce_saturates(op, md_dtype, running, value));
-          running = ame_int_reduce_result(op, md_dtype, running, value)
+      foreach (outer from 0 to (ame_nlen - 1)) {
+        var running : bits(ame_max_dtype_size) = zeros();
+        foreach (inner from 0 to (ame_nlen - 1)) {
+          let local_idx = if by_row then outer * ame_nlen + inner
+                                    else inner * ame_nlen + outer;
+          let value = ame_read_snapshot_elem(snapshot, ms1_dtype, ms1,
+                                             sq * ame_nelem + local_idx);
+          if inner == 0 then
+            running = value
+          else {
+            saturated = saturated |
+              bool_to_bit(ame_int_reduce_saturates(op, md_dtype, running, value));
+            running = ame_int_reduce_result(op, md_dtype, running, value)
+          }
+        };
+        foreach (inner from 0 to (ame_nlen - 1)) {
+          let local_idx = if by_row then outer * ame_nlen + inner
+                                    else inner * ame_nlen + outer;
+          write_m_elem(md_dtype, md, sq * ame_nelem + local_idx, running)
         }
-      };
-      foreach (inner from 0 to (ame_nlen - 1)) {
-        let local_idx = if by_row then outer * ame_nlen + inner else inner * ame_nlen + outer;
-        write_m_elem(md_dtype, md, sq * ame_nelem + local_idx, running)
       }
     };
-    };
+
     if saturated == 0b1 then ame_set_saturated();
     true
   }
@@ -70,37 +77,36 @@ function ame_reduce_ew(md_dtype : bits(32), ms1_dtype : bits(32),
 function ame_prefix_ew(md_dtype : bits(32), ms1_dtype : bits(32),
                        md : ameregidx, ms1 : ameregidx,
                        op : ame_int_reduce_op, by_row : bool) -> bool = {
-  let dest_size = ame_dtype_size(md_dtype);
-  let src_size = ame_dtype_size(ms1_dtype);
   let nsq = ame_nsq2(md_dtype, ms1_dtype);
 
-  if not(ame_valid_int_elementwise_dtype(md_dtype) & ame_valid_int_elementwise_dtype(ms1_dtype)) then
-    ame_unsupported_result()
-  else if dest_size != src_size | ame_is_signed(md_dtype) != ame_is_signed(ms1_dtype) then
-    ame_unsupported_result()
-  else if not(ame_check_formed_operand(md, md_dtype, nsq)) then false
-  else if not(ame_check_formed_operand(ms1, ms1_dtype, nsq)) then false
+  if not(ame_reduce_accepts(op, md_dtype, ms1_dtype)) then
+    return ame_unsupported_result();
+
+  if not(ame_unary_formed(nsq, md, md_dtype, ms1, ms1_dtype)) then false
   else {
     let snapshot = ame_snapshot_mregs();
     var saturated : bits(1) = 0b0;
 
     foreach (sq from 0 to (nsq - 1)) {
-    foreach (outer from 0 to (ame_nlen - 1)) {
-      var running : bits(ame_max_dtype_size) = zeros();
-      foreach (inner from 0 to (ame_nlen - 1)) {
-        let local_idx = if by_row then outer * ame_nlen + inner else inner * ame_nlen + outer;
-        let idx = sq * ame_nelem + local_idx;
-        let value = ame_read_snapshot_elem(snapshot, ms1_dtype, ms1, idx);
-        if inner == 0 then
-          running = value
-        else {
-          saturated = saturated | bool_to_bit(ame_int_reduce_saturates(op, md_dtype, running, value));
-          running = ame_int_reduce_result(op, md_dtype, running, value)
-        };
-        write_m_elem(md_dtype, md, idx, running)
+      foreach (outer from 0 to (ame_nlen - 1)) {
+        var running : bits(ame_max_dtype_size) = zeros();
+        foreach (inner from 0 to (ame_nlen - 1)) {
+          let local_idx = if by_row then outer * ame_nlen + inner
+                                    else inner * ame_nlen + outer;
+          let idx = sq * ame_nelem + local_idx;
+          let value = ame_read_snapshot_elem(snapshot, ms1_dtype, ms1, idx);
+          if inner == 0 then
+            running = value
+          else {
+            saturated = saturated |
+              bool_to_bit(ame_int_reduce_saturates(op, md_dtype, running, value));
+            running = ame_int_reduce_result(op, md_dtype, running, value)
+          };
+          write_m_elem(md_dtype, md, idx, running)
+        }
       }
     };
-    };
+
     if saturated == 0b1 then ame_set_saturated();
     true
   }

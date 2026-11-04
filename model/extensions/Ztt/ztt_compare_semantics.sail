@@ -53,32 +53,48 @@ function ame_predicate_elem_nonnegative(dtype : bits(32),
   }
 }
 
+// mpredsum/mpsumsq select from Ms1 where the predicate square is negative (or
+// non-negative) and either keep the destination or clear it elsewhere.  The
+// instruction is not a data conversion, so both data squares must carry the
+// same datatype (instructions.adoc, mpredsum.ew).
+function ame_predicate_accepts(md_dtype : bits(32), predicate_dtype : bits(32),
+                               ms1_dtype : bits(32)) -> bool =
+  ame_datatype_supported(md_dtype) &
+  ame_datatype_supported(predicate_dtype) &
+  ame_datatype_supported(ms1_dtype) &
+  md_dtype == ms1_dtype
+
 function ame_ew_predicate_m(md_dtype : bits(32), predicate_dtype : bits(32),
                             ms1_dtype : bits(32), md : ameregidx,
                             predicate_reg : ameregidx, ms1 : ameregidx,
                             select_when_negative : bool,
                             preserve_dest_when_false : bool) -> bool = {
-  if not(ame_datatype_supported(md_dtype) & ame_datatype_supported(predicate_dtype) &
-         ame_datatype_supported(ms1_dtype)) then ame_unsupported_result()
-  else if md_dtype != ms1_dtype then ame_unsupported_result()
+  let nsq = ame_nsq3(md_dtype, predicate_dtype, ms1_dtype);
+
+  if not(ame_predicate_accepts(md_dtype, predicate_dtype, ms1_dtype)) then
+    return ame_unsupported_result();
+
+  if not(ame_check_formed_operand(md, md_dtype, nsq)) |
+     not(ame_check_formed_operand(predicate_reg, predicate_dtype, nsq)) |
+     not(ame_check_formed_operand(ms1, ms1_dtype, nsq))
+  then false
   else {
-    let nsq = ame_nsq3(md_dtype, predicate_dtype, ms1_dtype);
-    if not(ame_check_formed_operand(md, md_dtype, nsq)) then false
-    else if not(ame_check_formed_operand(predicate_reg, predicate_dtype, nsq)) then false
-    else if not(ame_check_formed_operand(ms1, ms1_dtype, nsq)) then false
-    else {
     let snapshot = ame_snapshot_mregs();
+
     foreach (e from 0 to (nsq * ame_nelem - 1)) {
-      let predicate_elem = ame_read_snapshot_elem(snapshot, predicate_dtype, predicate_reg, e);
-      let selected = if select_when_negative
-        then ame_predicate_elem_negative(predicate_dtype, predicate_elem)
+      let predicate_elem = ame_read_snapshot_elem(snapshot, predicate_dtype,
+                                                  predicate_reg, e);
+      let selected =
+        if select_when_negative then
+          ame_predicate_elem_negative(predicate_dtype, predicate_elem)
         else ame_predicate_elem_nonnegative(predicate_dtype, predicate_elem);
-      let result = if selected then ame_read_snapshot_elem(snapshot, ms1_dtype, ms1, e)
-        else if preserve_dest_when_false then ame_read_snapshot_elem(snapshot, md_dtype, md, e)
+      let result =
+        if selected then ame_read_snapshot_elem(snapshot, ms1_dtype, ms1, e)
+        else if preserve_dest_when_false then
+          ame_read_snapshot_elem(snapshot, md_dtype, md, e)
         else zeros();
       write_m_elem(md_dtype, md, e, result)
     };
     true
-    }
   }
 }
