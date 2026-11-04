@@ -226,105 +226,104 @@ function ame_integer_binary_x_tuple_supported(op : ame_int_binary_op,
     md_dtype == ms2_dtype & md_dtype == amestype
   else true
 
-/* Comparisons are the one binary family whose result class differs from its
-   source class.  Keep them out of the arithmetic dispatch so floating inputs
-   can never be reinterpreted using an integer destination descriptor. */
-function ame_ew_compare_m(md_dtype : bits(32), ms1_dtype : bits(32),
-                          ms2_dtype : bits(32), md : ameregidx,
-                          ms1 : ameregidx, ms2 : ameregidx,
-                          op : ame_int_binary_op) -> bool = {
-  let nsq = ame_nsq3(md_dtype, ms1_dtype, ms2_dtype);
-  if not(ame_valid_int_elementwise_dtype(md_dtype)) then ame_unsupported_result()
-  else if ame_valid_int_elementwise_dtype(ms1_dtype) &
-          ame_valid_int_elementwise_dtype(ms2_dtype) then {
-    if not(ame_check_formed_operand(md, md_dtype, nsq)) then false
-    else if not(ame_check_formed_operand(ms1, ms1_dtype, nsq)) then false
-    else if not(ame_check_formed_operand(ms2, ms2_dtype, nsq)) then false
-    else {
-      let snapshot = ame_snapshot_mregs();
-      foreach (e from 0 to (nsq * ame_nelem - 1)) {
-        let (_, result) = ame_int_binary_mixed_result(op, md_dtype,
-          ms1_dtype, ms2_dtype,
-          ame_read_snapshot_elem(snapshot, ms1_dtype, ms1, e),
-          ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e));
-        write_m_elem(md_dtype, md, e, result)
-      };
-      true
-    }
-  }
-  else if ame_valid_softfloat_ew_dtype(ms1_dtype) &
-          ame_valid_softfloat_ew_dtype(ms2_dtype) &
-          ame_same_float_format2(ms1_dtype, ms2_dtype) then {
-    if not(ame_check_formed_operand(md, md_dtype, nsq)) then false
-    else if not(ame_check_formed_operand(ms1, ms1_dtype, nsq)) then false
-    else if not(ame_check_formed_operand(ms2, ms2_dtype, nsq)) then false
-    else match ame_fp_rounding_mode(ms1_dtype) {
-      None() => ame_unsupported_result(),
-      Some(rm) => {
-        let snapshot = ame_snapshot_mregs();
-        var flags : bits_fflags = zeros();
-        foreach (e from 0 to (nsq * ame_nelem - 1)) {
-          let (element_flags, result) = ame_float_binary_result(ms1_dtype,
-            op, rm,
-            ame_read_snapshot_elem(snapshot, ms1_dtype, ms1, e),
-            ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e));
-          flags = flags | element_flags;
-          write_m_elem(md_dtype, md, e, result)
-        };
-        accrue_amefflags(flags);
-        true
-      }
-    }
-  }
-  else ame_unsupported_result()
+/* The binary family accepts two disjoint tuple shapes: every operand an
+   integer datatype, or every operand a floating-point datatype of one format.
+   Comparisons are the family the manual singles out (instructions.adoc:900-902
+   for mcmpge.ew): the sources are integer or floating-point and the destination
+   is an integer mask, so the result class differs from the source class.  The
+   two acceptance
+   predicates below are the whole shaping rule; the execute bodies differ only in
+   which kernel they call, the way a V-extension clause differs only in its
+   `match funct6` arms. */
+
+struct ame_binary_fp_plan = {
+  dtype : bits(32),
+  rm    : bits_rm
 }
 
-function ame_ew_compare_x(md_dtype : bits(32), ms2_dtype : bits(32),
-                          md : ameregidx, rs1_val : xlenbits,
+function ame_binary_int_accepts(op : ame_int_binary_op, md_dtype : bits(32),
+                                ms1_dtype : bits(32),
+                                ms2_dtype : bits(32)) -> bool =
+  ame_valid_int_elementwise_dtype(md_dtype) &
+  ame_valid_int_elementwise_dtype(ms1_dtype) &
+  ame_valid_int_elementwise_dtype(ms2_dtype) &
+  (if ame_binary_is_comparison(op) then true
+   else ame_integer_binary_m_tuple_supported(op, md_dtype, ms1_dtype, ms2_dtype))
+
+function ame_binary_fp_accepts(op : ame_int_binary_op, md_dtype : bits(32),
+                               ms1_dtype : bits(32), ms2_dtype : bits(32))
+  -> option(ame_binary_fp_plan) =
+  if ame_binary_is_comparison(op) then {
+    if ame_valid_int_elementwise_dtype(md_dtype) &
+       ame_valid_softfloat_ew_dtype(ms1_dtype) &
+       ame_valid_softfloat_ew_dtype(ms2_dtype) &
+       ame_same_float_format2(ms1_dtype, ms2_dtype) then
+      match ame_fp_rounding_mode(ms1_dtype) {
+        Some(rm) => Some(struct { dtype = ms1_dtype, rm = rm }),
+        None()   => None()
+      }
+    else None()
+  }
+  else if ame_valid_softfloat_ew_dtype(md_dtype) &
+          ame_valid_softfloat_ew_dtype(ms1_dtype) &
+          ame_valid_softfloat_ew_dtype(ms2_dtype) &
+          ame_float_binary_supported(op) &
+          ame_same_float_format3(md_dtype, ms1_dtype, ms2_dtype) then
+    match ame_fp_rounding_mode(md_dtype) {
+      Some(rm) => Some(struct { dtype = md_dtype, rm = rm }),
+      None()   => None()
+    }
+  else None()
+
+function ame_binary_int_m(nsq : nat, md_dtype : bits(32), ms1_dtype : bits(32),
+                          ms2_dtype : bits(32), md : ameregidx, ms1 : ameregidx,
                           ms2 : ameregidx, op : ame_int_binary_op) -> bool = {
-  let nsq = ame_nsq2(md_dtype, ms2_dtype);
-  if not(ame_valid_int_elementwise_dtype(md_dtype)) then ame_unsupported_result()
-  else if ame_valid_int_elementwise_dtype(ms2_dtype) then {
-    if not(ame_check_formed_operand(md, md_dtype, nsq)) then false
-    else if not(ame_check_formed_operand(ms2, ms2_dtype, nsq)) then false
-    else if not(ame_datatype_supported(amestype) &
-                ame_is_integer(amestype)) then ame_unsupported_result()
-    else {
-      let raw_element : bits(ame_max_dtype_size) = zero_extend(ame_max_dtype_size, rs1_val);
-      let ms1_val = ame_int_result_from_int(ms2_dtype,
-        ame_elem_int(amestype, raw_element));
-      let snapshot = ame_snapshot_mregs();
-      foreach (e from 0 to (nsq * ame_nelem - 1)) {
-        let (_, result) = ame_int_binary_result(op, ms2_dtype, ms1_val,
+  if not(ame_check_formed_operand(md, md_dtype, nsq)) |
+     not(ame_check_formed_operand(ms1, ms1_dtype, nsq)) |
+     not(ame_check_formed_operand(ms2, ms2_dtype, nsq))
+  then false
+  else {
+    let snapshot = ame_snapshot_mregs();
+    var saturated : bits(1) = 0b0;
+
+    foreach (e from 0 to (nsq * ame_nelem - 1)) {
+      let (element_saturated, result) =
+        ame_int_binary_mixed_result(op, md_dtype, ms1_dtype, ms2_dtype,
+          ame_read_snapshot_elem(snapshot, ms1_dtype, ms1, e),
           ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e));
-        write_m_elem(md_dtype, md, e, result)
-      };
-      true
-    }
+      saturated = saturated | bool_to_bit(element_saturated);
+      write_m_elem(md_dtype, md, e, result)
+    };
+
+    if saturated == 0b1 then ame_set_saturated();
+    true
   }
-  else if ame_valid_softfloat_ew_dtype(ms2_dtype) then {
-    if not(ame_check_formed_operand(md, md_dtype, nsq)) then false
-    else if not(ame_check_formed_operand(ms2, ms2_dtype, nsq)) then false
-    else
-    match (ame_scalar_float_data_value(ms2_dtype, rs1_val),
-           ame_fp_rounding_mode(ms2_dtype)) {
-      (Some(ms1_val), Some(rm)) => {
-        let snapshot = ame_snapshot_mregs();
-        var flags : bits_fflags = zeros();
-        foreach (e from 0 to (nsq * ame_nelem - 1)) {
-          let (element_flags, result) = ame_float_binary_result(ms2_dtype,
-            op, rm, ms1_val,
-            ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e));
-          flags = flags | element_flags;
-          write_m_elem(md_dtype, md, e, result)
-        };
-        accrue_amefflags(flags);
-        true
-      },
-      _ => ame_unsupported_result()
-    }
+}
+
+function ame_binary_fp_m(nsq : nat, plan : ame_binary_fp_plan,
+                         md_dtype : bits(32), ms1_dtype : bits(32),
+                         ms2_dtype : bits(32), md : ameregidx, ms1 : ameregidx,
+                         ms2 : ameregidx, op : ame_int_binary_op) -> bool = {
+  if not(ame_check_formed_operand(md, md_dtype, nsq)) |
+     not(ame_check_formed_operand(ms1, ms1_dtype, nsq)) |
+     not(ame_check_formed_operand(ms2, ms2_dtype, nsq))
+  then false
+  else {
+    let snapshot = ame_snapshot_mregs();
+    var flags : bits_fflags = zeros();
+
+    foreach (e from 0 to (nsq * ame_nelem - 1)) {
+      let (element_flags, result) =
+        ame_float_binary_result(plan.dtype, op, plan.rm,
+          ame_read_snapshot_elem(snapshot, ms1_dtype, ms1, e),
+          ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e));
+      flags = flags | element_flags;
+      write_m_elem(md_dtype, md, e, result)
+    };
+
+    accrue_amefflags(flags);
+    true
   }
-  else ame_unsupported_result()
 }
 
 function ame_ew_binary_m(md_dtype : bits(32), ms1_dtype : bits(32),
@@ -333,56 +332,96 @@ function ame_ew_binary_m(md_dtype : bits(32), ms1_dtype : bits(32),
                          op : ame_int_binary_op) -> bool = {
   let nsq = ame_nsq3(md_dtype, ms1_dtype, ms2_dtype);
 
-  if ame_binary_is_comparison(op) then
-    ame_ew_compare_m(md_dtype, ms1_dtype, ms2_dtype, md,
-      ms1, ms2, op)
-  else if ame_valid_int_elementwise_dtype(md_dtype) & ame_valid_int_elementwise_dtype(ms1_dtype) & ame_valid_int_elementwise_dtype(ms2_dtype) then {
-    if not(ame_integer_binary_m_tuple_supported(op, md_dtype, ms1_dtype, ms2_dtype)) then
-      ame_unsupported_result()
-    else if not(ame_check_formed_operand(md, md_dtype, nsq)) then false
-    else if not(ame_check_formed_operand(ms1, ms1_dtype, nsq)) then false
-    else if not(ame_check_formed_operand(ms2, ms2_dtype, nsq)) then false
-    else {
-      let snapshot = ame_snapshot_mregs();
-      var saturated : bits(1) = 0b0;
-
-      foreach (e from 0 to (nsq * ame_nelem - 1)) {
-        let ms1_val = ame_read_snapshot_elem(snapshot, ms1_dtype, ms1, e);
-        let ms2_val = ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e);
-        let (element_saturated, result) =
-          ame_int_binary_mixed_result(op, md_dtype, ms1_dtype, ms2_dtype, ms1_val, ms2_val);
-        saturated = saturated | bool_to_bit(element_saturated);
-        write_m_elem(md_dtype, md, e, result)
-      };
-      if saturated == 0b1 then ame_set_saturated();
-      true
-    }
+  if ame_binary_int_accepts(op, md_dtype, ms1_dtype, ms2_dtype) then
+    ame_binary_int_m(nsq, md_dtype, ms1_dtype, ms2_dtype, md, ms1, ms2, op)
+  else match ame_binary_fp_accepts(op, md_dtype, ms1_dtype, ms2_dtype) {
+    Some(plan) => ame_binary_fp_m(nsq, plan, md_dtype, ms1_dtype, ms2_dtype,
+                                  md, ms1, ms2, op),
+    None()     => ame_unsupported_result()
   }
-  else if ame_valid_softfloat_ew_dtype(md_dtype) & ame_valid_softfloat_ew_dtype(ms1_dtype) & ame_valid_softfloat_ew_dtype(ms2_dtype) & ame_float_binary_supported(op) then {
-    if not(ame_same_float_format3(md_dtype, ms1_dtype, ms2_dtype)) then
-      ame_unsupported_result()
-    else if not(ame_check_formed_operand(md, md_dtype, nsq)) then false
-    else if not(ame_check_formed_operand(ms1, ms1_dtype, nsq)) then false
-    else if not(ame_check_formed_operand(ms2, ms2_dtype, nsq)) then false
-    else match ame_fp_rounding_mode(md_dtype) {
-      None() => ame_unsupported_result(),
-      Some(rm) => {
-        let snapshot = ame_snapshot_mregs();
-        var flags : bits_fflags = zeros();
+}
 
-        foreach (e from 0 to (nsq * ame_nelem - 1)) {
-          let ms1_val = ame_read_snapshot_elem(snapshot, ms1_dtype, ms1, e);
-          let ms2_val = ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e);
-          let (fflags, result) = ame_float_binary_result(md_dtype, op, rm, ms1_val, ms2_val);
-          flags = flags | fflags;
-          write_m_elem(md_dtype, md, e, result)
-        };
-        accrue_amefflags(flags);
-        true
-      }
-    }
+// Scalar forms take the same two shapes.  The data scalar is described by
+// amestype in both (instruction_semantics.adoc:257-268): the integer shape
+// converts it to Ms2, the floating-point shape requires amestype to be the
+// same float format as the destination and uses its low bits.
+function ame_binary_x_int_accepts(op : ame_int_binary_op, md_dtype : bits(32),
+                                  ms2_dtype : bits(32), rs1_val : xlenbits)
+  -> option(bits(ame_max_dtype_size)) = {
+  let raw_scalar : bits(ame_max_dtype_size) = zero_extend(ame_max_dtype_size, rs1_val);
+  let scalar = ame_int_result_from_int(ms2_dtype, ame_elem_int(amestype, raw_scalar));
+
+  if not(ame_valid_int_elementwise_dtype(md_dtype)) then None()
+  else if not(ame_valid_int_elementwise_dtype(ms2_dtype)) then None()
+  else if not(ame_datatype_supported(amestype) & ame_is_integer(amestype)) then None()
+  else if ame_binary_is_comparison(op) then Some(scalar)
+  else if ame_integer_binary_x_tuple_supported(op, md_dtype, ms2_dtype) then Some(scalar)
+  else None()
+}
+
+function ame_binary_x_fp_accepts(op : ame_int_binary_op, md_dtype : bits(32),
+                                 ms2_dtype : bits(32), rs1_val : xlenbits)
+  -> option((ame_binary_fp_plan, bits(ame_max_dtype_size))) = {
+  let destination_ok =
+    if ame_binary_is_comparison(op) then ame_valid_int_elementwise_dtype(md_dtype)
+    else ame_valid_softfloat_ew_dtype(md_dtype) & ame_float_binary_supported(op) &
+         ame_same_float_format2(md_dtype, ms2_dtype);
+
+  if not(ame_valid_softfloat_ew_dtype(ms2_dtype)) then None()
+  else if not(destination_ok) then None()
+  else match (ame_scalar_float_data_value(ms2_dtype, rs1_val),
+              ame_fp_rounding_mode(ms2_dtype)) {
+    (Some(scalar), Some(rm)) => Some((struct { dtype = ms2_dtype, rm = rm }, scalar)),
+    _                        => None()
   }
-  else ame_unsupported_result()
+}
+
+function ame_binary_int_x(nsq : nat, scalar : bits(ame_max_dtype_size),
+                          md_dtype : bits(32), ms2_dtype : bits(32),
+                          md : ameregidx, ms2 : ameregidx,
+                          op : ame_int_binary_op) -> bool = {
+  if not(ame_check_formed_operand(md, md_dtype, nsq)) |
+     not(ame_check_formed_operand(ms2, ms2_dtype, nsq))
+  then false
+  else {
+    let snapshot = ame_snapshot_mregs();
+    var saturated : bits(1) = 0b0;
+
+    foreach (e from 0 to (nsq * ame_nelem - 1)) {
+      let (element_saturated, result) =
+        ame_int_binary_mixed_result(op, md_dtype, ms2_dtype, ms2_dtype, scalar,
+          ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e));
+      saturated = saturated | bool_to_bit(element_saturated);
+      write_m_elem(md_dtype, md, e, result)
+    };
+
+    if saturated == 0b1 then ame_set_saturated();
+    true
+  }
+}
+
+function ame_binary_fp_x(nsq : nat, plan : ame_binary_fp_plan,
+                         scalar : bits(ame_max_dtype_size), md_dtype : bits(32),
+                         ms2_dtype : bits(32), md : ameregidx, ms2 : ameregidx,
+                         op : ame_int_binary_op) -> bool = {
+  if not(ame_check_formed_operand(md, md_dtype, nsq)) |
+     not(ame_check_formed_operand(ms2, ms2_dtype, nsq))
+  then false
+  else {
+    let snapshot = ame_snapshot_mregs();
+    var flags : bits_fflags = zeros();
+
+    foreach (e from 0 to (nsq * ame_nelem - 1)) {
+      let (element_flags, result) =
+        ame_float_binary_result(plan.dtype, op, plan.rm, scalar,
+          ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e));
+      flags = flags | element_flags;
+      write_m_elem(md_dtype, md, e, result)
+    };
+
+    accrue_amefflags(flags);
+    true
+  }
 }
 
 function ame_ew_binary_x(md_dtype : bits(32), ms2_dtype : bits(32),
@@ -390,65 +429,14 @@ function ame_ew_binary_x(md_dtype : bits(32), ms2_dtype : bits(32),
                          ms2 : ameregidx, op : ame_int_binary_op) -> bool = {
   let nsq = ame_nsq2(md_dtype, ms2_dtype);
 
-  if ame_binary_is_comparison(op) then
-    ame_ew_compare_x(md_dtype, ms2_dtype, md, rs1_val, ms2, op)
-  else if ame_valid_int_elementwise_dtype(md_dtype) & ame_valid_int_elementwise_dtype(ms2_dtype) then {
-    if not(ame_integer_binary_x_tuple_supported(op, md_dtype, ms2_dtype)) then
-      ame_unsupported_result()
-    else if not(ame_datatype_supported(amestype) &
-                ame_is_integer(amestype)) then ame_unsupported_result()
-    else {
-      let raw_element : bits(ame_max_dtype_size) = zero_extend(ame_max_dtype_size, rs1_val);
-      let ms1_val = ame_int_result_from_int(ms2_dtype,
-        ame_elem_int(amestype, raw_element));
-        if not(ame_check_formed_operand(md, md_dtype, nsq)) then false
-        else if not(ame_check_formed_operand(ms2, ms2_dtype, nsq)) then false
-        else {
-          let snapshot = ame_snapshot_mregs();
-          var saturated : bits(1) = 0b0;
-
-          foreach (e from 0 to (nsq * ame_nelem - 1)) {
-            let ms2_val = ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e);
-            let (element_saturated, result) = ame_int_binary_mixed_result(
-              op, md_dtype, ms2_dtype, ms2_dtype, ms1_val, ms2_val);
-            saturated = saturated | bool_to_bit(element_saturated);
-            write_m_elem(md_dtype, md, e, result)
-          };
-
-          if saturated == 0b1 then ame_set_saturated();
-          true
-        }
+  match ame_binary_x_int_accepts(op, md_dtype, ms2_dtype, rs1_val) {
+    Some(scalar) => ame_binary_int_x(nsq, scalar, md_dtype, ms2_dtype, md, ms2, op),
+    None() => match ame_binary_x_fp_accepts(op, md_dtype, ms2_dtype, rs1_val) {
+      Some((plan, scalar)) => ame_binary_fp_x(nsq, plan, scalar, md_dtype,
+                                              ms2_dtype, md, ms2, op),
+      None()               => ame_unsupported_result()
     }
   }
-  else if ame_valid_softfloat_ew_dtype(md_dtype) & ame_valid_softfloat_ew_dtype(ms2_dtype) & ame_float_binary_supported(op) then {
-    if not(ame_same_float_format2(md_dtype, ms2_dtype)) then
-      ame_unsupported_result()
-    else match ame_scalar_float_data_value(md_dtype, rs1_val) {
-      None() => { ame_set_unsupported(); true },
-      Some(ms1_val) => {
-        if not(ame_check_formed_operand(md, md_dtype, nsq)) then false
-        else if not(ame_check_formed_operand(ms2, ms2_dtype, nsq)) then false
-        else match ame_fp_rounding_mode(md_dtype) {
-          None() => { ame_set_unsupported(); true },
-          Some(rm) => {
-            let snapshot = ame_snapshot_mregs();
-            var flags : bits_fflags = zeros();
-
-            foreach (e from 0 to (nsq * ame_nelem - 1)) {
-              let ms2_val = ame_read_snapshot_elem(snapshot, ms2_dtype, ms2, e);
-              let (fflags, result) = ame_float_binary_result(md_dtype, op, rm, ms1_val, ms2_val);
-              flags = flags | fflags;
-              write_m_elem(md_dtype, md, e, result)
-            };
-
-            accrue_amefflags(flags);
-            true
-          }
-        }
-      }
-    }
-  }
-  else ame_unsupported_result()
 }
 
 function ame_ew_ternary_m(md_dtype : bits(32), ms1_dtype : bits(32),
