@@ -220,41 +220,53 @@ function ame_mmul_2d_float(ad_dtype : bits(32), ms1_dtype : bits(32),
   accrue_amefflags(flags)
 }
 
+function ame_mmul_dest_ok(ad_dtype : bits(32)) -> bool =
+  ame_nregs(ame_dtype_size(ad_dtype)) != 0 & not(ame_is_storage_only(ad_dtype))
+
+function ame_mmul_int_accepts(ad_dtype : bits(32), ms1_dtype : bits(32),
+                              ms2_dtype : bits(32)) -> bool =
+  ame_mmul_dest_ok(ad_dtype) &
+  ame_valid_int_elementwise_dtype(ad_dtype) &
+  ame_valid_int_elementwise_dtype(ms1_dtype) &
+  ame_valid_int_elementwise_dtype(ms2_dtype)
+
+function ame_mmul_fp_accepts(ad_dtype : bits(32), ms1_dtype : bits(32),
+                             ms2_dtype : bits(32)) -> option(bits_rm) =
+  if not(ame_mmul_dest_ok(ad_dtype)) then None()
+  else if not(ame_valid_softfloat_ew_dtype(ad_dtype) &
+              ame_valid_softfloat_ew_dtype(ms1_dtype) &
+              ame_valid_softfloat_ew_dtype(ms2_dtype)) then None()
+  else if not(ame_same_float_format3(ad_dtype, ms1_dtype, ms2_dtype)) then None()
+  else ame_fp_rounding_mode(ad_dtype)
+
 function ame_mmul_2d(ad_dtype : bits(32), ms1_dtype : bits(32),
                      ms2_dtype : bits(32), acc : ameaccregidx,
                      ms1 : ameregidx, ms2 : ameregidx,
                      accumulate : bool, subtract_product : bool,
                      transpose_a : bool, transpose_b : bool)
   -> bool = {
-  let dest_nregs = ame_nregs(ame_dtype_size(ad_dtype));
   let nsq = ame_nsq2(ms1_dtype, ms2_dtype);
 
-  if dest_nregs == 0 | ame_is_storage_only(ad_dtype) then ame_unsupported_result()
-  else if ame_valid_int_elementwise_dtype(ad_dtype) & ame_valid_int_elementwise_dtype(ms1_dtype) & ame_valid_int_elementwise_dtype(ms2_dtype) then {
-    if not(ame_check_formed_operand(ms1, ms1_dtype, nsq)) then false
-    else if not(ame_check_formed_operand(ms2, ms2_dtype, nsq)) then false
-    else {
-      ame_mmul_2d_integer(ad_dtype, ms1_dtype, ms2_dtype, acc, ms1, ms2,
-        accumulate, subtract_product, transpose_a, transpose_b);
-      true
-    }
-  } else if ame_valid_softfloat_ew_dtype(ad_dtype) & ame_valid_softfloat_ew_dtype(ms1_dtype) & ame_valid_softfloat_ew_dtype(ms2_dtype) then {
-    if not(ame_same_float_format3(ad_dtype, ms1_dtype, ms2_dtype)) then
-      ame_unsupported_result()
-    else if not(ame_check_formed_operand(ms1, ms1_dtype, nsq)) then false
-    else if not(ame_check_formed_operand(ms2, ms2_dtype, nsq)) then false
-    else
-    match ame_fp_rounding_mode(ad_dtype) {
-      None() => ame_unsupported_result(),
-      Some(rm) => {
-        ame_mmul_2d_float(ad_dtype, ms1_dtype, ms2_dtype, acc, ms1, ms2,
-          accumulate, subtract_product, transpose_a, transpose_b, rm);
-        true
-      }
-    }
-  } else ame_unsupported_result()
-}
+  if ame_mmul_int_accepts(ad_dtype, ms1_dtype, ms2_dtype) then
+    return if not(ame_unary_formed(nsq, ms1, ms1_dtype, ms2, ms2_dtype)) then false
+           else {
+             ame_mmul_2d_integer(ad_dtype, ms1_dtype, ms2_dtype, acc, ms1, ms2,
+               accumulate, subtract_product, transpose_a, transpose_b);
+             true
+           };
 
+  match ame_mmul_fp_accepts(ad_dtype, ms1_dtype, ms2_dtype) {
+    None()   => ame_unsupported_result(),
+    Some(rm) => if not(ame_unary_formed(nsq, ms1, ms1_dtype, ms2, ms2_dtype))
+                then false
+                else {
+                  ame_mmul_2d_float(ad_dtype, ms1_dtype, ms2_dtype, acc, ms1, ms2,
+                    accumulate, subtract_product, transpose_a, transpose_b, rm);
+                  true
+                }
+  }
+}
+// mmulacc is mmul with a fixed accumulate/subtract/transpose shape.
 function ame_mmulacc_2d(ad_dtype : bits(32), ms1_dtype : bits(32),
                         ms2_dtype : bits(32), acc : ameaccregidx,
                         ms1 : ameregidx, ms2 : ameregidx)
