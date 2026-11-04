@@ -109,10 +109,28 @@ function ame_ocp_fp8_math_result(dtype : bits(32), op : ame_float_math_op,
   ame_ocp_fp8_round_result(dtype, rm, input_flags | op_flags, result32)
 }
 
+// mexp2/mlog2 belong to the same §6.2.2 family as mcos/msin/mtanh/mrec/mrsqrt/
+// msqrt/mfrint*: they share the tuple rule, the destination rounding mode and
+// the amefflags accrual.  Only the kernel is different, so the family keeps one
+// driver (ame_ew_float_math) and the element layer dispatches to the log/exp
+// kernel below.  They are carried as ame_float_math_op values so the family
+// cannot grow a second driver again.
+function ame_float_math_is_logexp(op : ame_float_math_op) -> bool =
+  op == AME_FLOAT_EXP2 | op == AME_FLOAT_LOG2
+
+function ame_float_math_logexp_op(op : ame_float_math_op) -> ame_int_logexp_op =
+  match op {
+    AME_FLOAT_EXP2 => AME_INT_EXP2,
+    AME_FLOAT_LOG2 => AME_INT_LOG2,
+    _              => internal_error(__FILE__, __LINE__, "not a log/exp operation")
+  }
+
 function ame_float_math_result(dtype : bits(32), op : ame_float_math_op,
                                rm : bits_rm, value : bits(ame_max_dtype_size))
   -> (bits_fflags, bits(ame_max_dtype_size)) = {
-  if ame_is_ocp_fp8_dtype(dtype) then ame_ocp_fp8_math_result(dtype, op, rm, value)
+  if ame_float_math_is_logexp(op) then
+    ame_float_logexp_unary_result(dtype, ame_float_math_logexp_op(op), rm, value)
+  else if ame_is_ocp_fp8_dtype(dtype) then ame_ocp_fp8_math_result(dtype, op, rm, value)
   else if ame_is_bf16_dtype(dtype) then ame_bf16_math_result(op, rm, value)
   else match ame_dtype_size(dtype) {
     16 => {
@@ -160,18 +178,19 @@ function ame_float_math_result(dtype : bits(32), op : ame_float_math_op,
 // "overrides the destination datatype rounding-mode field").  Every other
 // operation of the family rounds into D with D's own rounding mode.
 function ame_float_math_dest_rm(op : ame_float_math_op, rm : bits_rm) -> bits_rm =
-  match op {
-    AME_FLOAT_ROUND_DOWN    => 0b010,
-    AME_FLOAT_ROUND_NEAREST => 0b000,
-    AME_FLOAT_ROUND_UP      => 0b011,
-    AME_FLOAT_ROUND_ZERO    => 0b001,
-    _                       => rm
+  match ame_float_math_own_rm(op) {
+    Some(own) => own,
+    None()    => rm
   }
 
 function ame_float_math_result_mixed(md_dtype : bits(32), ms1_dtype : bits(32),
                                      op : ame_float_math_op, rm : bits_rm,
                                      value : bits(ame_max_dtype_size))
   -> (bits_fflags, bits(ame_max_dtype_size)) = {
+  if ame_float_math_is_logexp(op) then
+    ame_float_logexp_unary_result_mixed(md_dtype, ms1_dtype,
+                                        ame_float_math_logexp_op(op), rm, value)
+  else {
   let (input_flags, value64) = ame_float_to_fp64(ms1_dtype, value);
   let (op_flags, result64) = ame_fp64_math_result(op, rm, value64);
   // A representable integral result is exact, so for mfrint* only representing
@@ -180,6 +199,7 @@ function ame_float_math_result_mixed(md_dtype : bits(32), ms1_dtype : bits(32),
   let (round_flags, result) =
     ame_fp64_to_float(md_dtype, ame_float_math_dest_rm(op, rm), result64);
   (input_flags | op_flags | round_flags, result)
+  }
 }
 
 function ame_ew_float_math(md_dtype : bits(32), ms1_dtype : bits(32),

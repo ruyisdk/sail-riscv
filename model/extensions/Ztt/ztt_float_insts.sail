@@ -64,12 +64,12 @@ function clause execute FP_FR2_MD_MS_TYPE(op, rd, rs1) = {
   if not(ame_check_mreg_operand(rs1)) then return Illegal_Instruction();
   match op {
     AME_MCOS_EW => ame_retire_if(ame_ew_float_math(MD(Mdregidx(rd)), MD(Mdregidx(rs1)), Ameregidx(rd), Ameregidx(rs1), AME_FLOAT_COS)),
-    AME_MEXP2_EW => ame_retire_if(ame_logexp_unary_m(MD(Mdregidx(rd)), MD(Mdregidx(rs1)), Ameregidx(rd), Ameregidx(rs1), AME_INT_EXP2)),
+    AME_MEXP2_EW => ame_retire_if(ame_ew_float_math(MD(Mdregidx(rd)), MD(Mdregidx(rs1)), Ameregidx(rd), Ameregidx(rs1), AME_FLOAT_EXP2)),
     AME_MFRINTM_EW => ame_retire_if(ame_ew_float_math(MD(Mdregidx(rd)), MD(Mdregidx(rs1)), Ameregidx(rd), Ameregidx(rs1), AME_FLOAT_ROUND_DOWN)),
     AME_MFRINTN_EW => ame_retire_if(ame_ew_float_math(MD(Mdregidx(rd)), MD(Mdregidx(rs1)), Ameregidx(rd), Ameregidx(rs1), AME_FLOAT_ROUND_NEAREST)),
     AME_MFRINTP_EW => ame_retire_if(ame_ew_float_math(MD(Mdregidx(rd)), MD(Mdregidx(rs1)), Ameregidx(rd), Ameregidx(rs1), AME_FLOAT_ROUND_UP)),
     AME_MFRINTZ_EW => ame_retire_if(ame_ew_float_math(MD(Mdregidx(rd)), MD(Mdregidx(rs1)), Ameregidx(rd), Ameregidx(rs1), AME_FLOAT_ROUND_ZERO)),
-    AME_MLOG2_EW => ame_retire_if(ame_logexp_unary_m(MD(Mdregidx(rd)), MD(Mdregidx(rs1)), Ameregidx(rd), Ameregidx(rs1), AME_INT_LOG2)),
+    AME_MLOG2_EW => ame_retire_if(ame_ew_float_math(MD(Mdregidx(rd)), MD(Mdregidx(rs1)), Ameregidx(rd), Ameregidx(rs1), AME_FLOAT_LOG2)),
     AME_MREC_EW => ame_retire_if(ame_ew_float_math(MD(Mdregidx(rd)), MD(Mdregidx(rs1)), Ameregidx(rd), Ameregidx(rs1), AME_FLOAT_RECIPROCAL)),
     AME_MRSQRT_EW => ame_retire_if(ame_ew_float_math(MD(Mdregidx(rd)), MD(Mdregidx(rs1)), Ameregidx(rd), Ameregidx(rs1), AME_FLOAT_RSQRT)),
     AME_MSIN_EW => ame_retire_if(ame_ew_float_math(MD(Mdregidx(rd)), MD(Mdregidx(rs1)), Ameregidx(rd), Ameregidx(rs1), AME_FLOAT_SIN)),

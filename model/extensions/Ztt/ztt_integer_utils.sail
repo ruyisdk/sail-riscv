@@ -50,7 +50,9 @@ enum ame_float_math_op = {
   AME_FLOAT_ROUND_ZERO,
   AME_FLOAT_COS,
   AME_FLOAT_SIN,
-  AME_FLOAT_TANH
+  AME_FLOAT_TANH,
+  AME_FLOAT_EXP2,
+  AME_FLOAT_LOG2
 }
 
 enum ame_int_reduce_op = {

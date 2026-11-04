@@ -1062,11 +1062,6 @@ INT_EW_TERNARY_X_OPS = {
   "mmulsub.ew.x" => "AME_INT_MULSUB"
 }.freeze
 
-INT_LOGEXP_UNARY_M_OPS = {
-  "mexp2.ew" => "AME_INT_EXP2",
-  "mlog2.ew" => "AME_INT_LOG2"
-}.freeze
-
 INT_LOGEXP_BINARY_M_OPS = {
   "mldexp.ew" => "AME_INT_LDEXP",
   "mldexpacc.ew" => "AME_INT_LDEXPACC",
@@ -1093,7 +1088,9 @@ FLOAT_MATH_UNARY_M_OPS = {
   "msqrt.ew" => "AME_FLOAT_SQRT",
   "mcos.ew" => "AME_FLOAT_COS",
   "msin.ew" => "AME_FLOAT_SIN",
-  "mtanh.ew" => "AME_FLOAT_TANH"
+  "mtanh.ew" => "AME_FLOAT_TANH",
+  "mexp2.ew" => "AME_FLOAT_EXP2",
+  "mlog2.ew" => "AME_FLOAT_LOG2"
 }.freeze
 
 BACKEND_MANAGEMENT_INSTRUCTIONS = %w[
@@ -1130,11 +1127,6 @@ EXECUTE_BODIES = BASE_EXECUTE_BODIES
   .merge(INT_EW_TERNARY_X_OPS.transform_values do |op|
     retire_if_true(
       "ame_ew_ternary_x(MD(Mdregidx(md)), MD(Mdregidx(ms2)), Ameregidx(md), X(Regidx(trunc(xs1))), Ameregidx(ms2), #{op})"
-    )
-  end)
-  .merge(INT_LOGEXP_UNARY_M_OPS.transform_values do |op|
-    retire_if_true(
-      "ame_logexp_unary_m(MD(Mdregidx(md)), MD(Mdregidx(ms1)), Ameregidx(md), Ameregidx(ms1), #{op})"
     )
   end)
   .merge(INT_LOGEXP_BINARY_M_OPS.transform_values do |op|
