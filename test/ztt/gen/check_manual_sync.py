@@ -27,6 +27,21 @@ SAIL_FAMILY_CASE_PATTERN = re.compile(
     r"^\s*(?P<name>AME_[A-Z0-9_]+)\s*=>",
 )
 SAIL_STUB_PATTERN = re.compile(r'Ztt execute (?:stub|implementation missing): (?P<name>[A-Za-z0-9._]+)')
+SAIL_FAMILY_ENCDEC_PATTERN = re.compile(
+    r"^mapping encdec_(?P<family>[A-Za-z0-9_]+) : [A-Za-z0-9_]+ <-> bits\((?P<width>[0-9]+)\) = \{\n"
+    r"(?P<body>.*?)^\}",
+    re.MULTILINE | re.DOTALL,
+)
+SAIL_FAMILY_MEMBER_PATTERN = re.compile(
+    r"^\s*(?P<member>AME_[A-Z0-9_]+) <-> 0b(?P<bits>[01]+),?$", re.MULTILINE
+)
+SAIL_ENCDEC_CLAUSE_PATTERN = re.compile(
+    r"^mapping clause encdec = (?P<name>[A-Za-z0-9_]+)\((?P<args>[^)]*)\)\s*\n"
+    r"\s*<->(?P<pattern>[^\n]*)",
+    re.MULTILINE,
+)
+SAIL_ENCDEC_REGISTER_PATTERN = re.compile(r"^(?P<register>[A-Za-z0-9_]+)\s*:\s*bits\((?P<width>[0-9]+)\)$")
+SAIL_ENCDEC_FAMILY_PATTERN = re.compile(r"^encdec_(?P<family>[A-Za-z0-9_]+)\((?P<operand>[A-Za-z0-9_]+)\)$")
 
 
 def read_manual_instruction_names(path: Path) -> set[str]:
@@ -84,16 +99,7 @@ def sail_constructor(name: str) -> str:
 
 
 def read_sail_execute_names(path: Path) -> tuple[set[str], set[str]]:
-    try:
-        if path.is_dir():
-            sail_files = sorted(path.glob("ztt_*.sail"))
-            if not sail_files:
-                raise ValueError(f"{path}: no Ztt Sail files found")
-            text = "\n".join(source.read_text() for source in sail_files)
-        else:
-            text = path.read_text()
-    except OSError as exc:
-        raise ValueError(f"cannot read Sail model {path}: {exc}") from exc
+    text = read_sail_source(path)
 
     execute_names = set(SAIL_EXECUTE_PATTERN.findall(text))
 
@@ -120,6 +126,154 @@ def read_sail_execute_names(path: Path) -> tuple[set[str], set[str]]:
     if not execute_names:
         raise ValueError(f"{path}: no Ztt execute clauses found")
     return execute_names, stubs
+
+
+def read_sail_source(path: Path) -> str:
+    """Read the Ztt Sail model, either one file or the whole model directory."""
+    try:
+        if path.is_dir():
+            sail_files = sorted(path.glob("ztt_*.sail"))
+            if not sail_files:
+                raise ValueError(f"{path}: no Ztt Sail files found")
+            return "\n".join(source.read_text() for source in sail_files)
+        return path.read_text()
+    except OSError as exc:
+        raise ValueError(f"cannot read Sail model {path}: {exc}") from exc
+
+
+def read_family_encodings(text: str, path: Path) -> dict[str, tuple[int, dict[str, int]]]:
+    """Map each instruction-selector family to its width and encoded members."""
+    tables: dict[str, tuple[int, dict[str, int]]] = {}
+    for match in SAIL_FAMILY_ENCDEC_PATTERN.finditer(text):
+        family = match.group("family")
+        width = int(match.group("width"))
+        members: dict[str, int] = {}
+        for member, bits in SAIL_FAMILY_MEMBER_PATTERN.findall(match.group("body")):
+            if len(bits) != width:
+                raise ValueError(
+                    f"{path}: family {family} encodes {member} in {len(bits)} bits, "
+                    f"but the mapping declares bits({width})"
+                )
+            members[member] = int(bits, 2)
+        if not members:
+            raise ValueError(f"{path}: family {family} has no encoded members")
+        tables[family] = (width, members)
+    return tables
+
+
+def parse_encdec_fields(
+    pattern: str, name: str, path: Path
+) -> list[tuple[int, int | None, str | None]]:
+    """Split one encdec pattern into (width, literal, family) fields, MSB first."""
+    fields: list[tuple[int, int | None, str | None]] = []
+    for piece in pattern.split("@"):
+        piece = piece.strip()
+        if not piece:
+            raise ValueError(f"{path}: {name} has an empty encdec field")
+        if re.fullmatch(r"0b[01]+", piece):
+            fields.append((len(piece) - 2, int(piece, 2), None))
+            continue
+        register = SAIL_ENCDEC_REGISTER_PATTERN.match(piece)
+        if register:
+            fields.append((int(register.group("width")), None, None))
+            continue
+        family = SAIL_ENCDEC_FAMILY_PATTERN.match(piece)
+        if family:
+            fields.append((0, None, family.group("family")))
+            continue
+        raise ValueError(f"{path}: cannot parse encdec field {piece!r} of {name}")
+    if not fields:
+        raise ValueError(f"{path}: {name} has no encdec fields")
+    return fields
+
+
+def read_sail_encodings(path: Path) -> dict[str, list[tuple[str, int, int]]]:
+    """Map every constructor and family member to its (mask, value) encodings."""
+    text = read_sail_source(path)
+    families = read_family_encodings(text, path)
+    encodings: dict[str, list[tuple[str, int, int]]] = {}
+    for match in SAIL_ENCDEC_CLAUSE_PATTERN.finditer(text):
+        name = match.group("name")
+        fields = parse_encdec_fields(match.group("pattern"), name, path)
+        families_used = {family for _, _, family in fields if family is not None}
+        for family in families_used:
+            if family not in families:
+                raise ValueError(f"{path}: {name} encodes with unknown family {family}")
+        if len(families_used) > 1:
+            raise ValueError(f"{path}: {name} encodes with more than one family")
+        # A family reference resolves to one concrete encoding per member; a
+        # constructor without one carries the complete encoding itself.
+        members = [None] if not families_used else sorted(families[next(iter(families_used))][1])
+        for member in members:
+            mask = value = 0
+            for width, literal, family in fields:
+                if family is not None:
+                    width = families[family][0]
+                    literal = families[family][1][member]
+                mask <<= width
+                value <<= width
+                if literal is not None:
+                    mask |= (1 << width) - 1
+                    value |= literal & ((1 << width) - 1)
+            key = name if member is None else member
+            encodings.setdefault(key, []).append((name, mask, value))
+    if not encodings:
+        raise ValueError(f"{path}: no Ztt encdec clauses found")
+    return encodings
+
+
+def read_manual_encodings(path: Path) -> dict[str, tuple[int, int]]:
+    """Map every snapshot instruction to the (mask, value) the manual encodes."""
+    try:
+        document = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError(f"cannot read instruction data {path}: {exc}") from exc
+
+    instructions = document.get("instructions") if isinstance(document, dict) else None
+    if not isinstance(instructions, list):
+        raise ValueError(f"{path}: expected an object containing an instructions array")
+
+    encodings: dict[str, tuple[int, int]] = {}
+    for index, instruction in enumerate(instructions):
+        name = instruction.get("name") if isinstance(instruction, dict) else None
+        mnemonic = instruction.get("mnemonic") if isinstance(instruction, dict) else None
+        wavedrom = instruction.get("resolved_wavedrom") if isinstance(instruction, dict) else None
+        if not isinstance(name, str) or not isinstance(mnemonic, str) or not isinstance(wavedrom, str):
+            raise ValueError(f"{path}: instructions[{index}] lacks a name, mnemonic or encoding")
+        # The snapshot stores the diagram fields LSB first and writes constants
+        # as hexadecimal numbers, which JSON does not accept.
+        fields = json.loads(re.sub(r"0x([0-9a-fA-F]+)", lambda m: str(int(m.group(1), 16)), wavedrom))
+        mask = value = 0
+        for field in reversed(fields.get("reg", [])):
+            width = field.get("bits") if isinstance(field, dict) else None
+            if not isinstance(width, int) or width <= 0:
+                raise ValueError(f"{path}: {name} has a field without a bit width")
+            mask <<= width
+            value <<= width
+            if field.get("type") == 2:
+                mask |= (1 << width) - 1
+                value |= int(field.get("name")) & ((1 << width) - 1)
+        constructor = sail_constructor(mnemonic.split()[0])
+        if constructor in encodings:
+            raise ValueError(f"{path}: duplicate encoding for {constructor}")
+        encodings[constructor] = (mask, value)
+    return encodings
+
+
+def encoding_mismatches(model_path: Path, manual_path: Path) -> dict[str, str]:
+    """Report instructions whose Sail encoding disagrees with the snapshot."""
+    sail = read_sail_encodings(model_path)
+    manual = read_manual_encodings(manual_path)
+    mismatches: dict[str, str] = {}
+    for constructor, (want_mask, want_value) in manual.items():
+        candidates = sail.get(constructor)
+        if not candidates:
+            mismatches[constructor] = "no encdec clause in the model"
+            continue
+        if not any(mask == want_mask and value == want_value for _, mask, value in candidates):
+            rendered = ", ".join(f"{name} mask={mask:#010x} value={value:#010x}" for name, mask, value in candidates)
+            mismatches[constructor] = f"manual mask={want_mask:#010x} value={want_value:#010x} but Sail has {rendered}"
+    return mismatches
 
 
 def macro_files_match(actual_path: Path, expected_path: Path) -> tuple[bool, str, str]:
@@ -189,8 +343,12 @@ def main() -> int:
     macros = read_macro_instruction_names(macro_path)
     sail_execute: set[str] = set()
     sail_stubs: set[str] = set()
+    sail_encoding_mismatches: dict[str, str] = {}
     if args.sail_model:
         sail_execute, sail_stubs = read_sail_execute_names(args.sail_model.resolve())
+        sail_encoding_mismatches = encoding_mismatches(
+            args.sail_model.resolve(), args.instruction_data.resolve()
+        )
 
     manual_without_macros = manual - macros
     macros_without_manual = macros - manual
@@ -225,9 +383,12 @@ def main() -> int:
     print(f"macro instructions: {len(macros)}")
     if args.sail_model:
         print(f"Sail execute clauses: {len(sail_execute)}")
+        print(f"Sail encodings checked: {len(manual) - len(sail_encoding_mismatches)}/{len(manual)}")
         print_names("manual instructions missing Sail execute clauses", manual_without_sail)
         print_names("Sail execute clauses absent from manual", sail_without_manual)
         print_names("Sail execute stubs", {sail_constructor(name) for name in sail_stubs})
+        for constructor in sorted(sail_encoding_mismatches):
+            print(f"Sail encoding mismatch: {constructor}: {sail_encoding_mismatches[constructor]}")
     print_names("manual instructions missing macros", manual_without_macros)
     print_names("macros absent from manual", macros_without_manual)
     if args.expected_macros:
@@ -252,6 +413,7 @@ def main() -> int:
         or manual_without_sail
         or sail_without_manual
         or sail_stubs
+        or sail_encoding_mismatches
     )
     if args.strict and inconsistent:
         return 1
