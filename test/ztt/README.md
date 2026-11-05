@@ -9,8 +9,8 @@ definitions and the generated assembly.
 ## Run matrix
 
 `run_ztt_tests.py` handles the generation, compilation and execution of the full N/UDS/M/ACC
-configuration matrix (120 configurations); CMake only regenerates the Sail model and the GAS
-macros from the manual snapshot and validates that the two are in sync. The script is resumable:
+configuration matrix (120 configurations); CMake only regenerates the GAS macros from the manual
+snapshot and validates them and the hand-written Sail model against that snapshot. The script is resumable:
 already generated source files, already compiled ELFs and already recorded results are reused, so
 an interrupted run continues from where it stopped.
 
@@ -208,9 +208,10 @@ ruby generators/import_manual_prose.rb
 cmake -S ../.. -B ../../build -DCMAKE_BUILD_TYPE=Debug -DENABLE_RISCV_ZTT_TESTS=ON
 ```
 
-Configuration refreshes the Sail model under `model/extensions/Ztt/` and the `src/ame_macros.inc`
-macro include file. The generated assembly test sources are still kept separately under
-`build/test/ztt/generated/`.
+Configuration refreshes the `src/ame_macros.inc` macro include file and checks the Sail model under
+`model/extensions/Ztt/` against the refreshed snapshot. The Sail model is edited in place: the
+encodings, assembly mappings and execute clauses are ordinary model source. The generated assembly
+test sources are still kept separately under `build/test/ztt/generated/`.
 
 The test generator's macros and Sail catalog can be checked against the standalone manual snapshot,
 so inconsistencies are still detected after a manual update:
@@ -222,9 +223,10 @@ python3 test/ztt/gen/check_manual_sync.py \
 ```
 
 `--strict` fails when the manual instruction set, the macros or the Sail catalog diverge; providing
-`--sail-model` also brings the generated Sail instruction catalog into the check. When
-`--expected-macros` is provided, the check compares macro encodings byte by byte, including encoding
-changes for mnemonics with the same name.
+`--sail-model` also checks the Sail instruction catalog: every instruction needs an execute clause,
+and its encdec mask and value must match the encoding the snapshot records. When `--expected-macros`
+is provided, the check compares macro encodings byte by byte, including encoding changes for
+mnemonics with the same name.
 
 `ZTT_INSTRUCTION_DATA` and `ZTT_EXPECTED_MACROS` can be passed to `build_simulator.sh` to make CMake
 perform the strict checks at configuration time. The imported snapshot contains 138 instructions.

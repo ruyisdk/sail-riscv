@@ -1,7 +1,7 @@
-# Ztt build support: regenerate the Sail model and GAS macros from the manual
-# snapshot and keep them synchronized.  Test generation, compilation, and
-# execution live in run_ztt_tests.py, which also owns the N/UDS/M/ACC matrix
-# and the per-combo runtime configurations.
+# Ztt build support: regenerate the GAS macros from the manual snapshot and
+# check the hand-written Sail model against the same snapshot.  Test
+# generation, compilation, and execution live in run_ztt_tests.py, which also
+# owns the N/UDS/M/ACC matrix and the per-combo runtime configurations.
 
 find_program(RUBY_BIN "ruby")
 
@@ -20,15 +20,6 @@ set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
     ${ztt_machine_readable_sources}
 )
 
-execute_process(
-    COMMAND ${RUBY_BIN} "${CMAKE_CURRENT_SOURCE_DIR}/generators/gen_ztt_sail.rb"
-        --output-dir "${ZTT_SAIL_MODEL_DIR}"
-    RESULT_VARIABLE ztt_sail_generation_status
-    ERROR_VARIABLE ztt_sail_generation_error
-)
-if (NOT ztt_sail_generation_status EQUAL 0)
-    message(FATAL_ERROR "Failed to generate Ztt Sail model:\n${ztt_sail_generation_error}")
-endif()
 execute_process(
     COMMAND ${RUBY_BIN} "${CMAKE_CURRENT_SOURCE_DIR}/generators/gen_ztt_macros.rb"
     OUTPUT_FILE "${ZTT_GENERATED_MACROS}"

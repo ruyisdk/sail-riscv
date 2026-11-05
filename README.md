@@ -8,7 +8,7 @@ Prerequisites:
 - CMake 3.20 or later (`cmake_minimum_required(VERSION 3.20)`).
 - A C/C++ compiler supporting C++17 (`CMAKE_CXX_STANDARD 17`).
 - GMP: downloaded and built locally by CMake by default (`DOWNLOAD_GMP=TRUE`, GMP 6.3.0); when `DOWNLOAD_GMP=FALSE` is set, the system GMP is used instead (`find_package(GMP)`).
-- Ruby: with `ENABLE_RISCV_ZTT_TESTS=ON`, the configuration stage runs `test/ztt/generators/gen_ztt_sail.rb` and `gen_ztt_macros.rb`.
+- Ruby: with `ENABLE_RISCV_ZTT_TESTS=ON`, the configuration stage runs `test/ztt/generators/gen_ztt_macros.rb`. The Ztt Sail model is hand-written and is checked, not generated.
 - `-DCMAKE_BUILD_TYPE` must be specified explicitly, otherwise CMake exits with a `FATAL_ERROR`.
 
 Full command sequence (the default behavior of `build_simulator.sh`):
